@@ -8,5 +8,6 @@ target_include_directories(wee8 INTERFACE
 	${CMAKE_CURRENT_LIST_DIR}/Inc
 )
 target_link_libraries(wee8 INTERFACE
-	${CMAKE_CURRENT_LIST_DIR}/
+	${CMAKE_CURRENT_LIST_DIR}/Lib/Win64/wee8.lib
+	dbghelp winmm shlwapi
 )

@@ -3,7 +3,6 @@
 
 #pragma once
 
-namespace rift {
 enum EApplicationSearchPath
 {
 	Installation,
@@ -12,8 +11,6 @@ enum EApplicationSearchPath
 };
 
 const char* GetApplicationSearchPath(EApplicationSearchPath search_path);
-
-}
 
 
 #endif // !RIFT_CORE_APPLICATION_H
