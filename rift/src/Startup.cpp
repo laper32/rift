@@ -1,10 +1,9 @@
-#include "v8-initialization.h"
 #include "libplatform/libplatform.h"
+#include "v8-initialization.h"
 
-#include <memory>
+namespace rift {
 
-
-int main(int argc, char *argv[])
+void Startup(int argc, char* argv[])
 {
     v8::V8::InitializeICUDefaultLocation(argv[0]);
     v8::V8::InitializeExternalStartupData(argv[0]);
@@ -14,7 +13,7 @@ int main(int argc, char *argv[])
     // Create a new Isolate and make it the current one.
     v8::Isolate::CreateParams create_params;
     create_params.array_buffer_allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
-    v8::Isolate *isolate = v8::Isolate::New(create_params);
+    v8::Isolate* isolate = v8::Isolate::New(create_params);
     {
         v8::Isolate::Scope isolate_scope(isolate);
 
@@ -84,5 +83,10 @@ int main(int argc, char *argv[])
     v8::V8::Dispose();
     v8::V8::DisposePlatform();
     delete create_params.array_buffer_allocator;
-    return 0;
+}
+
+} // namespace rift
+
+extern "C" {
+static void rift_startup(int argc, char* argv[]) { return rift::Startup(argc, argv); }
 }
