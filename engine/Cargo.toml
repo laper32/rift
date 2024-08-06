@@ -1,0 +1,15 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "engine"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+cxx = "1.0.124"
+
+[build-dependencies]
+bindgen = "0.69.4"
+cbindgen = "0.26.0"
