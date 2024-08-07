@@ -10,41 +10,24 @@ use std::ffi::c_float;
 use std::ffi::c_int;
 use std::ffi::c_uchar;
 use std::ffi::{CStr, CString};
+use std::os::raw::c_void;
 use std::ptr;
 
-/// The Scene Graph.
 #[repr(C)]
-pub struct SceneGraph {
-    id: c_int,
+pub struct RiftModuleVersion {
+    pub major: c_int,
+    pub minor: c_int,
+    pub patch: c_int,
 }
 
-// #[no_mangle]
-// pub extern "C" fn scene_graph_new(id: c_int) -> *mut SceneGraph {
-//     println!("SCENEGRAPH: Add SceneGraph {:?}", id);
-//     let scene_graph = Box::new(SceneGraph { id });
-//     Box::into_raw(scene_graph)
-// }
-
-// #[no_mangle]
-// pub extern "C" fn scene_graph_delete(scene_graph_ptr: *mut SceneGraph) {
-//     println!("SCENEGRAPH: Remove SceneGraph {:?}", scene_graph_ptr);
-//     if scene_graph_ptr.is_null() {
-//         return;
-//     }
-//     unsafe {
-//         // Brings scene_graph_ptr into scope and then forces Rust to deallocate it
-//         // when it falls out of the function scope.
-//         Box::from_raw(scene_graph_ptr);
-//     }
-// }
-
-// /// Module descriptor
-// #[repr(C)]
-// pub struct RiftModuleDescriptor {
-//     name: *const c_char,
-// }
-
-pub struct RiftModuleDescriptor {}
+#[repr(C)]
+pub struct RiftModuleDescriptor {
+    name: *const c_char,
+    version: RiftModuleVersion,
+    description: *const c_char,
+    author: *const c_char,
+    url: *const c_char,
+}
 
 #[repr(C)]
 pub struct RiftModule {
@@ -53,6 +36,29 @@ pub struct RiftModule {
     OnAllLoad: fn(),
     descriptor: *const RiftModuleDescriptor,
 }
+#[repr(C)]
+pub struct IEngine {
+    GetSearchPath: fn() -> *const c_char,
+}
 
 #[no_mangle]
-extern "C" fn __dummy_to_let_this_idiot_generated_DO_NOT_USE_IT(_: RiftModule) {}
+extern "C" fn RegisterRiftModule(module: *const RiftModule) {
+    println!("RegisterModule");
+}
+#[no_mangle]
+extern "C" fn GetEngine() -> *const IEngine {
+    ptr::null()
+}
+///
+/// Create an interface to expose library.
+/// Input: name: Name of the interface, which is the unique identifier.
+/// Input: return_code: Return code of the interface.
+/// Output: void*: Pointer to the interface (In this case it is IEngine).
+#[no_mangle]
+extern "C" fn CreateInterface(name: *const c_char, return_code: *mut c_int) -> *mut c_void {
+    let name = unsafe { CStr::from_ptr(name) };
+    let name = name.to_str().unwrap();
+    println!("CreateInterface: {}", name);
+    ptr::null_mut()
+}
+// void* CreateInterface(const char* name, int* return_code);

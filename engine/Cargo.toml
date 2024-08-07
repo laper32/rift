@@ -5,10 +5,11 @@ edition = "2021"
 
 [lib]
 name = "engine"
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib"]
 
 [dependencies]
 cxx = "1.0.124"
+homedir = "0.3.3"
 
 [build-dependencies]
 bindgen = "0.69.4"
