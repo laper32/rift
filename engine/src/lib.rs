@@ -1,6 +1,7 @@
 use module::ModuleManager;
 pub mod dir;
 pub mod ffi;
+pub mod manifest;
 mod module;
 mod runtime;
 
