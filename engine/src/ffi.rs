@@ -28,11 +28,11 @@ unsafe impl Send for RiftModuleVersion {}
 
 #[repr(C)]
 pub struct RiftModuleDescriptor {
-    pub name: *const c_char,
+    pub name: [c_char; 256],
     pub version: RiftModuleVersion,
-    pub description: *const c_char,
-    pub author: *const c_char,
-    pub url: *const c_char,
+    pub description: [c_char; 4096],
+    pub author: [c_char; 256],
+    pub url: [c_char; 256],
 }
 
 unsafe impl Send for RiftModuleDescriptor {}
@@ -42,7 +42,7 @@ pub struct RiftModule {
     pub OnLoad: fn() -> bool,
     pub OnUnload: fn(),
     pub OnAllLoad: fn(),
-    pub descriptor: *const RiftModuleDescriptor,
+    pub descriptor: RiftModuleDescriptor,
 }
 
 unsafe impl Send for RiftModule {}
@@ -59,16 +59,19 @@ extern "C" fn DeclareRiftModuleDescriptor(
     description: *const c_char,
     author: *const c_char,
     url: *const c_char,
-) -> *const RiftModuleDescriptor {
+) -> RiftModuleDescriptor {
     println!("DeclareModuleDescriptor");
-    let ret = Box::new(RiftModuleDescriptor {
-        name,
+    let name = unsafe { CStr::from_ptr(name) }.to_str().unwrap();
+    let description = unsafe { CStr::from_ptr(description) }.to_str().unwrap();
+    let author = unsafe { CStr::from_ptr(author) }.to_str().unwrap();
+    let url = unsafe { CStr::from_ptr(url) }.to_str().unwrap();
+    RiftModuleDescriptor {
+        name: name.as_bytes().to_owned().try_into().unwrap(),
         version,
-        description,
-        author,
-        url,
-    });
-    Box::into_raw(ret)
+        description: description.as_bytes().to_owned().try_into().unwrap(),
+        author: author.as_bytes().to_owned().try_into().unwrap(),
+        url: url.as_bytes().to_owned().try_into().unwrap(),
+    }
 }
 
 #[no_mangle]
