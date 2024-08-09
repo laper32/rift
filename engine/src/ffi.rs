@@ -18,34 +18,10 @@ use crate::module::ModuleRegistry;
 use crate::shutdown;
 
 #[repr(C)]
-#[deprecated(note = "Use Manifest instead. This will be removed soon.")]
-pub struct RiftModuleVersion {
-    pub major: c_int,
-    pub minor: c_int,
-    pub patch: c_int,
-}
-
-unsafe impl Send for RiftModuleVersion {}
-
-#[repr(C)]
-#[deprecated(note = "Use Manifest instead. This will be removed soon.")]
-pub struct RiftModuleDescriptor {
-    pub name: [c_char; 256],
-    pub version: RiftModuleVersion,
-    pub description: [c_char; 4096],
-    pub author: [c_char; 256],
-    pub url: [c_char; 256],
-}
-
-unsafe impl Send for RiftModuleDescriptor {}
-
-#[repr(C)]
 pub struct RiftModule {
     pub OnLoad: fn() -> bool,
     pub OnUnload: fn(),
     pub OnAllLoad: fn(),
-    #[deprecated(note = "Use Manifest instead. This will be removed soon.")]
-    pub descriptor: RiftModuleDescriptor,
 }
 
 unsafe impl Send for RiftModule {}
