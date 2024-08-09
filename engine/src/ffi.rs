@@ -19,9 +19,9 @@ use crate::shutdown;
 
 #[repr(C)]
 pub struct RiftModule {
-    pub OnLoad: fn() -> bool,
-    pub OnUnload: fn(),
-    pub OnAllLoad: fn(),
+    pub OnLoad: extern "C" fn() -> bool,
+    pub OnUnload: extern "C" fn(),
+    pub OnAllLoad: extern "C" fn(),
 }
 
 unsafe impl Send for RiftModule {}
