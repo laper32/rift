@@ -7,11 +7,11 @@ struct RiftModuleVersion
 
 struct RiftModuleDescriptor
 {
-    const char *name;
+    char name[256];
     struct RiftModuleVersion version;
-    const char *description;
-    const char *author;
-    const char *url;
+    char description[4096];
+    char author[256];
+    char url[256];
 };
 
 struct RiftModule
@@ -19,16 +19,11 @@ struct RiftModule
     bool (*OnLoad)(void);
     void (*OnUnload)(void);
     void (*OnAllLoad)(void);
-    const struct RiftModuleDescriptor *descriptor;
+    struct RiftModuleDescriptor descriptor;
 };
 extern "C"
 {
     void RegisterRiftModule(const struct RiftModule *module);
-    const struct RiftModuleDescriptor *DeclareRiftModuleDescriptor(const char *name,
-                                                                   struct RiftModuleVersion version,
-                                                                   const char *description,
-                                                                   const char *author,
-                                                                   const char *url);
 }
 
 #include <memory>
@@ -51,9 +46,9 @@ void OnAllLoad()
 extern "C" __declspec(dllexport) int ModuleMain()
 {
     g_Module->OnLoad = &OnLoad;
+    g_Module->OnAllLoad = &OnAllLoad;
     g_Module->OnUnload = &OnUnload;
-    g_Module->OnUnload = &OnUnload;
-    g_Module->descriptor = DeclareRiftModuleDescriptor("Sample", {1, 0, 0}, "Sample module", "rift-dev", "");
+    g_Module->descriptor = RiftModuleDescriptor{"Sample", {1, 0, 0}, "Sample module", "rift-dev", ""};
     RegisterRiftModule(g_Module.get());
 
     return 0;

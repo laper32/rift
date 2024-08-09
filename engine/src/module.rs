@@ -119,7 +119,7 @@ impl ModuleManager {
     }
 
     fn scan_possible_modules(possible_modules: &mut Vec<PathBuf>, path: String) {
-        let binding = PathBuf::from(path).join("modules");
+        let binding = PathBuf::from(path).join(MODULE_DIR_NAME);
         let path = binding.to_str().unwrap();
         let paths = fs::read_dir(path);
         match paths {
