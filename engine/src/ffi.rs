@@ -39,9 +39,9 @@ unsafe impl Send for RiftModuleDescriptor {}
 
 #[repr(C)]
 pub struct RiftModule {
-    pub OnLoad: fn() -> bool,
-    pub OnUnload: fn(),
-    pub OnAllLoad: fn(),
+    pub OnLoad: extern fn() -> bool,
+    pub OnUnload: extern fn(),
+    pub OnAllLoad: extern fn(),
     pub descriptor: RiftModuleDescriptor,
 }
 
