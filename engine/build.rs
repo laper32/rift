@@ -2,7 +2,6 @@ use std::env;
 
 fn main() {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    eprintln!("{crate_dir}");
 
     let mut config: cbindgen::Config = Default::default();
     config.language = cbindgen::Language::C;
