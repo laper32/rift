@@ -48,30 +48,8 @@ pub struct RiftModule {
 unsafe impl Send for RiftModule {}
 
 #[no_mangle]
-extern "C" fn RegisterRiftModule(module: *const RiftModule) {
+extern "C" fn RegisterRiftModule(module: RiftModule) {
     ModuleRegistry::instance().register_module(module);
-}
-
-#[no_mangle]
-extern "C" fn DeclareRiftModuleDescriptor(
-    name: *const c_char,
-    version: RiftModuleVersion,
-    description: *const c_char,
-    author: *const c_char,
-    url: *const c_char,
-) -> RiftModuleDescriptor {
-    println!("DeclareModuleDescriptor");
-    let name = unsafe { CStr::from_ptr(name) }.to_str().unwrap();
-    let description = unsafe { CStr::from_ptr(description) }.to_str().unwrap();
-    let author = unsafe { CStr::from_ptr(author) }.to_str().unwrap();
-    let url = unsafe { CStr::from_ptr(url) }.to_str().unwrap();
-    RiftModuleDescriptor {
-        name: name.as_bytes().to_owned().try_into().unwrap(),
-        version,
-        description: description.as_bytes().to_owned().try_into().unwrap(),
-        author: author.as_bytes().to_owned().try_into().unwrap(),
-        url: url.as_bytes().to_owned().try_into().unwrap(),
-    }
 }
 
 #[no_mangle]

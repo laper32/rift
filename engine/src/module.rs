@@ -151,12 +151,20 @@ impl ModuleManager {
                 None => false,
             }
         }
+        #[cfg(target_os = "linux")]
+        {
+            let module_ext = "so";
+            match path.extension() {
+                Some(ext) => ext == module_ext,
+                None => false,
+            }
+        }
     }
 }
 
 // used for FFI
 pub struct ModuleRegistry {
-    modules: Vec<*const RiftModule>,
+    modules: Vec<RiftModule>,
 }
 
 impl ModuleRegistry {
@@ -172,7 +180,7 @@ impl ModuleRegistry {
         unsafe { &mut *INSTANCE }
     }
 
-    pub fn register_module(&mut self, module: *const RiftModule) {
+    pub fn register_module(&mut self, module: RiftModule) {
         self.modules.push(module);
     }
 }
