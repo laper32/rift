@@ -1,3 +1,17 @@
+/**
+ * 大概会做的事情，有什么东西，怎么协调。
+ *
+ * 目前有两个东西：ModuleManager, ModuleRegistry
+ *
+ * ModuleRegistry: 用于注册模块，专门给ffi的RegisterRiftModule用的。
+ * 只有注册功能，没有其他功能。
+ * 其他功能如加载Modules，初始化Modules，卸载Modules等，都在ModuleManager里。
+ *
+ * ModuleManager：真正管这些Modules的地方。
+ * ModuleRegistry同样也需要ModuleManager初始化的时候才能注册上这些实例。
+ * 其应当想办法转译ModuleRegistry的FFI信息到相对安全的环境下处理，aka, OnLoad, OnUnload, OnAllLoaded这些。
+ *
+ */
 use crate::{dir::PathIdentity, ffi::RiftModule};
 use std::{fs, path::PathBuf};
 
@@ -44,11 +58,6 @@ impl ModuleManager {
         ModuleManager::scan_possible_modules(&mut possible_modules, user_profile_dir);
         // let mut pending_modules = Vec::new();
 
-        // 1. 扫描所有.dll
-        // 2. 加载这些.dll, 此时：
-        //  1. ModuleMain如果想被加载上的话，无条件会有RegisterRiftModule。
-        //  2. 因为2.1中已经在ModuleRegistry里注册了该Module，换言之此时已经有OnLoad, OnAllLoaded, OnUnload的函数指针。
-        //  3. 保存Library和RiftModule信息，等待接下来调用。
         possible_modules.iter().for_each(|x| {
             ModuleManager::load_module(x);
         });
