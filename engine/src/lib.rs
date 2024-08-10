@@ -3,11 +3,11 @@ pub mod manifest;
 mod runtime;
 mod workspace;
 
-fn init() -> bool {
+pub fn init() -> bool {
     runtime::init();
     true
 }
 
-fn shutdown() {
+pub fn shutdown() {
     runtime::shutdown();
 }

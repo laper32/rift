@@ -1,5 +1,3 @@
-use v8::{Platform, SharedRef};
-
 // static PLATFORM: SharedRef<Platform> = v8::new_default_platform(0, false).make_shared();
 
 pub fn init() {
