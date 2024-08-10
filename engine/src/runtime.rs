@@ -1,11 +1,11 @@
 use v8::{Platform, SharedRef};
 
-static PLATFORM: SharedRef<Platform> = v8::new_default_platform(0, false).make_shared();
+// static PLATFORM: SharedRef<Platform> = v8::new_default_platform(0, false).make_shared();
 
 pub fn init() {
     // Initialize V8.
-    v8::V8::initialize_platform(PLATFORM);
-    v8::V8::initialize();
+    // v8::V8::initialize_platform(PLATFORM);
+    // v8::V8::initialize();
     // {
     //     // Create a new Isolate and make it the current one.
     //     let isolate = &mut v8::Isolate::new(v8::CreateParams::default());
@@ -67,6 +67,6 @@ pub fn init() {
 }
 
 pub fn shutdown() {
-    unsafe { v8::V8::dispose() };
-    v8::V8::dispose_platform();
+    // unsafe { v8::V8::dispose() };
+    // v8::V8::dispose_platform();
 }

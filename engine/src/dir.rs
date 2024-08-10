@@ -1,4 +1,3 @@
-use crate::module::MODULE_DIR_NAME;
 use homedir;
 
 pub enum PathIdentity {
