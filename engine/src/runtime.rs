@@ -130,11 +130,10 @@ pub fn init() {
         .enable_all()
         .build()
         .unwrap();
-    // file_path = ?
     // 只有等全部解析加载完成我们才能得知要运行哪些文件哦
-    // if let Err(error) = runtime.block_on(run_js(file_path)) {
-    //     eprintln!("error: {error}");
-    // }
+    if let Err(error) = runtime.block_on(run_js(todo!())) {
+        eprintln!("error: {error}");
+    }
 }
 
 pub fn shutdown() {
