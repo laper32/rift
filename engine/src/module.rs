@@ -81,6 +81,8 @@ impl ModuleManager {
             let content = std::fs::read_to_string(path);
             match content {
                 Ok(content) => {
+                    let module_path = path.parent().unwrap().file_name().unwrap();
+                    println!("Path: {module_path:?}");
                     let overall = content.parse::<toml::Table>().unwrap();
                     let module_table = overall.get("module").unwrap().as_table().unwrap();
                     let module_name = module_table.get("name").unwrap().as_str().unwrap();
@@ -93,6 +95,7 @@ impl ModuleManager {
                         .iter()
                         .map(|author| author.as_str().unwrap().to_string())
                         .collect();
+
                     // bin/dir_name.dll
                     let default_entry = toml::Value::String(module_name.to_string());
                     let module_entry = module_table
