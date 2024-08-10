@@ -49,10 +49,24 @@ def move_output_to_redistributable(release: bool):
     if os.path.exists(rift_path):
         os.rename(rift_path, target_rift_path)
     
-    sample_module_path = "build/Debug/sample.dll"
-    if os.path.exists(sample_module_path):
-        if not os.path.exists(".dist/modules/sample.dll"):
-            shutil.copy(sample_module_path, ".dist/modules/sample.dll")
+    sample_module_path = ".dist/modules/sample"
+    os.makedirs(sample_module_path)
+    with open(".dist/modules/sample/Rift.toml", "w") as f:
+        f.write("""[module]
+name = "sample"
+version = "0.1.0"
+description = "A sample module for Rift"
+authors = ["rift-dev"]
+url = ""
+
+[dependencies]
+sample1="0.1.0"
+sample2="0.1.0"
+""")
+    # sample_module_path = "build/Debug/sample.dll"
+    # if os.path.exists(sample_module_path):
+    #     if not os.path.exists(".dist/modules/sample.dll"):
+    #         shutil.copy(sample_module_path, ".dist/modules/sample.dll")
         # if os.path.exists(".dist/modules/sample.dll"):
         #     shutil.copy
         #     # os.remove(".dist/modules/sample.dll")
