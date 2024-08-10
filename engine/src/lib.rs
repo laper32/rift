@@ -11,4 +11,6 @@ fn init() -> bool {
     true
 }
 
-fn shutdown() {}
+fn shutdown() {
+    module::shutdown()
+}

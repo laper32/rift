@@ -34,7 +34,13 @@ const MODULE_ENTRY_FN: &[u8] = b"ModuleMain";
 static mut INSTANCE: ModuleManager = ModuleManager::new();
 
 pub fn init() {
+    INSTANCE.write().init();
     println!("module::init()");
+}
+
+pub fn shutdown() {
+    INSTANCE.write().shutdown();
+    println!("module::shutdown()");
 }
 
 pub struct ModuleManifest {
@@ -45,25 +51,6 @@ pub struct ModuleManifest {
     pub authors: Vec<String>,
     // 入口dll，默认在bin/{文件夹同名}，除非你手动指定。
     pub entry: String,
-}
-
-pub struct ModuleInstanceVersion {
-    pub major: i32,
-    pub minor: i32,
-    pub patch: i32,
-}
-
-pub struct ModuleInstanceDescriptor {
-    name: String,
-    version: ModuleInstanceVersion,
-    description: String,
-    url: String,
-    instance_path: String,
-}
-
-pub struct ModuleInstance {
-    descriptor: ModuleInstanceDescriptor,
-    instance: RiftModule,
 }
 
 pub struct ModuleManager {
@@ -83,13 +70,14 @@ impl ModuleManager {
 
         Self {}
     }
-    pub fn instance() -> &'static mut Self {
-        static mut INSTANCE: once_cell::sync::Lazy<ModuleManager> =
-            once_cell::sync::Lazy::new(|| ModuleManager::new());
-        unsafe { &mut *INSTANCE }
-    }
 
     pub fn init(&mut self) {}
+
+    pub fn shutdown(&self) {
+        // for module in self.modules {
+        //     module.shutdown();
+        // }
+    }
 
     fn scan_modules(search_path: String) -> Vec<PathBuf> {
         let mut possible_modules = Vec::new();
