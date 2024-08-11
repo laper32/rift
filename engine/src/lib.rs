@@ -1,8 +1,9 @@
 pub mod dir;
+mod errors;
 pub mod manifest;
 mod runtime;
 mod workspace;
-mod errors;
+mod package;
 
 pub fn init() -> bool {
     runtime::init();

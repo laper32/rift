@@ -1,6 +1,6 @@
+use deno_core::extension;
 use std::env;
 use std::path::PathBuf;
-use deno_core::extension;
 
 fn main() {
     extension!(runjs, js = ["src/runtime.js",]);
@@ -19,7 +19,7 @@ fn main() {
         },
         None,
     )
-        .unwrap();
+    .unwrap();
 
     std::fs::write(snapshot_path, snapshot.output).unwrap();
 }

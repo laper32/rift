@@ -1,8 +1,10 @@
-
 use deno_ast::{MediaType, ParseParams, SourceTextInfo};
 use deno_core::anyhow::Error;
 use deno_core::error::AnyError;
-use deno_core::{extension, op2, FastString, ModuleLoadResponse, ModuleSourceCode, ModuleSpecifier, ModuleType, ResolutionKind};
+use deno_core::{
+    extension, op2, FastString, ModuleLoadResponse, ModuleSourceCode, ModuleSpecifier, ModuleType,
+    ResolutionKind,
+};
 use std::env;
 use std::rc::Rc;
 
@@ -136,6 +138,4 @@ pub fn init() {
     }
 }
 
-pub fn shutdown() {
-
-}
+pub fn shutdown() {}
