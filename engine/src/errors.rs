@@ -1,20 +1,19 @@
+use anyhow::Error;
 use std::fmt;
 use std::path::{Path, PathBuf};
-use anyhow::Error;
 
 pub type RiftResult<T> = anyhow::Result<T>;
 
-
 pub struct ManifestError {
     cause: Error,
-    manifest_path: PathBuf
+    manifest_path: PathBuf,
 }
 
 impl ManifestError {
     pub fn new<E: Into<Error>>(cause: E, manifest_path: PathBuf) -> ManifestError {
         ManifestError {
             cause: cause.into(),
-            manifest_path
+            manifest_path,
         }
     }
 

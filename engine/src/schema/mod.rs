@@ -62,7 +62,7 @@ pub struct TomlTarget {
     pub build_type: String,
     pub plugins: Option<String>,
     pub dependencies: Option<String>,
-    pub metadata: Option<String>
+    pub metadata: Option<String>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
@@ -77,7 +77,8 @@ pub struct TomlPlugin {
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
-    let raw_content = std::fs::read_to_string(path).map_err(|err| ManifestError::new(err, path.into()))?;
+    let raw_content =
+        std::fs::read_to_string(path).map_err(|err| ManifestError::new(err, path.into()))?;
     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
 
     Ok(content?)
@@ -90,12 +91,12 @@ fn test_load_manifest() {
 
     let manifest_path = env::var("CARGO_MANIFEST_DIR").unwrap();
     let identifier_path = PathBuf::from(manifest_path) // rift/engine
-        .parent().unwrap() // rift
+        .parent()
+        .unwrap() // rift
         .join(".dist")
         .join("sample_project")
         .join("Rift.toml");
     println!("Identifier path: {identifier_path:?}");
     let manifest = load_manifest(&identifier_path);
     println!("{:?}", manifest);
-
 }

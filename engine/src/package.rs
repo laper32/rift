@@ -1,17 +1,17 @@
+use crate::manifest::Manifest;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
-use crate::manifest::Manifest;
 
 /// Information about a package that is available somewhere in the file system.
 ///
 /// A package is a `Rift.toml` file plus all the files that are part of it.
 pub struct Package {
-    inner: Rc<PackageInner>
+    inner: Rc<PackageInner>,
 }
 
 struct PackageInner {
     manifest: Manifest,
-    manifest_path: PathBuf
+    manifest_path: PathBuf,
 }
 
 impl Package {
@@ -19,8 +19,8 @@ impl Package {
         Package {
             inner: Rc::new(PackageInner {
                 manifest,
-                manifest_path: manifest_path.to_path_buf()
-            })
+                manifest_path: manifest_path.to_path_buf(),
+            }),
         }
     }
     pub fn manifest(&self) -> &Manifest {
