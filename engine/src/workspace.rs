@@ -1,8 +1,18 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
 use crate::package::Package;
+
+struct Packages {
+    packages:HashMap<PathBuf, MaybePackage>
+}
 
 pub enum MaybePackage {
     Package(Package),
     Virtual
+}
+
+pub struct Workspace {
+    
 }
 
 //

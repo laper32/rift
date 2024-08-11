@@ -34,6 +34,4 @@ impl Package {
     pub fn root(&self) -> &Path {
         &self.inner.manifest_path.parent().unwrap()
     }
-
-    
 }

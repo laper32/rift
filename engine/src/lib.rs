@@ -1,9 +1,10 @@
 pub mod dir;
 mod errors;
-pub mod manifest;
 mod runtime;
 mod workspace;
 mod package;
+mod schema;
+mod manifest;
 
 pub fn init() -> bool {
     runtime::init();
