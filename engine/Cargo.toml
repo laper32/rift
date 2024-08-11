@@ -19,6 +19,7 @@ serde_toml = "0.0.1"
 static_init = "1.0.3"
 toml = "0.8.19"
 tokio = "1.39.2"
+anyhow = "1.0.86"
 # v8 = "0.102.0"
 
 [build-dependencies]

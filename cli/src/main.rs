@@ -1,3 +1,5 @@
+mod commands;
+
 use clap::Command;
 fn main() {
     let _matches = Command::new("Rift")

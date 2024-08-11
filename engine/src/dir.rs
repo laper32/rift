@@ -8,7 +8,7 @@ pub enum PathIdentity {
 
 const NON_INSTALLATION_PATH_NAME: &str = ".rift";
 
-// engine.dll一定和rift.exe在同一个目录下
+// 内核只有一个可执行文件
 impl PathIdentity {
     pub fn get_rift_path(path_id: PathIdentity) -> String {
         let installation_path = std::env::current_exe() // ${installation_path}/bin/rift.exe
