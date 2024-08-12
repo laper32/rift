@@ -1,45 +1,64 @@
-use crate::errors::RiftResult;
+use crate::errors::{ManifestError, RiftResult, SimpleError};
 use crate::package::Package;
 use std::collections::HashMap;
+use std::fs::File;
 use std::path::{Path, PathBuf};
+use crate::manifest::{Manifest, WorkspaceManifest, MANIFEST_IDENTIFIER};
+use crate::schema::{load_manifest, TomlWorkspace};
 
 struct Packages {
-    packages: HashMap<PathBuf, MaybePackage>,
-}
-
-pub enum MaybePackage {
-    Package(Package),
-    Virtual,
+    packages: HashMap<PathBuf, Package>,
 }
 
 pub struct Workspace {
     current_manifest: PathBuf,
-    root_manifest: Option<PathBuf>,
     packages: Packages,
 }
 
-impl Workspace {
-    pub fn new(manifest_path: &Path) -> RiftResult<Workspace> {
-        let mut workspace = Workspace::new_default(manifest_path.to_path_buf());
-        Ok(workspace)
-    }
-    fn new_default(current_manifest: PathBuf) -> Workspace {
-        Workspace {
-            current_manifest,
-            root_manifest: None,
-            packages: Packages {
-                packages: HashMap::new(),
-            },
-        }
-    }
+trait Node { // TODO: rename
+    fn root_manifest(&self) -> Option<PathBuf>;
+}
 
-    pub fn root(&self) -> &Path {
-        self.root_manifest().parent().unwrap()
-    }
-    pub fn root_manifest(&self) -> &Path {
-        self.root_manifest
-            .as_ref()
-            .unwrap_or(&self.current_manifest)
+impl Node for Workspace {
+    fn root_manifest(&self) -> Option<PathBuf> {
+        None
     }
 }
 
+impl Workspace {
+    pub fn new(manifest_path: &WorkspaceManifest) -> Workspace {
+
+    }
+}
+
+pub struct WorkspaceBuilder {
+    possible_manifests: HashMap<PathBuf, Manifest>,
+    init_path: PathBuf,
+}
+
+impl WorkspaceBuilder {
+    pub fn new(current_path: &PathBuf) -> Self {
+        Self {
+            possible_manifests: HashMap::new(),
+            init_path: current_path.clone(),
+        }
+    }
+
+    fn find_root(&self, current_path: &PathBuf) -> Option<PathBuf> {
+        let parent_manifest_path = current_path.parent()?.join(MANIFEST_IDENTIFIER);
+        if parent_manifest_path.exists() {
+            Some(parent_manifest_path)
+        } else {
+            self.find_root(&current_path.parent()?.to_path_buf())
+        }
+    }
+
+    pub fn build(self) -> RiftResult<Workspace> {
+        let root = match self.find_root(&self.init_path) {
+            None => return Err(Box::new(SimpleError::new("Unable to parse manifest toml"))),
+            Some(path) => path,
+        };
+        let root_workspace = load_manifest::<TomlWorkspace>(&root)?;
+        todo!()
+    }
+}

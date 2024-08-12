@@ -1,63 +1,29 @@
-use anyhow::Error;
-use std::fmt;
-use std::path::{Path, PathBuf};
+use std::fmt::{Debug, Display, Formatter, Write};
+use deno_core::v8::Message;
 
-pub type RiftResult<T> = anyhow::Result<T>;
+// pub type RiftResult<T> = anyhow::Result<T>;
+pub type RiftResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-pub struct ManifestError {
-    cause: Error,
-    manifest_path: PathBuf,
+pub struct SimpleError {
+    message: String,
 }
 
-impl ManifestError {
-    pub fn new<E: Into<Error>>(cause: E, manifest_path: PathBuf) -> ManifestError {
-        ManifestError {
-            cause: cause.into(),
-            manifest_path,
-        }
-    }
-
-    pub fn manifest_path(&self) -> &PathBuf {
-        &self.manifest_path
-    }
-    /// Returns an iterator over the `ManifestError` chain of causes.
-    ///
-    /// So if this error was not caused by another `ManifestError` this will be empty.
-    pub fn cause(&self) -> ManifestCauses<'_> {
-        ManifestCauses { current: self }
+impl Debug for SimpleError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
     }
 }
 
-impl std::error::Error for ManifestError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        self.cause.source()
+impl Display for SimpleError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.message)
     }
 }
 
-impl fmt::Debug for ManifestError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.cause.fmt(f)
+impl std::error::Error for SimpleError {}
+
+impl SimpleError {
+    pub fn new(message: &str) -> Self {
+        Self { message: message.to_string() }
     }
 }
-
-impl fmt::Display for ManifestError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.cause.fmt(f)
-    }
-}
-
-/// An iterator over the `ManifestError` chain of causes.
-pub struct ManifestCauses<'a> {
-    current: &'a ManifestError,
-}
-
-impl<'a> Iterator for ManifestCauses<'a> {
-    type Item = &'a ManifestError;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.current = self.current.cause.downcast_ref()?;
-        Some(self.current)
-    }
-}
-
-impl<'a> ::std::iter::FusedIterator for ManifestCauses<'a> {}

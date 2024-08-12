@@ -2,7 +2,7 @@ pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 
 pub struct WorkspaceManifest {
     /// 没啥说的
-    pub members: Option<Vec<String>>,
+    pub members: Vec<String>,
 
     /// 没啥说的
     pub exclude: Option<Vec<String>>,
@@ -34,6 +34,7 @@ pub struct ProjectManifest {
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
+
 pub struct TargetManifest {
     pub name: String,
     pub build_type: String,
@@ -64,19 +65,19 @@ pub enum Manifest {
 //         ProjectManifest {}
 //     }
 // }
-// 
+//
 // impl TargetManifest {
 //     pub fn new() -> TargetManifest {
 //         TargetManifest {
-//             
+//
 //         }
 //     }
 // }
-// 
+//
 // impl PluginManifest {
 //     pub fn new() -> PluginManifest {
 //         PluginManifest {
-//             
+//
 //         }
 //     }
 // }
