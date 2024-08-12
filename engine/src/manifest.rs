@@ -59,25 +59,3 @@ pub enum Manifest {
     Target(TargetManifest),
     Plugin(PluginManifest),
 }
-
-// impl ProjectManifest {
-//     pub fn new() -> ProjectManifest {
-//         ProjectManifest {}
-//     }
-// }
-//
-// impl TargetManifest {
-//     pub fn new() -> TargetManifest {
-//         TargetManifest {
-//
-//         }
-//     }
-// }
-//
-// impl PluginManifest {
-//     pub fn new() -> PluginManifest {
-//         PluginManifest {
-//
-//         }
-//     }
-// }

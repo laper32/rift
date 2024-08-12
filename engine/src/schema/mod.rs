@@ -1,6 +1,19 @@
 use crate::errors::{RiftResult, SimpleError};
 use serde::{Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::path::Path;
+
+/// 我们定义项目是基于section的
+/// 所以我们需要一个TomlManifest来明确Rift.toml里可能会有哪些section
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "kebab-case")]
+#[serde_with::serde_as]
+pub struct TomlManifest {
+    pub workspace: Option<TomlWorkspace>,
+    pub folder: Option<TomlFolder>,
+    pub plugin: Option<TomlPlugin>,
+    pub project: Option<TomlProject>,
+    pub target: Option<TomlTarget>,
+}
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -24,20 +37,6 @@ pub struct TomlWorkspace {
     /// 指向的是文件路径
     pub dependencies: Option<String>,
 }
-
-#[cfg(test)]
-mod test {
-    use crate::schema::TomlWorkspace;
-
-    #[test]
-    fn __test_maybe_null_workspace() {
-        let raw = r#"
-        [workspace]
-        "#;
-        let content = toml::from_str::<TomlWorkspace>(raw).unwrap();
-    }
-}
-
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case")]
@@ -89,30 +88,52 @@ pub struct TomlPlugin {
 //     let raw_content =
 //         std::fs::read_to_string(path).map_err(|err| ManifestError::new(err, path.into()))?;
 //     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
-// 
+//
 //     Ok(content?)
 //     // let content = toml::from_str(std::fs::read_to_string(path.to_path_buf()).unwrap() )
 // }
 
-pub fn load_manifest<T>(path: &Path) -> RiftResult<T> {
-    let raw_content =
-        std::fs::read_to_string(path).map_err(|err| SimpleError::new("..."))?;
-    toml::from_str::<T>(raw_content.as_str())?
+pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
+    let raw_content = std::fs::read_to_string(path).map_err(|_| SimpleError::new("..."))?;
+    let content = toml::from_str::<TomlManifest>(raw_content.as_str());
+    match content {
+        Ok(content) => Ok(content),
+        Err(e) => Err(e.into()),
+    }
 }
 
+#[cfg(test)]
+mod test {
+    use crate::schema::load_manifest;
+    use std::path::PathBuf;
 
-#[test]
-fn test_load_manifest() {
-    use std::env;
+    use super::TomlManifest;
 
-    let manifest_path = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let identifier_path = PathBuf::from(manifest_path) // rift/engine
-        .parent()
-        .unwrap() // rift
-        .join(".dist")
-        .join("sample_project")
-        .join("Rift.toml");
-    println!("Identifier path: {identifier_path:?}");
-    let manifest = load_manifest(&identifier_path);
-    println!("{:?}", manifest);
+    #[test]
+    fn __test_maybe_null_workspace() {
+        let raw = r#"
+        [workspace]
+        members = ["engine", "cli"]
+        "#;
+        let content = toml::from_str::<TomlManifest>(raw).unwrap();
+        println!("{:?}", content);
+        // let content = toml::from_str::<TomlWorkspace>(raw).unwrap();
+        // println!("{:?}", content);
+    }
+    #[test]
+    fn test_load_manifest() {
+        use std::env;
+
+        let manifest_path = env::var("CARGO_MANIFEST_DIR").unwrap();
+        let identifier_path = PathBuf::from(manifest_path) // rift/engine
+            .parent()
+            .unwrap() // rift
+            .join(".dist")
+            .join("sample_project")
+            .join("Rift.toml");
+        println!("Identifier path: {identifier_path:?}");
+
+        let manifest = load_manifest(&identifier_path);
+        println!("{:?}", manifest);
+    }
 }
