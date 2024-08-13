@@ -5,41 +5,59 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 
 
+pub struct Workspace {
+    // 我们需要知道是在哪里调用的rift
+    current_manifest: PathBuf,
+
+    // 我们需要记录这个workspace的根目录在哪里
+    root_manifest: Option<PathBuf>
+}
+
+impl Workspace {
+    fn new(manifest_path: &PathBuf) -> Workspace {
+
+    }
+    fn new_default(manifest_path: &PathBuf) -> Workspace {
+        Workspace {
+            current_manifest: manifest_path.clone(),
+            root_manifest: None
+        }
+    }
+}
 
 // struct Packages {
 //     packages: HashMap<PathBuf, Package>,
 // }
 
-// 
 // pub struct Workspace {
 //     current_manifest: PathBuf,
-// 
+//
 //     // 整个工作区的包。
 //     packages: Packages,
 // }
-// 
+//
 // trait Node {
 //     // TODO: rename
 //     fn root_manifest(&self) -> Option<PathBuf>;
 // }
-// 
+//
 // impl Node for Workspace {
 //     fn root_manifest(&self) -> Option<PathBuf> {
 //         None
 //     }
 // }
-// 
+//
 // impl Workspace {
 //     pub fn new(manifest_path: &WorkspaceManifest) -> Workspace {
 //         todo!()
 //     }
 // }
-// 
+//
 // pub struct WorkspaceBuilder {
 //     possible_manifests: HashMap<PathBuf, Manifest>,
 //     init_path: PathBuf,
 // }
-// 
+//
 // impl WorkspaceBuilder {
 //     pub fn new(current_path: &PathBuf) -> Self {
 //         Self {
@@ -47,7 +65,7 @@ use std::path::PathBuf;
 //             init_path: current_path.clone(),
 //         }
 //     }
-// 
+//
 //     fn find_root(&self, current_path: &PathBuf) -> Option<PathBuf> {
 //         let parent_manifest_path = current_path.parent()?.join(MANIFEST_IDENTIFIER);
 //         if parent_manifest_path.exists() {
@@ -56,7 +74,7 @@ use std::path::PathBuf;
 //             self.find_root(&current_path.parent()?.to_path_buf())
 //         }
 //     }
-// 
+//
 //     pub fn build(self) -> RiftResult<Workspace> {
 //         let root = match self.find_root(&self.init_path) {
 //             None => return Err(Box::new(SimpleError::new("Unable to parse manifest toml"))),

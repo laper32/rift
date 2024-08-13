@@ -1,5 +1,8 @@
 # Rift
 
+## Why Rift?
+![alt text](img_v3_02dn_36ffe1e0-8b57-4822-8918-c7d6650c5c6g.jpg)
+
 ## 项目说明
 
 Windows用户：由于我们使用V8，而rusty_v8有一个操作是创建符号链接，而创建符号链接需要管理员权限。
