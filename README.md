@@ -1,7 +1,7 @@
 # Rift
 
 ## Why Rift?
-![alt text](img_v3_02dn_36ffe1e0-8b57-4822-8918-c7d6650c5c6g.jpg)
+![alt text](assets/sc.jpg)
 
 ## 项目说明
 
