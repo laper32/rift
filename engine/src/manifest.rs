@@ -1,3 +1,5 @@
+use std::path::{Path, PathBuf};
+
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 
 pub struct WorkspaceManifest {
@@ -52,10 +54,59 @@ pub struct PluginManifest {
     pub dependencies: Option<String>,
 }
 
+/// 严格定义的话，Manifest是可以作为包管理的
+/// 下面三个都可以上传到包管理去
 pub enum Manifest {
-    Workspace(WorkspaceManifest),
-    Folder(FolderManifest),
     Project(ProjectManifest),
     Target(TargetManifest),
     Plugin(PluginManifest),
+}
+
+/// 这两个严格来说只用来组织项目结构
+pub enum Connector {
+    Workspace(WorkspaceManifest),
+    Folder(FolderManifest),
+}
+
+pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
+    let parent_manifest_path = current_path.parent()?.join(MANIFEST_IDENTIFIER);
+    if parent_manifest_path.exists() {
+        Some(parent_manifest_path)
+    } else {
+        find_root_manifest(&parent_manifest_path.parent()?.to_path_buf())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::{env, io};
+    use std::ffi::OsString;
+    use std::fs::read_dir;
+    use std::io::ErrorKind;
+    use std::path::PathBuf;
+    use crate::manifest::find_root_manifest;
+
+    fn get_project_root() -> io::Result<PathBuf> {
+        let path = env::current_dir()?;
+        let mut path_ancestors = path.as_path().ancestors();
+
+        while let Some(p) = path_ancestors.next() {
+            let has_cargo =
+                read_dir(p)?
+                    .into_iter()
+                    .any(|p| p.unwrap().file_name() == OsString::from("Cargo.lock"));
+            if has_cargo {
+                return Ok(PathBuf::from(p))
+            }
+        }
+        Err(io::Error::new(ErrorKind::NotFound, "Ran out of places to find Cargo.toml"))
+
+    }
+    #[test]
+    fn test_find_root_manifest() {
+        let sample_manifest_path = get_project_root().unwrap().join("sample").join("06_workspace_folder_project_target").join("folder2");
+        let manifest_root = find_root_manifest(&sample_manifest_path);
+        println!("{:?}", manifest_root);
+        
+    }
 }
