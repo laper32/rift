@@ -107,9 +107,27 @@ pub fn read_manifest(path: &Path) -> Option<EitherManifest> {
                         exclude: Some(folder_manifest.exclude),
                     }));
                 } else if manifest.project.is_some() {
-                    todo!()
+                    let project_manifest = manifest.project.unwrap();
+                    return EitherManifest::Real(Manifest::Project(ProjectManifest {
+                        name: project_manifest.name,
+                        authors: project_manifest.authors,
+                        version: project_manifest.version,
+                        description: project_manifest.description,
+                        plugins: project_manifest.plugins,
+                        dependencies: project_manifest.dependencies,
+                        metadata: project_manifest.metadata,
+                        members: Some(project_manifest.members),
+                        exclude: Some(project_manifest.exclude),
+                    }));
                 } else if manifest.target.is_some() {
-                    todo!()
+                    let target_manifest = manifest.target.unwrap();
+                    return EitherManifest::Real(Manifest::Target(TargetManifest {
+                        name: target_manifest.name,
+                        build_type: target_manifest.build_type,
+                        plugins: target_manifest.plugins,
+                        dependencies: target_manifest.dependencies,
+                        metadata: target_manifest.metadata,
+                    }));
                 } else {
                     panic!("Invalid manifest");
                 }
@@ -118,27 +136,9 @@ pub fn read_manifest(path: &Path) -> Option<EitherManifest> {
                 todo!("error: {:?}", e);
             }
         }
-        // Some(match deserialized_toml {
-        //     Ok(manifest) => {
-        //         if manifest.workspace.is_some() {
-        //             let workspace_manifest = manifest.workspace.unwrap();
-        //             EitherManifest::Virtual(VirtualManifest::Workspace(WorkspaceManifest {
-        //                 members: workspace_manifest.members,
-        //                 exclude: Some(workspace_manifest.exclude),
-        //                 metadata: workspace_manifest.metadata,
-        //                 plugins: workspace_manifest.plugins,
-        //                 dependencies: workspace_manifest.dependencies,
-        //             }))
-        //         } else {
-        //             return None;
-        //         }
-        //     }
-        //     Err(e) => {
-        //         return None;
-        //     }
-        // })
     };
-    todo!()
+    let manifest = manifest();
+    Some(manifest)
 }
 
 #[cfg(test)]
