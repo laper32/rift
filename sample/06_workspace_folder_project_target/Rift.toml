@@ -1,0 +1,3 @@
+[workspace]
+members = ["proj1", "proj2", "proj3", "proj4", "folder1", "folder2"]
+exclude = []
