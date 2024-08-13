@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 use deno_ast::{MediaType, ParseParams, SourceTextInfo};
 use deno_core::anyhow::Error;
 use deno_core::error::AnyError;

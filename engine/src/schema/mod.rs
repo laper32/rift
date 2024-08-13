@@ -84,15 +84,6 @@ pub struct TomlPlugin {
     pub dependencies: Option<String>,
 }
 
-// pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
-//     let raw_content =
-//         std::fs::read_to_string(path).map_err(|err| ManifestError::new(err, path.into()))?;
-//     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
-//
-//     Ok(content?)
-//     // let content = toml::from_str(std::fs::read_to_string(path.to_path_buf()).unwrap() )
-// }
-
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
     let raw_content = std::fs::read_to_string(path).map_err(|_| SimpleError::new("..."))?;
     let content = toml::from_str::<TomlManifest>(raw_content.as_str());

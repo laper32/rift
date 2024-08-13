@@ -1,6 +1,13 @@
 use std::path::{Path, PathBuf};
 
+use crate::schema;
+
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
+
+pub enum EitherManifest {
+    Real(Manifest),
+    Virtual(VirtualManifest),
+}
 
 pub struct WorkspaceManifest {
     /// 没啥说的
@@ -32,7 +39,8 @@ pub struct ProjectManifest {
     pub plugins: Option<String>,
     pub dependencies: Option<String>,
     pub metadata: Option<String>,
-    // 多个target才会用，如果只有一个的话建议不用，虽然我们不反对。
+    // 如果project和target同时存在，那么members和exclude将无法使用，就算里面写东西也会被忽略
+    // 除此之外无限制。
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
@@ -59,11 +67,10 @@ pub struct PluginManifest {
 pub enum Manifest {
     Project(ProjectManifest),
     Target(TargetManifest),
-    Plugin(PluginManifest),
 }
 
 /// 这两个严格来说只用来组织项目结构
-pub enum Connector {
+pub enum VirtualManifest {
     Workspace(WorkspaceManifest),
     Folder(FolderManifest),
 }
@@ -77,36 +84,75 @@ pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use std::{env, io};
-    use std::ffi::OsString;
-    use std::fs::read_dir;
-    use std::io::ErrorKind;
-    use std::path::PathBuf;
-    use crate::manifest::find_root_manifest;
-
-    fn get_project_root() -> io::Result<PathBuf> {
-        let path = env::current_dir()?;
-        let mut path_ancestors = path.as_path().ancestors();
-
-        while let Some(p) = path_ancestors.next() {
-            let has_cargo =
-                read_dir(p)?
-                    .into_iter()
-                    .any(|p| p.unwrap().file_name() == OsString::from("Cargo.lock"));
-            if has_cargo {
-                return Ok(PathBuf::from(p))
+pub fn read_manifest(path: &Path) -> Option<EitherManifest> {
+    let mut manifest = || {
+        let deserialized_toml = schema::load_manifest(&path.to_path_buf());
+        match deserialized_toml {
+            std::result::Result::Ok(manifest) => {
+                if manifest.workspace.is_some() {
+                    let workspace_manifest = manifest.workspace.unwrap();
+                    return EitherManifest::Virtual(VirtualManifest::Workspace(
+                        WorkspaceManifest {
+                            members: workspace_manifest.members,
+                            exclude: Some(workspace_manifest.exclude),
+                            metadata: workspace_manifest.metadata,
+                            plugins: workspace_manifest.plugins,
+                            dependencies: workspace_manifest.dependencies,
+                        },
+                    ));
+                } else if manifest.folder.is_some() {
+                    let folder_manifest = manifest.folder.unwrap();
+                    return EitherManifest::Virtual(VirtualManifest::Folder(FolderManifest {
+                        members: Some(folder_manifest.members),
+                        exclude: Some(folder_manifest.exclude),
+                    }));
+                } else if manifest.project.is_some() {
+                    todo!()
+                } else if manifest.target.is_some() {
+                    todo!()
+                } else {
+                    panic!("Invalid manifest");
+                }
+            }
+            Err(e) => {
+                todo!("error: {:?}", e);
             }
         }
-        Err(io::Error::new(ErrorKind::NotFound, "Ran out of places to find Cargo.toml"))
+        // Some(match deserialized_toml {
+        //     Ok(manifest) => {
+        //         if manifest.workspace.is_some() {
+        //             let workspace_manifest = manifest.workspace.unwrap();
+        //             EitherManifest::Virtual(VirtualManifest::Workspace(WorkspaceManifest {
+        //                 members: workspace_manifest.members,
+        //                 exclude: Some(workspace_manifest.exclude),
+        //                 metadata: workspace_manifest.metadata,
+        //                 plugins: workspace_manifest.plugins,
+        //                 dependencies: workspace_manifest.dependencies,
+        //             }))
+        //         } else {
+        //             return None;
+        //         }
+        //     }
+        //     Err(e) => {
+        //         return None;
+        //     }
+        // })
+    };
+    todo!()
+}
 
-    }
+#[cfg(test)]
+mod test {
+    use crate::{manifest::find_root_manifest, util::get_cargo_project_root};
+
     #[test]
     fn test_find_root_manifest() {
-        let sample_manifest_path = get_project_root().unwrap().join("sample").join("06_workspace_folder_project_target").join("folder2");
+        let sample_manifest_path = get_cargo_project_root()
+            .unwrap()
+            .join("sample")
+            .join("06_workspace_folder_project_target")
+            .join("folder2");
         let manifest_root = find_root_manifest(&sample_manifest_path);
         println!("{:?}", manifest_root);
-        
     }
 }

@@ -13,16 +13,7 @@ def construct_redistributable_dirs():
 def build(release: bool):
     cmdlet = ['cargo', 'build']
     if release: cmdlet.append('--release')
-    ret = subprocess.run(
-        cmdlet,
-        env=dict(
-            os.environ, 
-            **{
-                'RUSTY_V8_ARCHIVE': Path(os.curdir).absolute().joinpath(".cargo").joinpath("rusty_v8.lib").as_posix(),
-                'RUSTY_V8_MIRROR': Path(os.curdir).absolute().joinpath(".cargo").as_posix(),
-            }
-            )
-    )
+    ret = subprocess.run(cmdlet)
     if ret.returncode != 0:
         print("Failed to build the project.")
         exit(1)
