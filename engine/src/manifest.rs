@@ -1,14 +1,16 @@
 use std::path::{Path, PathBuf};
 
-use crate::schema;
+use crate::{errors::RiftResult, schema, workspace::MaybePackage};
 
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 
+#[derive(Debug)]
 pub enum EitherManifest {
     Real(Manifest),
     Virtual(VirtualManifest),
 }
 
+#[derive(Debug)]
 pub struct WorkspaceManifest {
     /// 没啥说的
     pub members: Vec<String>,
@@ -26,11 +28,13 @@ pub struct WorkspaceManifest {
     pub dependencies: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct FolderManifest {
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
 
+#[derive(Debug)]
 pub struct ProjectManifest {
     pub name: String,
     pub authors: Vec<String>,
@@ -45,6 +49,7 @@ pub struct ProjectManifest {
     pub exclude: Option<Vec<String>>,
 }
 
+#[derive(Debug)]
 pub struct TargetManifest {
     pub name: String,
     pub build_type: String,
@@ -64,12 +69,14 @@ pub struct PluginManifest {
 
 /// 严格定义的话，Manifest是可以作为包管理的
 /// 下面三个都可以上传到包管理去
+#[derive(Debug)]
 pub enum Manifest {
     Project(ProjectManifest),
     Target(TargetManifest),
 }
 
 /// 这两个严格来说只用来组织项目结构
+#[derive(Debug)]
 pub enum VirtualManifest {
     Workspace(WorkspaceManifest),
     Folder(FolderManifest),
@@ -84,14 +91,23 @@ pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
     }
 }
 
-pub fn read_manifest(path: &Path) -> Option<EitherManifest> {
-    let mut manifest = || {
+pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
+    let manifest = (|| {
         let deserialized_toml = schema::load_manifest(&path.to_path_buf());
         match deserialized_toml {
-            std::result::Result::Ok(manifest) => {
+            Ok(manifest) => {
                 if manifest.workspace.is_some() {
+                    if manifest.folder.is_some()
+                        || manifest.project.is_some()
+                        || manifest.target.is_some()
+                        || manifest.plugin.is_some()
+                    {
+                        anyhow::bail!(
+                            "Workspace and Folder/Project/Target/Plugin can't be used together."
+                        )
+                    }
                     let workspace_manifest = manifest.workspace.unwrap();
-                    return EitherManifest::Virtual(VirtualManifest::Workspace(
+                    return Ok(EitherManifest::Virtual(VirtualManifest::Workspace(
                         WorkspaceManifest {
                             members: workspace_manifest.members,
                             exclude: Some(workspace_manifest.exclude),
@@ -99,16 +115,33 @@ pub fn read_manifest(path: &Path) -> Option<EitherManifest> {
                             plugins: workspace_manifest.plugins,
                             dependencies: workspace_manifest.dependencies,
                         },
-                    ));
+                    )));
                 } else if manifest.folder.is_some() {
+                    if manifest.workspace.is_some()
+                        || manifest.project.is_some()
+                        || manifest.target.is_some()
+                        || manifest.plugin.is_some()
+                    {
+                        anyhow::bail!(
+                            "Workspace and Folder/Project/Target/Plugin can't be used together."
+                        )
+                    }
                     let folder_manifest = manifest.folder.unwrap();
-                    return EitherManifest::Virtual(VirtualManifest::Folder(FolderManifest {
-                        members: Some(folder_manifest.members),
-                        exclude: Some(folder_manifest.exclude),
-                    }));
+                    return Ok(EitherManifest::Virtual(VirtualManifest::Folder(
+                        FolderManifest {
+                            members: Some(folder_manifest.members),
+                            exclude: Some(folder_manifest.exclude),
+                        },
+                    )));
                 } else if manifest.project.is_some() {
                     let project_manifest = manifest.project.unwrap();
-                    return EitherManifest::Real(Manifest::Project(ProjectManifest {
+                    if manifest.workspace.is_some()
+                        || manifest.folder.is_some()
+                        || manifest.plugin.is_some()
+                    {
+                        anyhow::bail!("Workspace and Folder/Project/Plugin can't be used together.")
+                    }
+                    let mut project_manifest_actual = ProjectManifest {
                         name: project_manifest.name,
                         authors: project_manifest.authors,
                         version: project_manifest.version,
@@ -118,32 +151,49 @@ pub fn read_manifest(path: &Path) -> Option<EitherManifest> {
                         metadata: project_manifest.metadata,
                         members: Some(project_manifest.members),
                         exclude: Some(project_manifest.exclude),
-                    }));
+                    };
+
+                    if manifest.target.is_some() {
+                        project_manifest_actual.members = None;
+                        project_manifest_actual.exclude = None;
+                    }
+
+                    return Ok(EitherManifest::Real(Manifest::Project(
+                        project_manifest_actual,
+                    )));
                 } else if manifest.target.is_some() {
                     let target_manifest = manifest.target.unwrap();
-                    return EitherManifest::Real(Manifest::Target(TargetManifest {
+                    if manifest.workspace.is_some()
+                        || manifest.folder.is_some()
+                        || manifest.plugin.is_some()
+                    {
+                        anyhow::bail!("Workspace and Folder/Target/Plugin can't be used together.")
+                    }
+
+                    return Ok(EitherManifest::Real(Manifest::Target(TargetManifest {
                         name: target_manifest.name,
                         build_type: target_manifest.build_type,
                         plugins: target_manifest.plugins,
                         dependencies: target_manifest.dependencies,
                         metadata: target_manifest.metadata,
-                    }));
+                    })));
                 } else {
-                    panic!("Invalid manifest");
+                    anyhow::bail!("No any schema field found.")
                 }
             }
-            Err(e) => {
-                todo!("error: {:?}", e);
-            }
+            Err(e) => anyhow::bail!("error: {:?}", e),
         }
-    };
-    let manifest = manifest();
-    Some(manifest)
+    })();
+
+    Ok(manifest?)
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{manifest::find_root_manifest, util::get_cargo_project_root};
+    use crate::{
+        manifest::{find_root_manifest, read_manifest},
+        util::get_cargo_project_root,
+    };
 
     #[test]
     fn test_find_root_manifest() {
@@ -154,5 +204,17 @@ mod test {
             .join("folder2");
         let manifest_root = find_root_manifest(&sample_manifest_path);
         println!("{:?}", manifest_root);
+        let parsed_result = read_manifest(&manifest_root.unwrap().to_path_buf()).unwrap();
+        match parsed_result {
+            crate::manifest::EitherManifest::Real(m) => match m {
+                crate::manifest::Manifest::Project(_) => todo!(),
+                crate::manifest::Manifest::Target(_) => todo!(),
+            },
+            crate::manifest::EitherManifest::Virtual(vm) => match vm {
+                crate::manifest::VirtualManifest::Workspace(_) => todo!(),
+                crate::manifest::VirtualManifest::Folder(_) => todo!(),
+            },
+        }
+        println!("{:?}", parsed_result);
     }
 }

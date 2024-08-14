@@ -1,4 +1,4 @@
-use crate::errors::{RiftResult, SimpleError};
+use crate::errors::RiftResult;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -85,17 +85,23 @@ pub struct TomlPlugin {
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
-    let raw_content = std::fs::read_to_string(path).map_err(|_| SimpleError::new("..."))?;
+    let raw_content = std::fs::read_to_string(path)?;
     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
-    match content {
-        Ok(content) => Ok(content),
-        Err(e) => Err(e.into()),
-    }
+    Ok(content?)
 }
+
+// pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
+//     let raw_content = std::fs::read_to_string(path).map_err(|_| SimpleError::new("..."))?;
+//     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
+//     match content {
+//         Ok(content) => Ok(content),
+//         Err(e) => Err(e.into()),
+//     }
+// }
 
 #[cfg(test)]
 mod test {
-    use crate::schema::load_manifest;
+    // use crate::schema::load_manifest;
     use std::path::PathBuf;
 
     use super::TomlManifest;
@@ -124,7 +130,7 @@ mod test {
             .join("Rift.toml");
         println!("Identifier path: {identifier_path:?}");
 
-        let manifest = load_manifest(&identifier_path);
-        println!("{:?}", manifest);
+        // let manifest = load_manifest(&identifier_path);
+        // println!("{:?}", manifest);
     }
 }
