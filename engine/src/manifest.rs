@@ -8,6 +8,7 @@ pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 pub enum EitherManifest {
     Real(Manifest),
     Virtual(VirtualManifest),
+    Rift(RiftManifest),
 }
 
 #[derive(Debug)]
@@ -58,6 +59,7 @@ pub struct TargetManifest {
     pub metadata: Option<String>,
 }
 
+#[derive(Debug)]
 pub struct PluginManifest {
     pub name: String,
     pub version: String,
@@ -80,6 +82,13 @@ pub enum Manifest {
 pub enum VirtualManifest {
     Workspace(WorkspaceManifest),
     Folder(FolderManifest),
+}
+
+// 非项目用途的就可以算作是Rift的扩展。
+// 如：插件，内核扩展（如果以后有需要的话）
+#[derive(Debug)]
+pub enum RiftManifest {
+    Plugin(PluginManifest),
 }
 
 pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
@@ -177,6 +186,28 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         dependencies: target_manifest.dependencies,
                         metadata: target_manifest.metadata,
                     })));
+                } else if manifest.plugin.is_some() {
+                    let plugin_manifest = manifest.plugin.unwrap();
+                    // plugin和其他都互斥
+                    // 插件就老老实实平铺，别TM给老子干有的没的！
+                    if manifest.workspace.is_some()
+                        || manifest.folder.is_some()
+                        || manifest.project.is_some()
+                        || manifest.target.is_some()
+                    {
+                        anyhow::bail!(
+                            "Workspace and Folder/Project/Target/Plugin can't be used together."
+                        )
+                    }
+
+                    return Ok(EitherManifest::Rift(RiftManifest::Plugin(PluginManifest {
+                        name: plugin_manifest.name,
+                        version: plugin_manifest.version,
+                        authors: plugin_manifest.authors,
+                        description: plugin_manifest.description,
+                        metadata: plugin_manifest.metadata,
+                        dependencies: plugin_manifest.dependencies,
+                    })));
                 } else {
                     anyhow::bail!("No any schema field found.")
                 }
@@ -205,16 +236,6 @@ mod test {
         let manifest_root = find_root_manifest(&sample_manifest_path);
         println!("{:?}", manifest_root);
         let parsed_result = read_manifest(&manifest_root.unwrap().to_path_buf()).unwrap();
-        match parsed_result {
-            crate::manifest::EitherManifest::Real(m) => match m {
-                crate::manifest::Manifest::Project(_) => todo!(),
-                crate::manifest::Manifest::Target(_) => todo!(),
-            },
-            crate::manifest::EitherManifest::Virtual(vm) => match vm {
-                crate::manifest::VirtualManifest::Workspace(_) => todo!(),
-                crate::manifest::VirtualManifest::Folder(_) => todo!(),
-            },
-        }
         println!("{:?}", parsed_result);
     }
 }
