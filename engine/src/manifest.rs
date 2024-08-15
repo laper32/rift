@@ -1,6 +1,7 @@
 use std::{
     path::{Path, PathBuf},
     result,
+    fs
 };
 
 use serde::{Deserialize, Serialize};
@@ -246,12 +247,39 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
     Ok(manifest?)
 }
 
+pub fn print_manifest_structure(path: &Path, prefix: String, is_last: bool) {
+    // Current folder
+    let indent = if is_last { "└─" } else { "├─" };
+    println!("{}{}{}", prefix, indent, path.file_name().unwrap().to_str().unwrap());
+
+    // If has sub folder
+    if let Ok(entries) = fs::read_dir(path) {
+        let mut entries = entries.flatten().collect::<Vec<_>>();
+        entries.sort_by_key(|e| e.path()); // sort by char
+
+        let mut iter = entries.iter().peekable();
+        while let Some(entry) = iter.next() {
+            let entry_path = entry.path();
+
+            if entry_path.is_dir() {
+                // recursivlely print
+                let new_prefix = format!("{}{}", prefix, if is_last { "    " } else { "│   " });
+                let is_last_entry = iter.peek().is_none();
+                print_manifest_structure(&entry_path, new_prefix, is_last_entry);
+            }
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use crate::{
         manifest::{find_root_manifest, read_manifest},
         util::get_cargo_project_root,
+        
     };
+    use super::print_manifest_structure;
 
     #[test]
     fn test_find_root_manifest() {
@@ -264,5 +292,13 @@ mod test {
         println!("{:?}", manifest_root);
         let parsed_result = read_manifest(&manifest_root.unwrap().to_path_buf()).unwrap();
         println!("{:?}", parsed_result);
+    }
+
+    #[test]
+    fn test_print_manifest_structure() {
+        let project_root = get_cargo_project_root().unwrap().join("sample").join("04_workspace_and_multiple_projects");
+        
+        println!("Manifest Structure:");
+        print_manifest_structure(&project_root, String::new(), true);
     }
 }
