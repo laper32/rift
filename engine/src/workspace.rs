@@ -70,12 +70,14 @@ impl Packages {
         let key = manifest_path.parent().unwrap();
         match self.packages.entry(key.to_path_buf()) {
             Entry::Occupied(_) => {}
-            Entry::Vacant(v) => {
+            Entry::Vacant(_) => {
                 let manifest = read_manifest(manifest_path).unwrap();
                 match manifest {
                     EitherManifest::Real(m) => match m {
                         Manifest::Project(p) => {
+                            println!("We now find this is a project: {}", manifest_path.display());
                             let target_manifest = p.target.clone();
+                            println!("Has TargetManifest? {}", target_manifest.is_some());
                             if target_manifest.is_some() {
                                 let target_pkg_inner = Package::new(
                                     Manifest::Target(target_manifest.unwrap()),
@@ -244,8 +246,6 @@ mod test {
             .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
         let mut ws = Workspace::new(&simple_workspace);
         ws.packages.scan_all_possible_packages(&simple_workspace);
-        ws.packages.packages.iter().for_each(|kv| {
-            println!("{}", serde_json::to_string_pretty(&kv).unwrap());
-        });
+        assert_eq!(ws.packages.packages.len(), 2);
     }
 }
