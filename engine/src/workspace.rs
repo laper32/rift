@@ -1,10 +1,12 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
-    errors::RiftResult,
     manifest::{
         find_root_manifest, read_manifest, EitherManifest, Manifest, RiftManifest, VirtualManifest,
         MANIFEST_IDENTIFIER,
     },
     package::Package,
+    paths::PathBufExt,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -15,7 +17,7 @@ pub struct Packages {
     packages: HashMap<PathBuf, MaybePackage>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum MaybePackage {
     Package(Package),
     Virtual(VirtualManifest),
@@ -64,35 +66,69 @@ impl Workspace {
 }
 
 impl Packages {
-    pub fn load(&mut self, manifest_path: &Path) -> RiftResult<&MaybePackage> {
+    pub fn load(&mut self, manifest_path: &Path) {
         let key = manifest_path.parent().unwrap();
         match self.packages.entry(key.to_path_buf()) {
-            Entry::Occupied(e) => Ok(e.into_mut()),
+            Entry::Occupied(_) => {}
             Entry::Vacant(v) => {
-                let manifest = read_manifest(manifest_path)?;
+                let manifest = read_manifest(manifest_path).unwrap();
+                match manifest {
+                    EitherManifest::Real(m) => match m {
+                        Manifest::Project(p) => {
+                            let target_manifest = p.target.clone();
+                            if target_manifest.is_some() {
+                                let target_pkg_inner = Package::new(
+                                    Manifest::Target(target_manifest.unwrap()),
+                                    manifest_path,
+                                );
+                                self.insert_package(
+                                    manifest_path.to_path_buf(),
+                                    MaybePackage::Package(target_pkg_inner),
+                                );
+                            }
 
-                Ok(v.insert(match manifest {
-                    EitherManifest::Real(manifest) => {
-                        MaybePackage::Package(Package::new(manifest, manifest_path))
+                            let pkg_inner = Package::new(Manifest::Project(p), manifest_path);
+                            self.insert_package(
+                                manifest_path.to_path_buf(),
+                                MaybePackage::Package(pkg_inner),
+                            );
+                        }
+                        Manifest::Target(t) => {
+                            let pkg_inner = Package::new(Manifest::Target(t), manifest_path);
+                            self.insert_package(
+                                manifest_path.to_path_buf(),
+                                MaybePackage::Package(pkg_inner),
+                            );
+                        }
+                    },
+                    EitherManifest::Virtual(vm) => {
+                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Virtual(vm));
                     }
-                    EitherManifest::Virtual(vm) => MaybePackage::Virtual(vm),
-                    EitherManifest::Rift(rm) => MaybePackage::Rift(rm),
-                }))
+                    EitherManifest::Rift(rm) => {
+                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Rift(rm));
+                    }
+                }
             }
         }
+    }
+
+    fn insert_package(&mut self, manifest_path: PathBuf, package: MaybePackage) {
+        self.packages.insert(
+            PathBuf::from(manifest_path.as_posix().unwrap().to_string()),
+            package,
+        );
     }
 
     pub fn scan_all_possible_packages(&mut self, manifest_path: &Path) {
         let manifest = read_manifest(manifest_path);
         match manifest {
             Ok(em) => match em {
-                // TODO: 还没解决project和target在一个manifest的情况
                 EitherManifest::Real(m) => match m {
                     Manifest::Project(p) => {
                         if self.packages.contains_key(manifest_path) {
                             return;
                         }
-                        let _ = self.load(manifest_path);
+                        self.load(manifest_path);
                         if p.members.is_some() {
                             p.members.unwrap().iter().for_each(|member| {
                                 let full_path = manifest_path
@@ -104,32 +140,19 @@ impl Packages {
                             });
                         }
                     }
-                    Manifest::Target(t) => {
+                    Manifest::Target(_) => {
                         if self.packages.contains_key(manifest_path) {
                             return;
                         }
-                        let _ = self.load(manifest_path);
+                        self.load(manifest_path);
                     }
                 },
                 EitherManifest::Virtual(vm) => match vm {
-                    VirtualManifest::Workspace(w) => {
+                    VirtualManifest::Workspace(wm) => {
                         if self.packages.contains_key(manifest_path) {
                             return;
                         }
-                        w.members.iter().for_each(|member| {
-                            let full_path = manifest_path
-                                .parent()
-                                .unwrap()
-                                .join(member)
-                                .join(MANIFEST_IDENTIFIER);
-                            self.scan_all_possible_packages(&full_path);
-                        })
-                    }
-                    VirtualManifest::Folder(f) => {
-                        if self.packages.contains_key(manifest_path) {
-                            return;
-                        }
-                        f.members.unwrap().iter().for_each(|member| {
+                        wm.members.iter().for_each(|member| {
                             let full_path = manifest_path
                                 .parent()
                                 .unwrap()
@@ -137,19 +160,31 @@ impl Packages {
                                 .join(MANIFEST_IDENTIFIER);
                             self.scan_all_possible_packages(&full_path);
                         });
-                        let _ = self.load(manifest_path);
+                        self.load(manifest_path);
+                    }
+                    VirtualManifest::Folder(fm) => {
+                        if self.packages.contains_key(manifest_path) {
+                            return;
+                        }
+                        fm.members.unwrap().iter().for_each(|member| {
+                            let full_path = manifest_path
+                                .parent()
+                                .unwrap()
+                                .join(member)
+                                .join(MANIFEST_IDENTIFIER);
+                            self.scan_all_possible_packages(&full_path);
+                        });
+                        self.load(manifest_path);
                     }
                 },
-                EitherManifest::Rift(_rm) => {
+                EitherManifest::Rift(rm) => {
                     if self.packages.contains_key(manifest_path) {
                         return;
                     }
-                    let _ = self.load(manifest_path);
+                    self.load(manifest_path);
                 }
             },
-            Err(e) => {
-                eprintln!("Error: {:?}", e);
-            }
+            Err(e) => eprintln!("Error: {:?}", e),
         }
     }
 }
@@ -209,9 +244,8 @@ mod test {
             .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
         let mut ws = Workspace::new(&simple_workspace);
         ws.packages.scan_all_possible_packages(&simple_workspace);
-        ws.packages.packages.iter().for_each(|(k, v)| {
-            println!("Key: {:?}", k);
-            println!("Value: {:?}", v);
+        ws.packages.packages.iter().for_each(|kv| {
+            println!("{}", serde_json::to_string_pretty(&kv).unwrap());
         });
     }
 }

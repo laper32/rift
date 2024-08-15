@@ -1,4 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    result,
+};
+
+use serde::{Deserialize, Serialize};
 
 use crate::{errors::RiftResult, schema, workspace::MaybePackage};
 
@@ -20,7 +25,7 @@ pub enum EitherManifest {
     Rift(RiftManifest),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceManifest {
     /// 没啥说的
     pub members: Vec<String>,
@@ -38,13 +43,13 @@ pub struct WorkspaceManifest {
     pub dependencies: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderManifest {
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectManifest {
     pub name: String,
     pub authors: Vec<String>,
@@ -57,9 +62,12 @@ pub struct ProjectManifest {
     // 除此之外无限制。
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
+
+    // 当且仅当只有一个target出现的时候才会有这个field
+    pub target: Option<TargetManifest>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TargetManifest {
     pub name: String,
     pub build_type: String,
@@ -68,7 +76,7 @@ pub struct TargetManifest {
     pub metadata: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginManifest {
     pub name: String,
     pub version: String,
@@ -79,14 +87,14 @@ pub struct PluginManifest {
 }
 
 /// 针对项目本身的。
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Manifest {
     Project(ProjectManifest),
     Target(TargetManifest),
 }
 
 ///组织项目结构
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum VirtualManifest {
     Workspace(WorkspaceManifest),
     Folder(FolderManifest),
@@ -94,7 +102,7 @@ pub enum VirtualManifest {
 
 // 给rift用的
 // 如：插件，内核扩展（如果以后有需要的话）
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum RiftManifest {
     Plugin(PluginManifest),
 }
@@ -160,14 +168,7 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         anyhow::bail!("Workspace and Folder/Project/Plugin can't be used together.")
                     }
 
-                    if manifest.target.is_some() {
-                        if project_manifest.members.is_some() || project_manifest.exclude.is_some()
-                        {
-                            anyhow::bail!("Members/Exclude cannot both occur with Target.")
-                        }
-                    }
-
-                    return Ok(EitherManifest::Real(Manifest::Project(ProjectManifest {
+                    let mut result_manifest = ProjectManifest {
                         name: project_manifest.name,
                         authors: project_manifest.authors,
                         version: project_manifest.version,
@@ -177,7 +178,25 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         metadata: project_manifest.metadata,
                         members: project_manifest.members,
                         exclude: project_manifest.exclude,
-                    })));
+                        target: None,
+                    };
+
+                    if manifest.target.is_some() {
+                        if result_manifest.members.is_some() || result_manifest.exclude.is_some() {
+                            anyhow::bail!("Members/Exclude cannot both occur with Target.")
+                        } else {
+                            let target_manifest = manifest.target.unwrap();
+                            result_manifest.target = Some(TargetManifest {
+                                name: target_manifest.name,
+                                build_type: target_manifest.build_type,
+                                plugins: target_manifest.plugins,
+                                dependencies: target_manifest.dependencies,
+                                metadata: target_manifest.metadata,
+                            });
+                        }
+                    }
+
+                    return Ok(EitherManifest::Real(Manifest::Project(result_manifest)));
                 } else if manifest.target.is_some() {
                     let target_manifest = manifest.target.unwrap();
                     if manifest.workspace.is_some()
