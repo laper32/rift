@@ -1,16 +1,23 @@
-use module::ModuleManager;
-pub mod dir;
-pub mod ffi;
-pub mod manifest;
-mod module;
-mod runtime;
+use workspace::Workspace;
 
-fn init() -> bool {
-    module::init();
-    // runtime::init();
+pub mod dir;
+mod errors;
+mod manifest;
+mod package;
+pub mod paths;
+mod runtime;
+mod schema;
+pub mod util;
+mod workspace;
+
+pub fn init() -> bool {
+    let cwd = std::env::current_dir().unwrap();
+    let ws = Workspace::new(&cwd);
+    println!("Workspace root: {:?}", ws.root());
+    println!("Workspace root manifest: {:?}", ws.root_manifest());
     true
 }
 
-fn shutdown() {
-    module::shutdown()
+pub fn shutdown() {
+    runtime::shutdown();
 }

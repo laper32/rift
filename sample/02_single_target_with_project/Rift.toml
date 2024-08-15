@@ -1,0 +1,16 @@
+[project]
+name = "02_single_project"
+version = "0.1.0"
+authors = [""]
+description = ""
+url = ""
+plugin = "rift/02_single_project/plugins.ts"
+dependencies = "rift/02_single_project/dependencies.ts"
+metadata = "rift/02_single_project/metadata.ts"
+
+[target]
+name = "02_single_target"
+type = "bin"
+plugin = "rift/02_single_target/plugins.ts"
+dependencies = "rift/02_single_target/dependencies.ts"
+build = "rift/02_single_target/build.ts"

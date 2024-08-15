@@ -13,16 +13,7 @@ def construct_redistributable_dirs():
 def build(release: bool):
     cmdlet = ['cargo', 'build']
     if release: cmdlet.append('--release')
-    ret = subprocess.run(
-        cmdlet,
-        env=dict(
-            os.environ, 
-            **{
-                'RUSTY_V8_ARCHIVE': Path(os.curdir).absolute().joinpath(".cargo").joinpath("rusty_v8.lib").as_posix(),
-                'RUSTY_V8_MIRROR': Path(os.curdir).absolute().joinpath(".cargo").as_posix(),
-            }
-            )
-    )
+    ret = subprocess.run(cmdlet)
     if ret.returncode != 0:
         print("Failed to build the project.")
         exit(1)
@@ -49,28 +40,17 @@ def move_output_to_redistributable(release: bool):
     if os.path.exists(rift_path):
         os.rename(rift_path, target_rift_path)
     
-    sample_module_path = ".dist/modules/sample"
-    os.makedirs(sample_module_path)
-    with open(".dist/modules/sample/Rift.toml", "w") as f:
-        f.write("""[module]
-name = "sample"
+    os.makedirs(".dist/plugins/sample")
+    with open(".dist/plugins/sample/Rift.toml", "w") as f:
+        f.write("""[plugin]
+name = "Sample Plugin"
 version = "0.1.0"
-description = "A sample module for Rift"
-authors = ["rift-dev"]
-url = ""
-
-[dependencies]
-sample1="0.1.0"
-sample2="0.1.0"
-""")
-    # sample_module_path = "build/Debug/sample.dll"
-    # if os.path.exists(sample_module_path):
-    #     if not os.path.exists(".dist/modules/sample.dll"):
-    #         shutil.copy(sample_module_path, ".dist/modules/sample.dll")
-        # if os.path.exists(".dist/modules/sample.dll"):
-        #     shutil.copy
-        #     # os.remove(".dist/modules/sample.dll")
-        # os.rename(sample_module_path, ".dist/modules/sample.dll")
+author = ["rift-dev"]
+description = "Sample Plugin"
+url = "Sample Plugin"
+dependencies = "rift/dependencies.ts"
+metadata = "rift/metadata.ts"
+                """)
 
     pass
 
