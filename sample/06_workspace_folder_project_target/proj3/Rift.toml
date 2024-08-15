@@ -1,5 +1,5 @@
 [project]
-urlname = "proj3"
+name = "proj3"
 version = "0.1.0"
 description = "A sample project"
 authors = []

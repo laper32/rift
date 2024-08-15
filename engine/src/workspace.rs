@@ -1,6 +1,9 @@
 use crate::{
     errors::RiftResult,
-    manifest::{find_root_manifest, read_manifest, EitherManifest, RiftManifest, VirtualManifest},
+    manifest::{
+        find_root_manifest, read_manifest, EitherManifest, Manifest, RiftManifest, VirtualManifest,
+        MANIFEST_IDENTIFIER,
+    },
     package::Package,
 };
 use std::{
@@ -58,46 +61,6 @@ impl Workspace {
             .as_ref()
             .unwrap_or(&self.current_manifest)
     }
-    pub fn load_packages(&mut self, manifest_path: &PathBuf) {
-        let pkg = self.packages.load(&manifest_path);
-        match pkg {
-            Ok(MaybePackage::Package(pkg)) => match pkg.manifest() {
-                // 因为project可能会有多个target，所以我们还得特殊处理
-                crate::manifest::Manifest::Project(proj) => {
-                    if proj.members.is_some() {
-                        for ele in proj.members.clone().unwrap() {
-                            let member_path = manifest_path.parent().unwrap().join(ele);
-                            self.load_packages(&member_path);
-                        }
-                    }
-                }
-                crate::manifest::Manifest::Target(m) => {}
-            },
-            Ok(MaybePackage::Virtual(vm)) => match vm {
-                VirtualManifest::Workspace(vm) => {
-                    for ele in vm.members.clone() {
-                        let member_path = manifest_path.parent().unwrap().join(ele);
-                        self.load_packages(&member_path);
-                    }
-                }
-                VirtualManifest::Folder(vm) => {
-                    for ele in vm.members.clone().unwrap() {
-                        let member_path = manifest_path.parent().unwrap().join(ele);
-                        self.load_packages(&member_path);
-                    }
-                }
-            },
-            Ok(MaybePackage::Rift(rm)) => {
-                // ...
-            }
-            Err(e) => {
-                println!("{:?}", e);
-            }
-        }
-    }
-    pub fn packages(&self) -> &Packages {
-        &self.packages
-    }
 }
 
 impl Packages {
@@ -118,10 +81,83 @@ impl Packages {
             }
         }
     }
+
+    pub fn scan_all_possible_packages(&mut self, manifest_path: &Path) {
+        let manifest = read_manifest(manifest_path);
+        match manifest {
+            Ok(em) => match em {
+                // TODO: 还没解决project和target在一个manifest的情况
+                EitherManifest::Real(m) => match m {
+                    Manifest::Project(p) => {
+                        if self.packages.contains_key(manifest_path) {
+                            return;
+                        }
+                        let _ = self.load(manifest_path);
+                        if p.members.is_some() {
+                            p.members.unwrap().iter().for_each(|member| {
+                                let full_path = manifest_path
+                                    .parent()
+                                    .unwrap()
+                                    .join(member)
+                                    .join(MANIFEST_IDENTIFIER);
+                                self.scan_all_possible_packages(&full_path);
+                            });
+                        }
+                    }
+                    Manifest::Target(t) => {
+                        if self.packages.contains_key(manifest_path) {
+                            return;
+                        }
+                        let _ = self.load(manifest_path);
+                    }
+                },
+                EitherManifest::Virtual(vm) => match vm {
+                    VirtualManifest::Workspace(w) => {
+                        if self.packages.contains_key(manifest_path) {
+                            return;
+                        }
+                        w.members.iter().for_each(|member| {
+                            let full_path = manifest_path
+                                .parent()
+                                .unwrap()
+                                .join(member)
+                                .join(MANIFEST_IDENTIFIER);
+                            self.scan_all_possible_packages(&full_path);
+                        })
+                    }
+                    VirtualManifest::Folder(f) => {
+                        if self.packages.contains_key(manifest_path) {
+                            return;
+                        }
+                        f.members.unwrap().iter().for_each(|member| {
+                            let full_path = manifest_path
+                                .parent()
+                                .unwrap()
+                                .join(member)
+                                .join(MANIFEST_IDENTIFIER);
+                            self.scan_all_possible_packages(&full_path);
+                        });
+                        let _ = self.load(manifest_path);
+                    }
+                },
+                EitherManifest::Rift(_rm) => {
+                    if self.packages.contains_key(manifest_path) {
+                        return;
+                    }
+                    let _ = self.load(manifest_path);
+                }
+            },
+            Err(e) => {
+                eprintln!("Error: {:?}", e);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use crate::paths::PathExt;
     use crate::util;
 
@@ -149,10 +185,33 @@ mod test {
         let expect_result_manifest = binding.as_posix();
         assert_eq!(ws.root().as_posix(), expected_result);
         assert_eq!(ws.root_manifest().as_posix(), expect_result_manifest);
-        ws.load_packages(&ws.root_manifest().to_path_buf().clone());
-        let pkgs = ws.packages();
-        pkgs.packages.iter().for_each(|(k, v)| {
-            println!("{:?} {:?}", k, v);
+    }
+    #[test]
+    fn test_simple_target() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("01_simple_target")
+            .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
+        let mut ws = Workspace::new(&simple_workspace);
+        ws.packages.scan_all_possible_packages(&simple_workspace);
+        ws.packages.packages.iter().for_each(|(k, v)| {
+            println!("Key: {:?}", k);
+            println!("Value: {:?}", v);
+        });
+    }
+    #[test]
+    fn test_single_target_with_project() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("02_single_target_with_project")
+            .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
+        let mut ws = Workspace::new(&simple_workspace);
+        ws.packages.scan_all_possible_packages(&simple_workspace);
+        ws.packages.packages.iter().for_each(|(k, v)| {
+            println!("Key: {:?}", k);
+            println!("Value: {:?}", v);
         });
     }
 }

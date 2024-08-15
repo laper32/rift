@@ -4,6 +4,15 @@ use crate::{errors::RiftResult, schema, workspace::MaybePackage};
 
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 
+/// 为什么有EitherManifest？为什么schema那边还要定义一份TomlXXX？为什么我们有MaybePackage的同时还要有EitherManifest?
+///
+/// 首先，schema那边定义了所有我们所需要的配置信息，但是有一个问题：我们不能，也不可能知道这个配置信息有没有问题。<br/>
+/// 最典型的就是我们不可能在加载配置文件的时候就知道说workspace和folder同时存在吧。 <br/>
+/// 所以我们需要做第一层转换，将配置文件的数据格式转换成我们真正需要的manifset struct。 <br/>
+/// 这也是为什么我们有TomlManifest。
+///
+/// 然后，加载了Manifest以后，我们肯定要针对这些Manifest分类，哪些是项目？哪些用于处理架构？哪些是给Rift的扩展？我们总得想办法知道吧。 <br/>
+/// 所以下面这三个enum field就是这么来的。
 #[derive(Debug)]
 pub enum EitherManifest {
     Real(Manifest),
@@ -69,22 +78,21 @@ pub struct PluginManifest {
     pub dependencies: Option<String>,
 }
 
-/// 严格定义的话，Manifest是可以作为包管理的
-/// 下面三个都可以上传到包管理去
+/// 针对项目本身的。
 #[derive(Debug)]
 pub enum Manifest {
     Project(ProjectManifest),
     Target(TargetManifest),
 }
 
-/// 这两个严格来说只用来组织项目结构
+///组织项目结构
 #[derive(Debug)]
 pub enum VirtualManifest {
     Workspace(WorkspaceManifest),
     Folder(FolderManifest),
 }
 
-// 非项目用途的就可以算作是Rift的扩展。
+// 给rift用的
 // 如：插件，内核扩展（如果以后有需要的话）
 #[derive(Debug)]
 pub enum RiftManifest {
@@ -100,6 +108,7 @@ pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
     }
 }
 
+/// 解析Manifest，根据路劲内的信息为其分类至正确的enum。
 pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
     let manifest = (|| {
         let deserialized_toml = schema::load_manifest(&path.to_path_buf());
