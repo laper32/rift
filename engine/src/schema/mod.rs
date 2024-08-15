@@ -55,11 +55,10 @@ pub struct TomlProject {
     pub plugins: Option<String>,
     pub dependencies: Option<String>,
     pub metadata: Option<String>,
-    // 多个target才会用，如果只有一个的话建议不用，虽然我们不反对。
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub members: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub exclude: Vec<String>,
+
+    // Members/Exclude不能和Target同时存在。
+    pub members: Option<Vec<String>>,
+    pub exclude: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]

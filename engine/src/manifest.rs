@@ -150,7 +150,15 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                     {
                         anyhow::bail!("Workspace and Folder/Project/Plugin can't be used together.")
                     }
-                    let mut project_manifest_actual = ProjectManifest {
+
+                    if manifest.target.is_some() {
+                        if project_manifest.members.is_some() || project_manifest.exclude.is_some()
+                        {
+                            anyhow::bail!("Members/Exclude cannot both occur with Target.")
+                        }
+                    }
+
+                    return Ok(EitherManifest::Real(Manifest::Project(ProjectManifest {
                         name: project_manifest.name,
                         authors: project_manifest.authors,
                         version: project_manifest.version,
@@ -158,18 +166,9 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         plugins: project_manifest.plugins,
                         dependencies: project_manifest.dependencies,
                         metadata: project_manifest.metadata,
-                        members: Some(project_manifest.members),
-                        exclude: Some(project_manifest.exclude),
-                    };
-
-                    if manifest.target.is_some() {
-                        project_manifest_actual.members = None;
-                        project_manifest_actual.exclude = None;
-                    }
-
-                    return Ok(EitherManifest::Real(Manifest::Project(
-                        project_manifest_actual,
-                    )));
+                        members: project_manifest.members,
+                        exclude: project_manifest.exclude,
+                    })));
                 } else if manifest.target.is_some() {
                     let target_manifest = manifest.target.unwrap();
                     if manifest.workspace.is_some()
