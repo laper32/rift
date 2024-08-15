@@ -75,20 +75,6 @@ impl Packages {
                 match manifest {
                     EitherManifest::Real(m) => match m {
                         Manifest::Project(p) => {
-                            println!("We now find this is a project: {}", manifest_path.display());
-                            let target_manifest = p.target.clone();
-                            println!("Has TargetManifest? {}", target_manifest.is_some());
-                            if target_manifest.is_some() {
-                                let target_pkg_inner = Package::new(
-                                    Manifest::Target(target_manifest.unwrap()),
-                                    manifest_path,
-                                );
-                                self.insert_package(
-                                    manifest_path.to_path_buf(),
-                                    MaybePackage::Package(target_pkg_inner),
-                                );
-                            }
-
                             let pkg_inner = Package::new(Manifest::Project(p), manifest_path);
                             self.insert_package(
                                 manifest_path.to_path_buf(),
@@ -193,7 +179,6 @@ impl Packages {
 
 #[cfg(test)]
 mod test {
-    use std::path::PathBuf;
 
     use crate::paths::PathExt;
     use crate::util;
@@ -229,7 +214,7 @@ mod test {
         let simple_workspace = our_project_root
             .join("sample")
             .join("01_simple_target")
-            .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
+            .join("Rift.toml");
         let mut ws = Workspace::new(&simple_workspace);
         ws.packages.scan_all_possible_packages(&simple_workspace);
         ws.packages.packages.iter().for_each(|(k, v)| {
@@ -243,9 +228,54 @@ mod test {
         let simple_workspace = our_project_root
             .join("sample")
             .join("02_single_target_with_project")
-            .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
+            .join("Rift.toml");
         let mut ws = Workspace::new(&simple_workspace);
         ws.packages.scan_all_possible_packages(&simple_workspace);
-        assert_eq!(ws.packages.packages.len(), 2);
+        assert_eq!(ws.packages.packages.len(), 1);
+    }
+    #[test]
+    fn test_single_project_with_multiple_targets() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("03_single_project_with_multiple_target")
+            .join("Rift.toml"); //
+        let mut ws = Workspace::new(&simple_workspace);
+        ws.packages.scan_all_possible_packages(&simple_workspace);
+
+        assert_eq!(ws.packages.packages.len(), 5);
+    }
+    #[test]
+    fn test_workspace_and_mutiple_projects() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("04_workspace_and_multiple_projects")
+            .join("Rift.toml"); //
+        let mut ws = Workspace::new(&simple_workspace);
+        ws.packages.scan_all_possible_packages(&simple_workspace);
+        assert_eq!(ws.packages.packages.len(), 5);
+    }
+    #[test]
+    fn test_project_folder_target() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("05_project_folder_target")
+            .join("Rift.toml"); //
+        let mut ws = Workspace::new(&simple_workspace);
+        ws.packages.scan_all_possible_packages(&simple_workspace);
+        assert_eq!(ws.packages.packages.len(), 11);
+    }
+    #[test]
+    fn test_workspace_folder_project_target() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("06_workspace_folder_project_target")
+            .join("Rift.toml"); //
+        let mut ws = Workspace::new(&simple_workspace);
+        ws.packages.scan_all_possible_packages(&simple_workspace);
+        assert_eq!(ws.packages.packages.len(), 33); // ...是巧合吗？
     }
 }
