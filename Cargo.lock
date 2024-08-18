@@ -698,6 +698,7 @@ name = "engine"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap",
  "deno_ast",
  "deno_bindgen",
  "deno_core",

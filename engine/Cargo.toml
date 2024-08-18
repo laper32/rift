@@ -21,6 +21,7 @@ tokio = "1.39.2"
 anyhow = "1.0.86"
 serde_json = "1.0.125"
 deno_bindgen = "0.8.1"
+clap.workspace = true
 
 [build-dependencies]
 deno_core = "0.303.0"
