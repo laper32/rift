@@ -7,6 +7,7 @@ mod package;
 pub mod paths;
 mod runtime;
 mod schema;
+mod task;
 pub mod util;
 mod workspace;
 

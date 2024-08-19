@@ -67,33 +67,44 @@ impl deno_core::ModuleLoader for TsModuleLoader {
 
             let media_type = MediaType::from_path(&path);
 
-            let module_type = match media_type {
-                MediaType::JavaScript
-                | MediaType::Mjs
-                | MediaType::Cjs
-                | MediaType::Jsx
-                | MediaType::TypeScript
+            let (module_type, should_transpile) = match MediaType::from_path(&path) {
+                MediaType::JavaScript | MediaType::Mjs | MediaType::Cjs => {
+                    (deno_core::ModuleType::JavaScript, false)
+                }
+                MediaType::Jsx => (deno_core::ModuleType::JavaScript, true),
+                MediaType::TypeScript
                 | MediaType::Mts
+                | MediaType::Cts
                 | MediaType::Dts
                 | MediaType::Dmts
                 | MediaType::Dcts
-                | MediaType::Tsx => ModuleType::JavaScript,
-                MediaType::Json => ModuleType::Json,
-                _ => panic!("Unknown extension: {:?}", path.extension()),
+                | MediaType::Tsx => (deno_core::ModuleType::JavaScript, true),
+                MediaType::Json => (deno_core::ModuleType::Json, false),
+                _ => panic!("Unknown extension {:?}", path.extension()),
             };
-            let code = std::fs::read_to_string(&path)?;
-            let parsed_source = deno_ast::parse_module(ParseParams {
-                specifier: module_specifier.clone(),
-                text: SourceTextInfo::from_string(code).text(),
-                media_type,
-                capture_tokens: false,
-                scope_analysis: false,
-                maybe_syntax: None,
-            })?;
 
+            let code = std::fs::read_to_string(&path)?;
+            let code = if should_transpile {
+                let parsed = deno_ast::parse_module(ParseParams {
+                    specifier: module_specifier.clone(),
+                    text: SourceTextInfo::from_string(code).text(),
+                    media_type,
+                    capture_tokens: false,
+                    scope_analysis: false,
+                    maybe_syntax: None,
+                })?;
+                parsed
+                    .transpile(&Default::default(), &Default::default())?
+                    .into_source()
+                    .into_string()
+                    .unwrap()
+                    .text
+            } else {
+                code
+            };
             let module = deno_core::ModuleSource::new(
                 module_type,
-                ModuleSourceCode::String(FastString::from(parsed_source.text().clone())),
+                ModuleSourceCode::String(FastString::from(code)),
                 &module_specifier,
                 None,
             );
@@ -114,6 +125,7 @@ extension! {
         op_set_timeout,
     ]
 }
+
 async fn run_js(file_path: &str) -> Result<(), AnyError> {
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
@@ -128,6 +140,7 @@ async fn run_js(file_path: &str) -> Result<(), AnyError> {
     js_runtime.run_event_loop(Default::default()).await?;
     result.await
 }
+
 pub fn init() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()

@@ -10,5 +10,5 @@ edition = "2021"
 # bindgen = "0.69.4" 
 
 [dependencies]
-clap = "4.5.13"
+clap.workspace = true
 engine = { path = "../engine" }
