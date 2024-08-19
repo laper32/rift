@@ -26,15 +26,15 @@ pub struct TaskManager {
     possible_tasks: HashMap<String, TaskManifest>,
 }
 
+type TomlTaskManifestInner = HashMap<
+    // section name
+    String,
+    // specific task
+    TomlTask,
+>;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TomlTaskManifest(
-    HashMap<
-        // section name
-        String,
-        // specific task
-        TomlTask,
-    >,
-);
+pub struct TomlTaskManifest(TomlTaskManifestInner);
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TomlTaskFlag {
