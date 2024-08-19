@@ -1,8 +1,9 @@
-// Task的一部分。
-// 方便维护所以拆成了两个Manager。
+/// Alias
+/// 本质上来说是用于服务Task的。
+/// Alias作为命令的简写包装，旨在于简化操作，如rift br可以展开成rift build --release
+use std::{collections::HashMap, ffi::OsString, path::PathBuf};
 
-use std::{collections::HashMap, path::PathBuf};
-
+use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::RiftResult;
@@ -31,8 +32,8 @@ impl AliasManager {
         unsafe { &mut *INSTANCE }
     }
 
-    pub fn find_alias(&self, name: String) -> String {
-        self.aliases.get(&name).unwrap().to_string()
+    pub fn find_alias(&self, name: String) -> Option<&String> {
+        self.aliases.get(&name)
     }
 
     pub fn insert_alias(&mut self, name: String, alias: String) -> RiftResult<()> {
@@ -69,11 +70,27 @@ impl AliasManager {
             }
         }
     }
+
+    pub fn to_command_vec(&self, cmd: &str) -> RiftResult<Option<Vec<String>>> {
+        let alias = Self::instance().find_alias(String::from(cmd));
+        match alias {
+            Some(_) => {
+                let alias = alias.unwrap();
+                let cmd_vec = alias
+                    .split_whitespace()
+                    .map(|s| s.to_string())
+                    .collect::<Vec<String>>();
+                Ok(Some(cmd_vec))
+            }
+            None => Ok(None),
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::task::alias::TomlAliasManifest;
+
+    use super::AliasManager;
 
     #[test]
     fn test_load() {
@@ -81,7 +98,10 @@ mod test {
         [alias]
         rr = "build --release"
         "#;
+        AliasManager::instance().load_alias_from_string(raw.to_owned());
+        let cmd = AliasManager::instance().to_command_vec("rr");
+        println!("{:?}", cmd);
 
-        println!("{:?}", toml::from_str::<TomlAliasManifest>(raw));
+        // println!("{:?}", toml::from_str::<TomlAliasManifest>(raw));
     }
 }
