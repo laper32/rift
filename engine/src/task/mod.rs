@@ -2,6 +2,8 @@
 // 1. Builtin
 // 2. 插件
 
+mod alias;
+
 use std::{collections::HashMap, path::PathBuf};
 
 use clap::Arg;
