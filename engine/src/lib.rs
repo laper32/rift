@@ -1,6 +1,7 @@
 use workspace::Workspace;
 
 pub mod dir;
+pub mod events;
 mod manifest;
 mod package;
 pub mod paths;
