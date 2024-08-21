@@ -10,5 +10,11 @@ edition = "2021"
 # bindgen = "0.69.4" 
 
 [dependencies]
+toml.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+serde_toml.workspace = true
+anyhow.workspace = true
 clap.workspace = true
+
 engine = { path = "../engine" }

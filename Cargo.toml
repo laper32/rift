@@ -4,3 +4,8 @@ members = ["cli", "engine"]
 
 [workspace.dependencies]
 clap = { version = "4.5.13", features = ["string"] }
+anyhow = "1.0.86"
+serde = "1.0.205"
+serde_toml = "0.0.1"
+serde_json = "1.0.125"
+toml = "0.8.19"

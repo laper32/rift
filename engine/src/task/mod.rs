@@ -2,11 +2,10 @@
 // 1. Builtin
 // 2. 插件
 
-mod alias;
+pub mod alias;
 
 use std::{collections::HashMap, path::PathBuf};
 
-use alias::AliasManager;
 use clap::Arg;
 use serde::{Deserialize, Serialize};
 

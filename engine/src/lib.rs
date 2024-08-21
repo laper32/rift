@@ -1,13 +1,13 @@
 use workspace::Workspace;
 
 pub mod dir;
-mod errors;
+pub mod errors;
 mod manifest;
 mod package;
 pub mod paths;
 mod runtime;
 mod schema;
-mod task;
+pub mod task;
 pub mod util;
 mod workspace;
 
