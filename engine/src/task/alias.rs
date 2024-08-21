@@ -1,12 +1,11 @@
 /// Alias
 /// 本质上来说是用于服务Task的。
 /// Alias作为命令的简写包装，旨在于简化操作，如rift br可以展开成rift build --release
-use std::{collections::HashMap, ffi::OsString, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
-use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 
-use crate::errors::RiftResult;
+use crate::util::errors::RiftResult;
 
 type TomlAlias = HashMap<String, String>;
 

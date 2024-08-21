@@ -1,7 +1,6 @@
 use workspace::Workspace;
 
 pub mod dir;
-pub mod errors;
 mod manifest;
 mod package;
 pub mod paths;

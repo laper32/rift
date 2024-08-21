@@ -9,7 +9,7 @@ use std::{collections::HashMap, path::PathBuf};
 use clap::Arg;
 use serde::{Deserialize, Serialize};
 
-use crate::errors::RiftResult;
+use crate::util::errors::RiftResult;
 
 pub struct Task {
     inner: TaskInner,
