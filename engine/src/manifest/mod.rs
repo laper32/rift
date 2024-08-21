@@ -1,12 +1,11 @@
 use std::{
     fs,
     path::{Path, PathBuf},
-    result,
 };
 
 use serde::{Deserialize, Serialize};
 
-use crate::{errors::RiftResult, schema, workspace::MaybePackage};
+use crate::{schema, util::errors::RiftResult};
 
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 

@@ -1861,8 +1861,13 @@ dependencies = [
 name = "rift"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "clap",
  "engine",
+ "serde",
+ "serde_json",
+ "serde_toml",
+ "toml",
 ]
 
 [[package]]

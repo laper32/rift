@@ -1,6 +1,7 @@
-use crate::errors::RiftResult;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+
+use crate::util::errors::RiftResult;
 
 /// 我们定义项目是基于section的
 /// 所以我们需要一个TomlManifest来明确Rift.toml里可能会有哪些section
@@ -88,15 +89,6 @@ pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
     Ok(content?)
 }
-
-// pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
-//     let raw_content = std::fs::read_to_string(path).map_err(|_| SimpleError::new("..."))?;
-//     let content = toml::from_str::<TomlManifest>(raw_content.as_str());
-//     match content {
-//         Ok(content) => Ok(content),
-//         Err(e) => Err(e.into()),
-//     }
-// }
 
 #[cfg(test)]
 mod test {
