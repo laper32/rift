@@ -2,14 +2,14 @@
 // 1. Builtin
 // 2. 插件
 
-mod alias;
+pub mod alias;
 
 use std::{collections::HashMap, path::PathBuf};
 
 use clap::Arg;
 use serde::{Deserialize, Serialize};
 
-use crate::errors::RiftResult;
+use crate::util::errors::RiftResult;
 
 pub struct Task {
     inner: TaskInner,
@@ -26,15 +26,15 @@ pub struct TaskManager {
     possible_tasks: HashMap<String, TaskManifest>,
 }
 
+type TomlTaskManifestInner = HashMap<
+    // section name
+    String,
+    // specific task
+    TomlTask,
+>;
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TomlTaskManifest(
-    HashMap<
-        // section name
-        String,
-        // specific task
-        TomlTask,
-    >,
-);
+pub struct TomlTaskManifest(TomlTaskManifestInner);
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TomlTaskFlag {

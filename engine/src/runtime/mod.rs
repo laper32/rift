@@ -1,3 +1,6 @@
+pub mod evaluate;
+pub mod specifier;
+
 #[allow(dead_code)]
 use deno_ast::{MediaType, ParseParams, SourceTextInfo};
 use deno_core::anyhow::Error;
