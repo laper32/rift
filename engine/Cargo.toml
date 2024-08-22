@@ -23,6 +23,16 @@ serde_json.workspace = true
 serde_toml.workspace = true
 anyhow.workspace = true
 clap.workspace = true
+tracing.workspace = true
+url = "2.5.2"
+relative-path = { version = "1.9.3", features = ["serde"] }
+rust-embed = { version = "8.5.0", features = [
+    "debug-embed",
+    "interpolate-folder-path",
+    "include-exclude",
+] }
+hex = "0.4.3"
+sha2 = "0.10.8"
 
 [build-dependencies]
 deno_core = "0.303.0"
