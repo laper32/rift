@@ -6,6 +6,7 @@ use workspace::Workspace;
 mod blob;
 pub mod dir;
 pub mod events;
+mod fs;
 pub mod hash;
 mod manifest;
 mod package;

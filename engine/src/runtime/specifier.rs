@@ -10,21 +10,24 @@ use relative_path::RelativePathBuf;
 
 /// An `import` specifier referring to a file within the current project.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ModuleLocalImportSpecifier {
+pub enum RiftModuleLocalImportSpecifier {
+    // 相对路径。。。
     Relative(String),
+    // 项目的根目录
+    // 这个还得看看怎么归类，因为这里有歧义。
     ProjectRoot(String),
 }
 
-impl std::fmt::Display for ModuleLocalImportSpecifier {
+impl std::fmt::Display for RiftModuleLocalImportSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ModuleLocalImportSpecifier::Relative(path) => write!(f, "{path}"),
-            ModuleLocalImportSpecifier::ProjectRoot(path) => write!(f, "/{path}"),
+            RiftModuleLocalImportSpecifier::Relative(path) => write!(f, "{path}"),
+            RiftModuleLocalImportSpecifier::ProjectRoot(path) => write!(f, "/{path}"),
         }
     }
 }
 
-impl std::str::FromStr for ModuleLocalImportSpecifier {
+impl std::str::FromStr for RiftModuleLocalImportSpecifier {
     type Err = anyhow::Error;
 
     fn from_str(specifier: &str) -> Result<Self, Self::Err> {
@@ -47,16 +50,18 @@ impl std::str::FromStr for ModuleLocalImportSpecifier {
 /// A specifier from an `import` statement in a JavaScript module. Can
 /// be resolved to a module specifier using the `resolve` function.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum ModuleImportSpecifier {
-    Local(ModuleLocalImportSpecifier),
+pub enum RiftModuleImportSpecifier {
+    /// 项目内的，没啥好说的吧。
+    Local(RiftModuleLocalImportSpecifier),
+    /// 非项目内的包，比如说：安装目录的插件包，UserProfile的插件包
     External(String),
 }
 
-impl std::fmt::Display for ModuleImportSpecifier {
+impl std::fmt::Display for RiftModuleImportSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ModuleImportSpecifier::Local(specifier) => write!(f, "{}", specifier),
-            ModuleImportSpecifier::External(specifier) => write!(f, "{}", specifier),
+            RiftModuleImportSpecifier::Local(specifier) => write!(f, "{}", specifier),
+            RiftModuleImportSpecifier::External(specifier) => write!(f, "{}", specifier),
         }
     }
 }
@@ -69,12 +74,14 @@ impl std::fmt::Display for ModuleImportSpecifier {
 #[derive(
     Debug, Clone, PartialEq, Eq, Hash, serde_with::DeserializeFromStr, serde_with::SerializeDisplay,
 )]
-pub enum ModuleSpecifier {
+pub enum RiftModuleSpecifier {
+    /// 捆绑进rift.exe的内置包，比如说RiftProjectManifest这种不太适合作为插件的情况。。
     Runtime { subpath: RelativePathBuf },
+    /// 外部路径，咯
     File { path: PathBuf },
 }
 
-impl ModuleSpecifier {
+impl RiftModuleSpecifier {
     pub fn from_path(path: &Path) -> Self {
         Self::File {
             path: path.to_owned(),
@@ -82,7 +89,7 @@ impl ModuleSpecifier {
     }
 }
 
-impl TryFrom<&'_ url::Url> for ModuleSpecifier {
+impl TryFrom<&'_ url::Url> for RiftModuleSpecifier {
     type Error = anyhow::Error;
 
     fn try_from(value: &'_ url::Url) -> Result<Self, Self::Error> {
@@ -103,7 +110,7 @@ impl TryFrom<&'_ url::Url> for ModuleSpecifier {
     }
 }
 
-impl TryFrom<url::Url> for ModuleSpecifier {
+impl TryFrom<url::Url> for RiftModuleSpecifier {
     type Error = anyhow::Error;
 
     fn try_from(value: url::Url) -> Result<Self, Self::Error> {
@@ -111,28 +118,28 @@ impl TryFrom<url::Url> for ModuleSpecifier {
     }
 }
 
-impl From<&'_ ModuleSpecifier> for url::Url {
-    fn from(value: &'_ ModuleSpecifier) -> Self {
+impl From<&'_ RiftModuleSpecifier> for url::Url {
+    fn from(value: &'_ RiftModuleSpecifier) -> Self {
         match value {
-            ModuleSpecifier::Runtime { subpath } => {
+            RiftModuleSpecifier::Runtime { subpath } => {
                 let mut url: url::Url = "rift:///".parse().expect("failed to build URL");
                 url.set_path(subpath.as_str());
                 url
             }
-            ModuleSpecifier::File { path } => {
+            RiftModuleSpecifier::File { path } => {
                 url::Url::from_file_path(path).expect("failed to build URL")
             }
         }
     }
 }
 
-impl From<ModuleSpecifier> for url::Url {
-    fn from(value: ModuleSpecifier) -> Self {
+impl From<RiftModuleSpecifier> for url::Url {
+    fn from(value: RiftModuleSpecifier) -> Self {
         Self::from(&value)
     }
 }
 
-impl std::str::FromStr for ModuleSpecifier {
+impl std::str::FromStr for RiftModuleSpecifier {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -142,7 +149,7 @@ impl std::str::FromStr for ModuleSpecifier {
     }
 }
 
-impl std::fmt::Display for ModuleSpecifier {
+impl std::fmt::Display for RiftModuleSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", url::Url::from(self))
     }

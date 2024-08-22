@@ -1,4 +1,5 @@
 pub mod evaluate;
+pub mod loader;
 pub mod specifier;
 
 #[allow(dead_code)]
@@ -45,6 +46,8 @@ fn op_remove_file(#[string] path: String) -> Result<(), AnyError> {
     Ok(())
 }
 
+// TODO: 这个是准备remake的，因为我们现在只能加载有限个文件，还没办法加载以包为单位的文件。
+// 换句话说没法解决复杂需求。
 struct TsModuleLoader;
 
 impl deno_core::ModuleLoader for TsModuleLoader {
