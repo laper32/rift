@@ -10,7 +10,6 @@ use super::specifier::RiftModuleSpecifier;
 
 struct RiftModuleLoader {
     // sources: Vec<ModuleSource>,
-    //     pub sources: Rc<RefCell<HashMap<BriocheModuleSpecifier, ModuleSource>>>,
     pub sources: Rc<RefCell<HashMap<RiftModuleSpecifier, ModuleSource>>>,
 }
 

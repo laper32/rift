@@ -7,10 +7,6 @@ use util::errors::RiftResult;
 use workspace::Workspace;
 
 mod blob;
-pub mod events;
-pub mod forward;
-mod fs;
-pub mod hash;
 mod manifest;
 mod package;
 pub mod paths;
@@ -78,9 +74,8 @@ impl Rift {
         unsafe { &mut *INSTANCE }
     }
 
-    // Windows上是按照一个完整的包来处理的
-    // Linux的话，因为大多数情况下都是直接放在/usr/bin下的，所以不能用这个
-    #[cfg(windows)]
+    // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。
+    // Linux的话，如果你是直接把它放在/usr/bin里面的话，这个就没用了
     pub fn installation_path(&self) -> RiftResult<&Path> {
         self.rift_exe().map(|exe| {
             exe // ${InstallationPath}/bin/rift.exe
@@ -91,16 +86,12 @@ impl Rift {
         })
     }
 
-    pub fn user_path(&self) -> RiftResult<&Path> {
-        let myhome = homedir::my_home();
-        match myhome {
-            Ok(home) => {
-                // Ok(Path::from(value))
-                // todo!()
-                todo!()
-            }
-            Err(e) => anyhow::bail!("No home directory found"),
-        }
+    // 用户目录, aka: ~/.rift
+    pub fn home_path(&self) -> RiftResult<PathBuf> {
+        Ok(homedir::my_home()
+            .unwrap()
+            .unwrap()
+            .join(paths::NON_INSTALLATION_PATH_NAME))
     }
 
     pub fn rift_exe(&self) -> RiftResult<&Path> {

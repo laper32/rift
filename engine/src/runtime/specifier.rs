@@ -6,6 +6,10 @@
 /// 5. 项目内部作为Util的脚本
 use std::path::{Path, PathBuf};
 
+use crate::manifest::MANIFEST_IDENTIFIER;
+use crate::runtime::RuntimeFiles;
+use crate::util::errors::RiftResult;
+use crate::workspace::Workspace;
 use relative_path::RelativePathBuf;
 
 /// An `import` specifier referring to a file within the current project.
@@ -152,5 +156,79 @@ impl std::str::FromStr for RiftModuleSpecifier {
 impl std::fmt::Display for RiftModuleSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", url::Url::from(self))
+    }
+}
+
+// =================================================================================
+
+pub fn resolve(
+    specifier: &RiftModuleImportSpecifier,
+    referrer: &RiftModuleSpecifier,
+) -> RiftResult<RiftModuleSpecifier> {
+    match referrer {
+        RiftModuleSpecifier::Runtime { subpath } => {
+            let specifier_path = match specifier {
+                RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::Relative(
+                    specifier_path,
+                )) => specifier_path,
+                _ => {
+                    anyhow::bail!("Invalid specifier")
+                }
+            };
+            let new_subpath = subpath
+                .parent()
+                .map(|parent| parent.to_owned())
+                .unwrap_or(RelativePathBuf::from(""))
+                .join(specifier_path);
+
+            // 既然惯例是index.ts/js 那我们也这么用算了。。
+            let candidates = [
+                new_subpath.join("index.js"),
+                new_subpath.join("index.ts"),
+                new_subpath.with_extension("js"),
+                new_subpath.with_extension("ts"),
+                new_subpath,
+            ];
+            for candidate in candidates {
+                let file = RuntimeFiles::get(candidate.as_str());
+                if file.is_some() {
+                    return Ok(RiftModuleSpecifier::Runtime { subpath: candidate });
+                }
+            }
+            anyhow::bail!("internal module '{specifier}' not found (imported from {referrer})");
+        }
+        RiftModuleSpecifier::File { path } => {
+            // 这里要做的事就有点多了。首先我们得明确如下问题：
+            // 这个文件是来自于哪里的？是插件，还是项目，还是只是单纯的为了简写而做的包装性的Util，还是Rift.toml里面指定的脚本？
+            let project_manifest = path.join(MANIFEST_IDENTIFIER);
+            let workspace = Workspace::new(&project_manifest);
+            match specifier {
+                // 以项目根目录为主的import
+                RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::ProjectRoot(
+                    specifier_path,
+                )) => {}
+                // 直接就是相对路径import
+                RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::Relative(
+                    specifier_path,
+                )) => {}
+                // External可以来自于：
+                // - 项目的.rift/plugins
+                // - ~/.rift/plugins
+                // - ${InstallationPath}/plugins
+                RiftModuleImportSpecifier::External(dep) => {}
+            }
+            todo!()
+        }
+    }
+    todo!()
+}
+
+#[cfg(test)]
+mod test {
+    use crate::runtime::specifier::RiftModuleSpecifier;
+
+    #[test]
+    fn test_module_specifier() {
+        let specifier: RiftModuleSpecifier = "rift:///dist/index.js".parse().expect("Failed");
     }
 }

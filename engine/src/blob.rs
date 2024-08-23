@@ -1,7 +1,3 @@
-pub struct SaveBlobPermit<'a> {
-    _permit: tokio::sync::SemaphorePermit<'a>,
-}
-
 #[derive(
     Debug,
     Clone,
