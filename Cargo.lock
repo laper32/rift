@@ -776,6 +776,7 @@ dependencies = [
  "deno_core",
  "hex",
  "homedir",
+ "lazycell",
  "once_cell",
  "relative-path",
  "reqwest",

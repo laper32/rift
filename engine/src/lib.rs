@@ -1,11 +1,14 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-use dir::PathIdentity;
+use anyhow::Context;
+use lazycell::LazyCell;
+use paths::{try_canonicalize, NON_INSTALLATION_PATH_NAME};
+use util::errors::RiftResult;
 use workspace::Workspace;
 
 mod blob;
-pub mod dir;
 pub mod events;
+pub mod forward;
 mod fs;
 pub mod hash;
 mod manifest;
@@ -29,25 +32,141 @@ pub fn shutdown() {
     runtime::shutdown();
 }
 
-pub struct Engine {
-    installation_path: PathBuf,
-    user_path: PathBuf,
-    project_path: PathBuf,
-    // pub home: PathBuf,
+pub struct Rift {
+    /// rift.exe的路径
+    rift_exe: LazyCell<PathBuf>,
 }
 
-impl Engine {
+/// Returns the absolute path of where the given executable is located based
+/// on searching the `PATH` environment variable.
+///
+/// Returns an error if it cannot be found.
+pub fn resolve_executable(exec: &Path) -> RiftResult<PathBuf> {
+    if exec.components().count() == 1 {
+        let paths = std::env::var_os("PATH").ok_or_else(|| anyhow::format_err!("no PATH"))?;
+        let candidates = std::env::split_paths(&paths).flat_map(|path| {
+            let candidate = path.join(&exec);
+            let with_exe = if std::env::consts::EXE_EXTENSION.is_empty() {
+                None
+            } else {
+                Some(candidate.with_extension(std::env::consts::EXE_EXTENSION))
+            };
+            core::iter::once(candidate).chain(with_exe)
+        });
+        for candidate in candidates {
+            if candidate.is_file() {
+                return Ok(candidate);
+            }
+        }
+
+        anyhow::bail!("no executable for `{}` found in PATH", exec.display())
+    } else {
+        Ok(exec.into())
+    }
+}
+
+impl Rift {
     fn new() -> Self {
         Self {
-            installation_path: PathIdentity::get_rift_path(PathIdentity::Installation).into(),
-            user_path: PathIdentity::get_rift_path(PathIdentity::UserProfile).into(),
-            project_path: PathIdentity::get_rift_path(PathIdentity::Project).into(),
+            rift_exe: LazyCell::new(),
         }
     }
 
     pub fn instance() -> &'static mut Self {
-        static mut INSTANCE: once_cell::sync::Lazy<Engine> =
-            once_cell::sync::Lazy::new(|| Engine::new());
+        static mut INSTANCE: once_cell::sync::Lazy<Rift> =
+            once_cell::sync::Lazy::new(|| Rift::new());
         unsafe { &mut *INSTANCE }
+    }
+
+    // Windows上是按照一个完整的包来处理的
+    // Linux的话，因为大多数情况下都是直接放在/usr/bin下的，所以不能用这个
+    #[cfg(windows)]
+    pub fn installation_path(&self) -> RiftResult<&Path> {
+        self.rift_exe().map(|exe| {
+            exe // ${InstallationPath}/bin/rift.exe
+                .parent() // ${InstallationPath}/bin
+                .unwrap()
+                .parent() // ${InstallationPath}
+                .unwrap()
+        })
+    }
+
+    pub fn user_path(&self) -> RiftResult<&Path> {
+        let myhome = homedir::my_home();
+        match myhome {
+            Ok(home) => {
+                // Ok(Path::from(value))
+                // todo!()
+                todo!()
+            }
+            Err(e) => anyhow::bail!("No home directory found"),
+        }
+    }
+
+    pub fn rift_exe(&self) -> RiftResult<&Path> {
+        self.rift_exe
+            .try_borrow_with(|| {
+                let from_env = || -> RiftResult<PathBuf> {
+                    // Try re-using the `rift` set in the environment already. This allows
+                    // commands that use Cargo as a library to inherit (via `cargo <subcommand>`)
+                    // or set (by setting `$CARGO`) a correct path to `cargo` when the current exe
+                    // is not actually cargo (e.g., `cargo-*` binaries, Valgrind, `ld.so`, etc.).
+                    let exe = try_canonicalize(
+                        std::env::var_os("RIFT")
+                            .map(PathBuf::from)
+                            .ok_or_else(|| anyhow::anyhow!("$RIFT not set"))?,
+                    )?;
+                    Ok(exe)
+                };
+                fn from_current_exe() -> RiftResult<PathBuf> {
+                    // Try fetching the path to `rift` using `env::current_exe()`.
+                    // The method varies per operating system and might fail; in particular,
+                    // it depends on `/proc` being mounted on Linux, and some environments
+                    // (like containers or chroots) may not have that available.
+                    let exe = try_canonicalize(std::env::current_exe()?)?;
+                    Ok(exe)
+                }
+
+                fn from_argv() -> RiftResult<PathBuf> {
+                    // Grab `argv[0]` and attempt to resolve it to an absolute path.
+                    // If `argv[0]` has one component, it must have come from a `PATH` lookup,
+                    // so probe `PATH` in that case.
+                    // Otherwise, it has multiple components and is either:
+                    // - a relative path (e.g., `./rift`, `target/debug/rift`), or
+                    // - an absolute path (e.g., `/usr/local/bin/rift`).
+                    // In either case, `Path::canonicalize` will return the full absolute path
+                    // to the target if it exists.
+                    let argv0 = std::env::args_os()
+                        .map(PathBuf::from)
+                        .next()
+                        .ok_or_else(|| anyhow::anyhow!("no argv[0]"))?;
+                    resolve_executable(&argv0)
+                }
+                let exe = from_env()
+                    .or_else(|_| from_current_exe())
+                    .or_else(|_| from_argv())
+                    .context("couldn't get the path to cargo executable")?;
+                Ok(exe)
+            })
+            .map(AsRef::as_ref)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn test_rift_exe() {
+        println!("{:?}", super::Rift::instance().rift_exe().unwrap());
+        println!(
+            "{:?}",
+            url::Url::from_file_path(super::Rift::instance().rift_exe().unwrap())
+                .unwrap()
+                .path()
+        )
+        // println!(
+        //     "{:?}",
+        //     super::Engine::instance().installation_path().unwrap()
+        // );
     }
 }

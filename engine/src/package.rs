@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use crate::manifest::Manifest;
-use crate::paths::PathExt;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
@@ -24,7 +23,7 @@ impl Package {
         Package {
             inner: Rc::new(PackageInner {
                 manifest,
-                manifest_path: PathBuf::from(manifest_path.as_posix().unwrap().to_string()),
+                manifest_path: manifest_path.to_path_buf(),
             }),
         }
     }

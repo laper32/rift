@@ -6,7 +6,6 @@ use crate::{
         MANIFEST_IDENTIFIER,
     },
     package::Package,
-    paths::PathBufExt,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -101,10 +100,7 @@ impl Packages {
     }
 
     fn insert_package(&mut self, manifest_path: PathBuf, package: MaybePackage) {
-        self.packages.insert(
-            PathBuf::from(manifest_path.as_posix().unwrap().to_string()),
-            package,
-        );
+        self.packages.insert(manifest_path, package);
     }
 
     pub fn scan_all_possible_packages(&mut self, manifest_path: &Path) {
@@ -180,7 +176,6 @@ impl Packages {
 #[cfg(test)]
 mod test {
 
-    use crate::paths::PathExt;
     use crate::util;
 
     use super::Workspace;
@@ -194,19 +189,17 @@ mod test {
             .join("sample")
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
-        let mut ws = Workspace::new(&simple_workspace);
-        let binding = our_project_root
+        let ws = Workspace::new(&simple_workspace);
+        let expected_root = our_project_root
             .join("sample")
             .join("04_workspace_and_multiple_projects");
-        let expected_result = binding.as_posix();
 
-        let binding = our_project_root
+        let expected_root_manifest = our_project_root
             .join("sample")
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml");
-        let expect_result_manifest = binding.as_posix();
-        assert_eq!(ws.root().as_posix(), expected_result);
-        assert_eq!(ws.root_manifest().as_posix(), expect_result_manifest);
+        assert_eq!(ws.root(), expected_root);
+        assert_eq!(ws.root_manifest(), expected_root_manifest);
     }
     #[test]
     fn test_simple_target() {
