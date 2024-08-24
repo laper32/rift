@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 /// 这里应当分为如下几个部分：
 /// 1. Rift内部捆绑
 /// 2. 第一方插件
@@ -5,12 +6,16 @@
 /// 4. 项目内部的插件
 /// 5. 项目内部作为Util的脚本
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::manifest::MANIFEST_IDENTIFIER;
 use crate::runtime::RuntimeFiles;
 use crate::util::errors::RiftResult;
 use crate::workspace::Workspace;
+use anyhow::Context;
 use relative_path::RelativePathBuf;
+
+use super::script::ScriptManager;
 
 /// An `import` specifier referring to a file within the current project.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -161,6 +166,46 @@ impl std::fmt::Display for RiftModuleSpecifier {
 
 // =================================================================================
 
+pub fn runtime_specifiers_with_contents(
+) -> impl Iterator<Item = (RiftModuleSpecifier, Cow<'static, [u8]>)> {
+    RuntimeFiles::iter().flat_map(|path| {
+        let file = RuntimeFiles::get(&path)?;
+        let specifier = RiftModuleSpecifier::Runtime {
+            subpath: RelativePathBuf::from(&*path),
+        };
+        Some((specifier, file.data))
+    })
+}
+
+pub fn read_specifier_contents(specifier: &RiftModuleSpecifier) -> RiftResult<Arc<Vec<u8>>> {
+    match specifier {
+        RiftModuleSpecifier::Runtime { subpath } => {
+            let file = RuntimeFiles::get(subpath.as_str())
+                .with_context(|| format!("internal module '{specifier}' not found"))?;
+            Ok(Arc::new(file.data.to_vec()))
+        }
+        RiftModuleSpecifier::File { path } => {
+            let (_, contents) = ScriptManager::instance()
+                .load_cached(path)?
+                .with_context(|| format!("module '{specifier}' not loaded"))?;
+            Ok(contents)
+        }
+    }
+}
+
+pub async fn load_specifier_contents(specifier: &RiftModuleSpecifier) -> RiftResult<Arc<Vec<u8>>> {
+    match specifier {
+        RiftModuleSpecifier::Runtime { .. } => {}
+        RiftModuleSpecifier::File { path } => {
+            ScriptManager::instance()
+                .load(path)
+                .await
+                .with_context(|| format!("module '{specifier}' not loaded"))?;
+        }
+    }
+    read_specifier_contents(specifier)
+}
+
 pub fn resolve(
     specifier: &RiftModuleImportSpecifier,
     referrer: &RiftModuleSpecifier,
@@ -227,8 +272,13 @@ pub fn resolve(
 mod test {
     use crate::runtime::specifier::RiftModuleSpecifier;
 
+    use super::read_specifier_contents;
+
     #[test]
     fn test_module_specifier() {
         let specifier: RiftModuleSpecifier = "rift:///dist/index.js".parse().expect("Failed");
+        println!("{:?}", specifier);
+        let contents = read_specifier_contents(&specifier);
+        println!("{:?}", contents.unwrap().len())
     }
 }

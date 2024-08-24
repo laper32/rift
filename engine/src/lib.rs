@@ -6,7 +6,7 @@ use paths::{try_canonicalize, NON_INSTALLATION_PATH_NAME};
 use util::errors::RiftResult;
 use workspace::Workspace;
 
-mod blob;
+// mod blob;
 mod manifest;
 mod package;
 pub mod paths;
