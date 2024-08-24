@@ -1,7 +1,12 @@
-use crate::runtime::specifier::{self, RiftModuleSpecifier};
+use std::sync::Arc;
+
+use crate::{
+    runtime::specifier::{self, RiftModuleSpecifier},
+    util::errors::RiftResult,
+};
 
 pub struct ForwardManager {
-    tx: tokio::sync::mpsc::UnboundedSender<RuntimeBridgeMessage>,
+    tx: tokio::sync::mpsc::UnboundedSender<Forward>,
 }
 
 impl ForwardManager {
@@ -34,7 +39,7 @@ impl ForwardManager {
     pub fn read_specifier_contents(
         &self,
         specifier: RiftModuleSpecifier,
-    ) -> RfitResult<Arc<Vec<u8>>> {
+    ) -> RiftResult<Arc<Vec<u8>>> {
         let (contents_tx, contents_rx) = std::sync::mpsc::channel();
         self.tx.send(Forward::ReadSpecifierContents {
             specifier,
