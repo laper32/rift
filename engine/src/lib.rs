@@ -7,6 +7,7 @@ use util::errors::RiftResult;
 use workspace::Workspace;
 
 // mod blob;
+mod forward;
 mod manifest;
 mod package;
 pub mod paths;

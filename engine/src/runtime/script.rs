@@ -50,7 +50,7 @@ impl ScriptManager {
             .map_err(|e| anyhow::anyhow!("Failed to acquire lock, err: {e}"))?;
         inner.contents.insert(uuid, contents.clone());
         inner.identities.insert(path.clone(), uuid);
-        tracing::debug!(path = %path.display(), %uuid, "loaded file into VFS");
+        tracing::debug!(path = %path.display(), %uuid, "loaded file into ScriptManager");
         Ok((uuid, contents))
     }
 

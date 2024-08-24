@@ -8,7 +8,7 @@ use crate::util::errors::RiftResult;
 
 use super::specifier::RiftModuleSpecifier;
 
-struct RiftModuleLoader {
+pub struct RiftModuleLoader {
     // sources: Vec<ModuleSource>,
     pub sources: Rc<RefCell<HashMap<RiftModuleSpecifier, ModuleSource>>>,
 }
@@ -25,6 +25,11 @@ impl RiftModuleLoader {
         module_specifier: &deno_core::ModuleSpecifier,
     ) -> RiftResult<deno_core::ModuleSource> {
         let rift_module_specifier: RiftModuleSpecifier = module_specifier.try_into()?;
+        /*
+        let contents = self
+            .bridge
+            .read_specifier_contents(brioche_module_specifier.clone())?;
+         */
         todo!()
     }
 }

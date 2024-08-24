@@ -13,7 +13,7 @@ use crate::runtime::RuntimeFiles;
 use crate::util::errors::RiftResult;
 use crate::workspace::Workspace;
 use anyhow::Context;
-use relative_path::RelativePathBuf;
+use relative_path::{PathExt, RelativePathBuf};
 
 use super::script::ScriptManager;
 
@@ -22,16 +22,16 @@ use super::script::ScriptManager;
 pub enum RiftModuleLocalImportSpecifier {
     // 相对路径。。。
     Relative(String),
-    // 项目的根目录
-    // 这个还得看看怎么归类，因为这里有歧义。
-    ProjectRoot(String),
+    // // TODO: 最好是能做成这样: import * from "rift:projectRoot/subpath"
+    // // 这样的话我们就可以直接解决掉import的时候不知道怎么办的问题
+    // ProjectRoot(String),
 }
 
 impl std::fmt::Display for RiftModuleLocalImportSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             RiftModuleLocalImportSpecifier::Relative(path) => write!(f, "{path}"),
-            RiftModuleLocalImportSpecifier::ProjectRoot(path) => write!(f, "/{path}"),
+            // RiftModuleLocalImportSpecifier::ProjectRoot(path) => write!(f, "/{path}"),
         }
     }
 }
@@ -46,9 +46,11 @@ impl std::str::FromStr for RiftModuleLocalImportSpecifier {
             || specifier.starts_with("../")
         {
             return Ok(Self::Relative(specifier.to_string()));
-        } else if let Some(project_root_subpath) = specifier.strip_prefix('/') {
+        }
+        /* else if let Some(project_root_subpath) = specifier.strip_prefix('/') {
             return Ok(Self::ProjectRoot(project_root_subpath.to_string()));
-        } else {
+        }  */
+        else {
             anyhow::bail!("Invalid module specifier: {}", specifier)
         }
     }
@@ -247,21 +249,34 @@ pub fn resolve(
             // 这个文件是来自于哪里的？是插件，还是项目，还是只是单纯的为了简写而做的包装性的Util，还是Rift.toml里面指定的脚本？
             let project_manifest = path.join(MANIFEST_IDENTIFIER);
             let workspace = Workspace::new(&project_manifest);
+            let subpath = path.relative_to(path)?;
             match specifier {
-                // 以项目根目录为主的import
-                RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::ProjectRoot(
-                    specifier_path,
-                )) => {}
-                // 直接就是相对路径import
                 RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::Relative(
                     specifier_path,
-                )) => {}
-                // External可以来自于：
-                // - 项目的.rift/plugins
-                // - ~/.rift/plugins
-                // - ${InstallationPath}/plugins
-                RiftModuleImportSpecifier::External(dep) => {}
+                )) => {
+                    let new_subpath = subpath
+                        .parent()
+                        .map(|parent| parent.to_owned())
+                        .unwrap_or(RelativePathBuf::from(""))
+                        .join_normalized(specifier_path);
+                }
+                RiftModuleImportSpecifier::External(_) => todo!(),
             }
+            // match specifier {
+            //     // 以项目根目录为主的import
+            //     RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::ProjectRoot(
+            //         specifier_path,
+            //     )) => {}
+            //     // 直接就是相对路径import
+            //     RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::Relative(
+            //         specifier_path,
+            //     )) => {}
+            //     // External可以来自于：
+            //     // - 项目的.rift/plugins
+            //     // - ~/.rift/plugins
+            //     // - ${InstallationPath}/plugins
+            //     RiftModuleImportSpecifier::External(dep) => {}
+            // }
             todo!()
         }
     }
