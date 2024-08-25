@@ -11,7 +11,9 @@ use std::{
 
 use anyhow::Context;
 
-use crate::{forward::ForwardManager, util::errors::RiftResult};
+use crate::{
+    forward::ForwardManager, runtime::specifier::RiftImportSpecifier, util::errors::RiftResult,
+};
 
 use super::specifier::RiftModuleSpecifier;
 
@@ -89,17 +91,47 @@ impl deno_core::ModuleLoader for RiftModuleLoader {
         referrer: &str,
         kind: deno_core::ResolutionKind,
     ) -> Result<deno_core::ModuleSpecifier, anyhow::Error> {
-        todo!()
+        /*
+        if let deno_core::ResolutionKind::MainModule = kind {
+            let resolved = specifier.parse()?;
+            tracing::debug!(%specifier, %referrer, %resolved, "resolved main module");
+            return Ok(resolved);
+        }
+
+        let referrer: BriocheModuleSpecifier = referrer.parse()?;
+        let specifier: BriocheImportSpecifier = specifier.parse()?;
+
+        let resolved = self
+            .bridge
+            .resolve_specifier(specifier.clone(), referrer.clone())?;
+
+        tracing::debug!(%specifier, %referrer, %resolved, "resolved module");
+
+        let resolved: deno_core::ModuleSpecifier = resolved.into();
+        Ok(resolved)
+         */
+        if let deno_core::ResolutionKind::MainModule = kind {
+            let resolved = specifier.parse()?;
+            tracing::debug!(%specifier, %referrer, %resolved, "resolved main module");
+            return Ok(resolved);
+        }
+        let referrer: RiftModuleSpecifier = referrer.parse()?;
+        let specifier: RiftImportSpecifier = specifier.parse()?;
+        let resolved =
+            ForwardManager::instance().resolve_specifier(specifier.clone(), referrer.clone())?;
+        tracing::debug!(%specifier, %referrer, %resolved, "resolved module");
+        let resolved: deno_core::ModuleSpecifier = resolved.into();
+        Ok(resolved)
     }
 
     fn load(
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
-        maybe_referrer: Option<&deno_core::ModuleSpecifier>,
-        is_dyn_import: bool,
-        requested_module_type: deno_core::RequestedModuleType,
+        _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
+        _is_dyn_import: bool,
+        _requested_module_type: deno_core::RequestedModuleType,
     ) -> deno_core::ModuleLoadResponse {
-        todo!()
+        deno_core::ModuleLoadResponse::Sync(self.load_module_source(module_specifier))
     }
 }
 

@@ -19,7 +19,7 @@ use super::script::ScriptManager;
 
 /// An `import` specifier referring to a file within the current project.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RiftModuleLocalImportSpecifier {
+pub enum RiftLocalImportSpecifier {
     // 相对路径。。。
     Relative(String),
     // // TODO: 最好是能做成这样: import * from "rift:projectRoot/subpath"
@@ -27,16 +27,16 @@ pub enum RiftModuleLocalImportSpecifier {
     // ProjectRoot(String),
 }
 
-impl std::fmt::Display for RiftModuleLocalImportSpecifier {
+impl std::fmt::Display for RiftLocalImportSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RiftModuleLocalImportSpecifier::Relative(path) => write!(f, "{path}"),
+            RiftLocalImportSpecifier::Relative(path) => write!(f, "{path}"),
             // RiftModuleLocalImportSpecifier::ProjectRoot(path) => write!(f, "/{path}"),
         }
     }
 }
 
-impl std::str::FromStr for RiftModuleLocalImportSpecifier {
+impl std::str::FromStr for RiftLocalImportSpecifier {
     type Err = anyhow::Error;
 
     fn from_str(specifier: &str) -> Result<Self, Self::Err> {
@@ -61,18 +61,36 @@ impl std::str::FromStr for RiftModuleLocalImportSpecifier {
 /// A specifier from an `import` statement in a JavaScript module. Can
 /// be resolved to a module specifier using the `resolve` function.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub enum RiftModuleImportSpecifier {
+pub enum RiftImportSpecifier {
     /// 项目内的，没啥好说的吧。
-    Local(RiftModuleLocalImportSpecifier),
+    Local(RiftLocalImportSpecifier),
     /// 非项目内的包，比如说：安装目录的插件包，UserProfile的插件包
     External(String),
 }
 
-impl std::fmt::Display for RiftModuleImportSpecifier {
+impl std::fmt::Display for RiftImportSpecifier {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RiftModuleImportSpecifier::Local(specifier) => write!(f, "{}", specifier),
-            RiftModuleImportSpecifier::External(specifier) => write!(f, "{}", specifier),
+            RiftImportSpecifier::Local(specifier) => write!(f, "{}", specifier),
+            RiftImportSpecifier::External(specifier) => write!(f, "{}", specifier),
+        }
+    }
+}
+
+impl std::str::FromStr for RiftImportSpecifier {
+    type Err = anyhow::Error;
+
+    fn from_str(specifier: &str) -> Result<Self, Self::Err> {
+        if specifier == "."
+            || specifier == ".."
+            || specifier.starts_with("./")
+            || specifier.starts_with("../")
+            || specifier.starts_with('/')
+        {
+            let local_specifier = specifier.parse()?;
+            Ok(Self::Local(local_specifier))
+        } else {
+            Ok(Self::External(specifier.to_string()))
         }
     }
 }
@@ -209,15 +227,15 @@ pub async fn load_specifier_contents(specifier: &RiftModuleSpecifier) -> RiftRes
 }
 
 pub fn resolve(
-    specifier: &RiftModuleImportSpecifier,
+    specifier: &RiftImportSpecifier,
     referrer: &RiftModuleSpecifier,
 ) -> RiftResult<RiftModuleSpecifier> {
     match referrer {
         RiftModuleSpecifier::Runtime { subpath } => {
             let specifier_path = match specifier {
-                RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::Relative(
-                    specifier_path,
-                )) => specifier_path,
+                RiftImportSpecifier::Local(RiftLocalImportSpecifier::Relative(specifier_path)) => {
+                    specifier_path
+                }
                 _ => {
                     anyhow::bail!("Invalid specifier")
                 }
@@ -251,16 +269,14 @@ pub fn resolve(
             let workspace = Workspace::new(&project_manifest);
             let subpath = path.relative_to(path)?;
             match specifier {
-                RiftModuleImportSpecifier::Local(RiftModuleLocalImportSpecifier::Relative(
-                    specifier_path,
-                )) => {
+                RiftImportSpecifier::Local(RiftLocalImportSpecifier::Relative(specifier_path)) => {
                     let new_subpath = subpath
                         .parent()
                         .map(|parent| parent.to_owned())
                         .unwrap_or(RelativePathBuf::from(""))
                         .join_normalized(specifier_path);
                 }
-                RiftModuleImportSpecifier::External(_) => todo!(),
+                RiftImportSpecifier::External(_) => todo!(),
             }
             // match specifier {
             //     // 以项目根目录为主的import

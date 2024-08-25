@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    runtime::specifier::{self, RiftModuleSpecifier},
+    runtime::specifier::{self, RiftImportSpecifier, RiftModuleSpecifier},
     util::errors::RiftResult,
 };
 
@@ -21,7 +21,15 @@ impl ForwardManager {
                             contents_tx,
                         } => {
                             let contents = specifier::read_specifier_contents(&specifier);
-                            contents_tx.send(contents);
+                            let _ = contents_tx.send(contents);
+                        }
+                        Forward::ResolveSpecifier {
+                            specifier,
+                            referrer,
+                            resolved_tx,
+                        } => {
+                            let resolved = specifier::resolve(&specifier, &referrer);
+                            let _ = resolved_tx.send(resolved);
                         }
                     }
                 });
@@ -48,11 +56,31 @@ impl ForwardManager {
         let contents = contents_rx.recv()??;
         Ok(contents)
     }
+
+    pub fn resolve_specifier(
+        &self,
+        specifier: RiftImportSpecifier,
+        referrer: RiftModuleSpecifier,
+    ) -> RiftResult<RiftModuleSpecifier> {
+        let (resolved_tx, resolved_rx) = std::sync::mpsc::channel();
+        self.tx.send(Forward::ResolveSpecifier {
+            specifier,
+            referrer,
+            resolved_tx,
+        })?;
+        let resolved = resolved_rx.recv()??;
+        Ok(resolved)
+    }
 }
 
 pub enum Forward {
     ReadSpecifierContents {
         specifier: RiftModuleSpecifier,
-        contents_tx: std::sync::mpsc::Sender<anyhow::Result<Arc<Vec<u8>>>>,
+        contents_tx: std::sync::mpsc::Sender<RiftResult<Arc<Vec<u8>>>>,
+    },
+    ResolveSpecifier {
+        specifier: RiftImportSpecifier,
+        referrer: RiftModuleSpecifier,
+        resolved_tx: std::sync::mpsc::Sender<RiftResult<RiftModuleSpecifier>>,
     },
 }

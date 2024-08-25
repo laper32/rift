@@ -23,6 +23,7 @@ pub enum MaybePackage {
     Rift(RiftManifest),
 }
 
+// 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
 pub struct Workspace {
     // 我们需要知道是在哪里调用的rift
     current_manifest: PathBuf,
