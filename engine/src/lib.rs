@@ -2,16 +2,14 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use lazycell::LazyCell;
-use paths::{try_canonicalize, NON_INSTALLATION_PATH_NAME};
-use util::errors::RiftResult;
+use util::{
+    errors::RiftResult,
+    fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
+};
 use workspace::Workspace;
 
-// mod blob;
-mod forward;
 mod manifest;
 mod package;
-pub mod paths;
-mod runtime;
 mod schema;
 pub mod task;
 pub mod util;
@@ -26,7 +24,7 @@ pub fn init() -> bool {
 }
 
 pub fn shutdown() {
-    runtime::shutdown();
+    // runtime::shutdown();
 }
 
 pub struct Rift {
@@ -92,7 +90,7 @@ impl Rift {
         Ok(homedir::my_home()
             .unwrap()
             .unwrap()
-            .join(paths::NON_INSTALLATION_PATH_NAME))
+            .join(NON_INSTALLATION_PATH_NAME))
     }
 
     pub fn rift_exe(&self) -> RiftResult<&Path> {
@@ -100,10 +98,10 @@ impl Rift {
             .try_borrow_with(|| {
                 let from_env = || -> RiftResult<PathBuf> {
                     // Try re-using the `rift` set in the environment already. This allows
-                    // commands that use Cargo as a library to inherit (via `cargo <subcommand>`)
-                    // or set (by setting `$CARGO`) a correct path to `cargo` when the current exe
-                    // is not actually cargo (e.g., `cargo-*` binaries, Valgrind, `ld.so`, etc.).
-                    let exe = try_canonicalize(
+                    // commands that use Cargo as a library to inherit (via `rift <subcommand>`)
+                    // or set (by setting `$RIFT`) a correct path to `rift` when the current exe
+                    // is not actually cargo (e.g., `rift-*` binaries, Valgrind, `ld.so`, etc.).
+                    let exe = canonicalize_path(
                         std::env::var_os("RIFT")
                             .map(PathBuf::from)
                             .ok_or_else(|| anyhow::anyhow!("$RIFT not set"))?,
@@ -115,7 +113,7 @@ impl Rift {
                     // The method varies per operating system and might fail; in particular,
                     // it depends on `/proc` being mounted on Linux, and some environments
                     // (like containers or chroots) may not have that available.
-                    let exe = try_canonicalize(std::env::current_exe()?)?;
+                    let exe = canonicalize_path(std::env::current_exe()?)?;
                     Ok(exe)
                 }
 
