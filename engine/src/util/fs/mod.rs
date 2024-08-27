@@ -370,7 +370,8 @@ pub fn hard_link_dir_recursive(from: &Path, to: &Path) -> RiftResult<()> {
 /// # Limitations
 ///
 /// For Windows users, please check the following message from the Rust documentation:
-///  Windows treats symlink creation as a [privileged action][symlink-security],
+///
+/// Windows treats symlink creation as a [privileged action][symlink-security],
 /// therefore this function is likely to fail unless the user makes changes to
 /// their system to permit symlink creation. Users can try enabling Developer
 /// Mode, granting the `SeCreateSymbolicLinkPrivilege` privilege, or running

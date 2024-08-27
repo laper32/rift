@@ -1,6 +1,7 @@
 import * as rift from 'rift';
 import * as cxx from "cxx";
 
+
 cxx.includeDirectories.push(`${rift.projectRoot}/include`);
 
 var example_cpp = cxx.target("example-cpp");
@@ -15,7 +16,7 @@ example_cpp.sourceFiles.push([
 var compileOptions = new Array();
 if (rift.isWindows()) {
     if (cxx.getToolchain() == "msvc") {
-        if (cxx.getCompiler() == "msvc") {
+        if (cxx.getCompiler() == "cl") {
             compileOptions.push([
                 "/std:c++17",
                 "/EHsc",
