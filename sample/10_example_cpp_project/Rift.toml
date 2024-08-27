@@ -2,7 +2,6 @@
 name = "example-cpp"
 version = "0.1.0"
 authors = ["Rift Dev Team"]
-build = "rift/build.ts"
 dependencies = "rift/dependencies.ts"
 plugins = "rift/plugins.ts"
 metadata = "rift/metadata.ts"
@@ -10,3 +9,4 @@ metadata = "rift/metadata.ts"
 [target]
 name = "example-cpp"
 type = "bin"
+build = "rift/build.ts"
