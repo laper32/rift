@@ -1,6 +1,7 @@
 pub mod errors;
 pub mod fs;
 pub mod os;
+pub mod path;
 
 use std::{
     env,
