@@ -29,13 +29,8 @@ pub fn canonicalize_path<P: AsRef<Path>>(path: P) -> RiftResult<PathBuf> {
         Ok(result) => {
             let path = result.into_owned();
             Ok(PathBuf::from(path))
-            // todo!()
         }
-        Err(e) => anyhow::bail!(
-            "Failed to canonicalize path: {:?}, error: {:?}",
-            path.as_ref(),
-            e
-        ),
+        Err(e) => Err(e).with_context(|| format!("Canonicalze path: {:?}", path.as_ref())),
     }
 }
 
