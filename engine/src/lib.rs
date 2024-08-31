@@ -155,9 +155,5 @@ mod test {
                 .unwrap()
                 .path()
         )
-        // println!(
-        //     "{:?}",
-        //     super::Engine::instance().installation_path().unwrap()
-        // );
     }
 }

@@ -1,8 +1,16 @@
-use std::path::PathBuf;
+use std::{env, path::PathBuf, rc::Rc};
 
-use crate::{util::errors::RiftResult, workspace::WorkspaceManager};
+use deno_core::extension;
+use ops::runtime;
+
+use crate::{
+    util::{errors::RiftResult, fs::as_posix::PathBufExt},
+    workspace::WorkspaceManager,
+};
 
 mod graph;
+mod loader;
+mod ops;
 
 #[derive(Clone, Debug)]
 pub enum ManifestScriptKind {
@@ -241,16 +249,98 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
     Ok(ret)
 }
 
+static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
 /*
 按照一般情况来说，应该是先确定我们要启用什么插件，然后看需要什么依赖，最后再加载对应的metadata？
 */
 
+async fn run_js(file_path: &str) -> RiftResult<()> {
+    let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
+    let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
+        module_loader: Some(Rc::new(loader::TsModuleLoader)),
+        startup_snapshot: Some(&RUNTIME_SNAPSHOT),
+        extensions: vec![runtime::init_ops()],
+        ..Default::default()
+    });
+    let mod_id = js_runtime.load_main_es_module(&main_module).await?;
+    let result = js_runtime.mod_evaluate(mod_id);
+    js_runtime.run_event_loop(Default::default()).await?;
+    result.await
+}
+
+pub fn init() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap();
+    let plugin_scripts = collect_workspace_plugins_scripts().unwrap();
+    let dependencies_scripts = collect_workspace_dependencies_scripts().unwrap();
+    let metadata_scripts = collect_workspace_metadata_scripts().unwrap();
+
+    plugin_scripts.iter().for_each(|script| {
+        let binding = script.manifest_path.clone();
+        let current_manifest_path = binding.parent().unwrap();
+        let script_path = script.path.clone().unwrap();
+        let actual_script_path = PathBuf::from(current_manifest_path)
+            .join(script_path)
+            .as_posix()
+            .unwrap()
+            .to_string();
+        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+            eprintln!("error: {error}");
+        }
+    });
+
+    dependencies_scripts.iter().for_each(|script| {
+        let binding = script.manifest_path.clone();
+        let current_manifest_path = binding.parent().unwrap();
+        let script_path = script.path.clone().unwrap();
+        let actual_script_path = PathBuf::from(current_manifest_path)
+            .join(script_path)
+            .as_posix()
+            .unwrap()
+            .to_string();
+        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+            eprintln!("error: {error}");
+        }
+    });
+
+    metadata_scripts.iter().for_each(|script| {
+        let binding = script.manifest_path.clone();
+        let current_manifest_path = binding.parent().unwrap();
+        let script_path = script.path.clone().unwrap();
+        let actual_script_path = PathBuf::from(current_manifest_path)
+            .join(script_path)
+            .as_posix()
+            .unwrap()
+            .to_string();
+        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+            eprintln!("error: {error}");
+        }
+    });
+}
+
+pub fn shutdown() {}
+
 #[cfg(test)]
 mod test {
-    use crate::workspace::WorkspaceManager;
+
+    use crate::{
+        util::{self},
+        workspace::WorkspaceManager,
+    };
+
+    use super::init;
 
     #[test]
     fn workspace_dependencies_scripts() {
-        // WorkspaceManager::instance()
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("01_simple_target")
+            .join("Rift.toml");
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
+        init()
     }
 }
