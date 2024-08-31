@@ -1,4 +1,4 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use crate::{util::errors::RiftResult, workspace::WorkspaceManager};
 
@@ -239,4 +239,18 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
             },
         });
     Ok(ret)
+}
+
+/*
+按照一般情况来说，应该是先确定我们要启用什么插件，然后看需要什么依赖，最后再加载对应的metadata？
+*/
+
+#[cfg(test)]
+mod test {
+    use crate::workspace::WorkspaceManager;
+
+    #[test]
+    fn workspace_dependencies_scripts() {
+        // WorkspaceManager::instance()
+    }
 }
