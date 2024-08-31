@@ -23,6 +23,13 @@ pub enum MaybePackage {
     Rift(RiftManifest),
 }
 
+#[derive(Debug, PartialEq)]
+pub enum WorkspaceStatus {
+    Unknown,
+    Init,
+    OK,
+}
+
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
 pub struct WorkspaceManager {
     // 我们需要知道是在哪里调用的rift
@@ -33,6 +40,7 @@ pub struct WorkspaceManager {
 
     // 有多少包
     packages: Packages,
+    status: WorkspaceStatus,
 }
 
 impl WorkspaceManager {
@@ -43,6 +51,7 @@ impl WorkspaceManager {
             packages: Packages {
                 packages: HashMap::new(),
             },
+            status: WorkspaceStatus::Unknown,
         }
     }
 
@@ -69,11 +78,16 @@ impl WorkspaceManager {
             .unwrap_or(&self.current_manifest)
     }
     pub fn load_packages(&mut self) {
+        self.status = WorkspaceStatus::Init;
         self.packages
             .scan_all_possible_packages(&self.current_manifest);
+        self.status = WorkspaceStatus::OK;
     }
     pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
         &self.packages.packages
+    }
+    pub fn is_loaded(&self) -> bool {
+        self.status == WorkspaceStatus::OK
     }
 }
 
