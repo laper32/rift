@@ -6,7 +6,7 @@ use util::{
     errors::RiftResult,
     fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
 };
-use workspace::Workspace;
+use workspace::WorkspaceManager;
 
 mod manifest;
 mod package;
@@ -17,10 +17,10 @@ pub mod util;
 mod workspace;
 
 pub fn init() -> bool {
-    let cwd = std::env::current_dir().unwrap();
-    let ws = Workspace::new(&cwd);
-    println!("Workspace root: {:?}", ws.root());
-    println!("Workspace root manifest: {:?}", ws.root_manifest());
+    // let cwd = std::env::current_dir().unwrap();
+    // let ws = WorkspaceManager::new(&cwd);
+    // println!("Workspace root: {:?}", ws.root());
+    // println!("Workspace root manifest: {:?}", ws.root_manifest());
     true
 }
 

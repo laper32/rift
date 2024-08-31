@@ -24,7 +24,7 @@ pub enum MaybePackage {
 }
 
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
-pub struct Workspace {
+pub struct WorkspaceManager {
     // 我们需要知道是在哪里调用的rift
     current_manifest: PathBuf,
 
@@ -35,23 +35,28 @@ pub struct Workspace {
     packages: Packages,
 }
 
-impl Workspace {
-    pub fn new(manifest_path: &PathBuf) -> Workspace {
-        if !manifest_path.ends_with("Rift.toml") {
-            panic!("Workspace must be initialized with a Rift.toml file");
-        }
-        let mut ws = Workspace::new_default(manifest_path);
-        ws.root_manifest = find_root_manifest(manifest_path);
-        ws
-    }
-    fn new_default(manifest_path: &PathBuf) -> Workspace {
-        Workspace {
-            current_manifest: manifest_path.clone(),
+impl WorkspaceManager {
+    fn new() -> Self {
+        Self {
+            current_manifest: PathBuf::new(),
             root_manifest: None,
             packages: Packages {
                 packages: HashMap::new(),
             },
         }
+    }
+
+    pub fn instance() -> &'static mut Self {
+        static mut INSTANCE: once_cell::sync::Lazy<WorkspaceManager> =
+            once_cell::sync::Lazy::new(|| WorkspaceManager::new());
+        unsafe { &mut *INSTANCE }
+    }
+
+    /// Set current manifest.
+    /// This will also try to find root manifest.
+    pub fn set_current_manifest(&mut self, current_manifest: &PathBuf) {
+        self.root_manifest = find_root_manifest(&current_manifest);
+        self.current_manifest = current_manifest.to_path_buf();
     }
 
     pub fn root(&self) -> &Path {
@@ -62,6 +67,13 @@ impl Workspace {
         self.root_manifest
             .as_ref()
             .unwrap_or(&self.current_manifest)
+    }
+    pub fn load_packages(&mut self) {
+        self.packages
+            .scan_all_possible_packages(&self.current_manifest);
+    }
+    pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
+        &self.packages.packages
     }
 }
 
@@ -179,7 +191,7 @@ mod test {
 
     use crate::util;
 
-    use super::Workspace;
+    use super::WorkspaceManager;
 
     #[test]
     fn test_load_workspace_happypath() {
@@ -190,17 +202,19 @@ mod test {
             .join("sample")
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml"); // 这里只有一个Workspace和Project，没有别的东西
-        let ws = Workspace::new(&simple_workspace);
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         let expected_root = our_project_root
             .join("sample")
             .join("04_workspace_and_multiple_projects");
-
         let expected_root_manifest = our_project_root
             .join("sample")
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml");
-        assert_eq!(ws.root(), expected_root);
-        assert_eq!(ws.root_manifest(), expected_root_manifest);
+        assert_eq!(WorkspaceManager::instance().root(), expected_root);
+        assert_eq!(
+            WorkspaceManager::instance().root_manifest(),
+            expected_root_manifest
+        );
     }
     #[test]
     fn test_simple_target() {
@@ -209,12 +223,18 @@ mod test {
             .join("sample")
             .join("01_simple_target")
             .join("Rift.toml");
-        let mut ws = Workspace::new(&simple_workspace);
-        ws.packages.scan_all_possible_packages(&simple_workspace);
-        ws.packages.packages.iter().for_each(|(k, v)| {
-            println!("Key: {:?}", k);
-            println!("Value: {:?}", v);
-        });
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .packages
+            .iter()
+            .for_each(|(k, v)| {
+                println!("Key: {:?}", k);
+                println!("Value: {:?}", v);
+            });
     }
     #[test]
     fn test_single_target_with_project() {
@@ -223,9 +243,11 @@ mod test {
             .join("sample")
             .join("02_single_target_with_project")
             .join("Rift.toml");
-        let mut ws = Workspace::new(&simple_workspace);
-        ws.packages.scan_all_possible_packages(&simple_workspace);
-        assert_eq!(ws.packages.packages.len(), 1);
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .scan_all_possible_packages(&simple_workspace);
+        assert_eq!(WorkspaceManager::instance().packages.packages.len(), 1);
     }
     #[test]
     fn test_single_project_with_multiple_targets() {
@@ -234,10 +256,12 @@ mod test {
             .join("sample")
             .join("03_single_project_with_multiple_target")
             .join("Rift.toml"); //
-        let mut ws = Workspace::new(&simple_workspace);
-        ws.packages.scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .scan_all_possible_packages(&simple_workspace);
 
-        assert_eq!(ws.packages.packages.len(), 5);
+        assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
     }
     #[test]
     fn test_workspace_and_mutiple_projects() {
@@ -246,9 +270,11 @@ mod test {
             .join("sample")
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml"); //
-        let mut ws = Workspace::new(&simple_workspace);
-        ws.packages.scan_all_possible_packages(&simple_workspace);
-        assert_eq!(ws.packages.packages.len(), 5);
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .scan_all_possible_packages(&simple_workspace);
+        assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
     }
     #[test]
     fn test_project_folder_target() {
@@ -257,9 +283,11 @@ mod test {
             .join("sample")
             .join("05_project_folder_target")
             .join("Rift.toml"); //
-        let mut ws = Workspace::new(&simple_workspace);
-        ws.packages.scan_all_possible_packages(&simple_workspace);
-        assert_eq!(ws.packages.packages.len(), 11);
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .scan_all_possible_packages(&simple_workspace);
+        assert_eq!(WorkspaceManager::instance().packages.packages.len(), 11);
     }
     #[test]
     fn test_workspace_folder_project_target() {
@@ -268,8 +296,10 @@ mod test {
             .join("sample")
             .join("06_workspace_folder_project_target")
             .join("Rift.toml"); //
-        let mut ws = Workspace::new(&simple_workspace);
-        ws.packages.scan_all_possible_packages(&simple_workspace);
-        assert_eq!(ws.packages.packages.len(), 33); // ...是巧合吗？
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance()
+            .packages
+            .scan_all_possible_packages(&simple_workspace);
+        assert_eq!(WorkspaceManager::instance().packages.packages.len(), 33); // ...是巧合吗？
     }
 }

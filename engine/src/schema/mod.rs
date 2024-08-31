@@ -20,6 +20,7 @@ pub struct TomlManifest {
 #[serde(rename_all = "kebab-case")]
 #[serde_with::serde_as]
 pub struct TomlWorkspace {
+    pub name: Option<String>,
     /// 没啥说的
     /// 强制加，不能没有这个field，否则报错。
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
@@ -42,6 +43,7 @@ pub struct TomlWorkspace {
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct TomlFolder {
+    pub name: Option<String>,
     pub members: Vec<String>,
     pub exclude: Vec<String>,
 }

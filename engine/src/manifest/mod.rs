@@ -27,6 +27,7 @@ pub enum EitherManifest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceManifest {
+    pub name: Option<String>,
     /// 没啥说的
     pub members: Vec<String>,
 
@@ -45,6 +46,7 @@ pub struct WorkspaceManifest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderManifest {
+    pub name: Option<String>,
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
@@ -135,6 +137,7 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                     let workspace_manifest = manifest.workspace.unwrap();
                     return Ok(EitherManifest::Virtual(VirtualManifest::Workspace(
                         WorkspaceManifest {
+                            name: workspace_manifest.name,
                             members: workspace_manifest.members,
                             exclude: Some(workspace_manifest.exclude),
                             metadata: workspace_manifest.metadata,
@@ -155,6 +158,7 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                     let folder_manifest = manifest.folder.unwrap();
                     return Ok(EitherManifest::Virtual(VirtualManifest::Folder(
                         FolderManifest {
+                            name: folder_manifest.name,
                             members: Some(folder_manifest.members),
                             exclude: Some(folder_manifest.exclude),
                         },
