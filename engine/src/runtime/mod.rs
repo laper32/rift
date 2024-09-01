@@ -37,26 +37,36 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
         .iter()
         .for_each(|pkg| match pkg.1 {
             crate::workspace::MaybePackage::Package(m) => match m.manifest() {
-                crate::manifest::Manifest::Project(p) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Project,
-                    manifest_path: pkg.0.clone(),
-                    path: {
-                        if p.metadata.is_some() {
+                crate::manifest::Manifest::Project(p) => {
+                    ret.push(ManifestScript {
+                        kind: ManifestScriptKind::Project,
+                        manifest_path: pkg.0.clone(),
+                        path: if p.metadata.is_some() {
                             Some(PathBuf::from(p.metadata.clone().unwrap()))
                         } else {
                             None
-                        }
-                    },
-                }),
+                        },
+                    });
+                    if p.target.is_some() {
+                        let target = p.target.as_ref().unwrap();
+                        ret.push(ManifestScript {
+                            kind: ManifestScriptKind::Target,
+                            manifest_path: pkg.0.clone(),
+                            path: if target.metadata.is_some() {
+                                Some(PathBuf::from(target.metadata.clone().unwrap()))
+                            } else {
+                                None
+                            },
+                        })
+                    }
+                }
                 crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Target,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if t.metadata.is_some() {
-                            Some(PathBuf::from(t.metadata.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if t.metadata.is_some() {
+                        Some(PathBuf::from(t.metadata.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
             },
@@ -64,37 +74,26 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Workspace,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if w.metadata.is_some() {
-                            Some(PathBuf::from(w.metadata.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if w.metadata.is_some() {
+                        Some(PathBuf::from(w.metadata.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
-                crate::manifest::VirtualManifest::Folder(f) => ret.push(ManifestScript {
+                crate::manifest::VirtualManifest::Folder(_) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Folder,
                     manifest_path: pkg.0.clone(),
                     path: None,
-                    // path: {
-                    //     if f.dependencies.is_some() {
-                    //         Some(PathBuf::from(f.dependencies.clone().unwrap()))
-                    //     } else {
-                    //         None
-                    //     }
-                    // },
                 }),
             },
             crate::workspace::MaybePackage::Rift(rm) => match rm {
                 crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Plugin,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if p.metadata.is_some() {
-                            Some(PathBuf::from(p.metadata.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if p.metadata.is_some() {
+                        Some(PathBuf::from(p.metadata.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
             },
@@ -113,26 +112,36 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
         .iter()
         .for_each(|pkg| match pkg.1 {
             crate::workspace::MaybePackage::Package(m) => match m.manifest() {
-                crate::manifest::Manifest::Project(p) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Project,
-                    manifest_path: pkg.0.clone(),
-                    path: {
-                        if p.plugins.is_some() {
+                crate::manifest::Manifest::Project(p) => {
+                    ret.push(ManifestScript {
+                        kind: ManifestScriptKind::Project,
+                        manifest_path: pkg.0.clone(),
+                        path: if p.plugins.is_some() {
                             Some(PathBuf::from(p.plugins.clone().unwrap()))
                         } else {
                             None
-                        }
-                    },
-                }),
+                        },
+                    });
+                    if p.target.is_some() {
+                        let target = p.target.as_ref().unwrap();
+                        ret.push(ManifestScript {
+                            kind: ManifestScriptKind::Target,
+                            manifest_path: pkg.0.clone(),
+                            path: if target.plugins.is_some() {
+                                Some(PathBuf::from(target.plugins.clone().unwrap()))
+                            } else {
+                                None
+                            },
+                        })
+                    }
+                }
                 crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Target,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if t.plugins.is_some() {
-                            Some(PathBuf::from(t.plugins.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if t.plugins.is_some() {
+                        Some(PathBuf::from(t.plugins.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
             },
@@ -140,33 +149,20 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Workspace,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if w.plugins.is_some() {
-                            Some(PathBuf::from(w.plugins.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if w.plugins.is_some() {
+                        Some(PathBuf::from(w.plugins.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
-                crate::manifest::VirtualManifest::Folder(f) => ret.push(ManifestScript {
+                crate::manifest::VirtualManifest::Folder(_) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Folder,
                     manifest_path: pkg.0.clone(),
                     path: None,
-                    // path: {
-                    //     if f.dependencies.is_some() {
-                    //         Some(PathBuf::from(f.dependencies.clone().unwrap()))
-                    //     } else {
-                    //         None
-                    //     }
-                    // },
                 }),
             },
             crate::workspace::MaybePackage::Rift(rm) => match rm {
-                crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Plugin,
-                    manifest_path: pkg.0.clone(),
-                    path: None,
-                }),
+                crate::manifest::RiftManifest::Plugin(_) => { /* ... */ }
             },
         });
     Ok(ret)
@@ -182,26 +178,36 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
         .iter()
         .for_each(|pkg| match pkg.1 {
             crate::workspace::MaybePackage::Package(m) => match m.manifest() {
-                crate::manifest::Manifest::Project(p) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Project,
-                    manifest_path: pkg.0.clone(),
-                    path: {
-                        if p.dependencies.is_some() {
+                crate::manifest::Manifest::Project(p) => {
+                    ret.push(ManifestScript {
+                        kind: ManifestScriptKind::Project,
+                        manifest_path: pkg.0.clone(),
+                        path: if p.dependencies.is_some() {
                             Some(PathBuf::from(p.dependencies.clone().unwrap()))
                         } else {
                             None
-                        }
-                    },
-                }),
+                        },
+                    });
+                    if p.target.is_some() {
+                        let target = p.target.as_ref().unwrap();
+                        ret.push(ManifestScript {
+                            kind: ManifestScriptKind::Target,
+                            manifest_path: pkg.0.clone(),
+                            path: if target.dependencies.is_some() {
+                                Some(PathBuf::from(target.dependencies.clone().unwrap()))
+                            } else {
+                                None
+                            },
+                        })
+                    }
+                }
                 crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Target,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if t.dependencies.is_some() {
-                            Some(PathBuf::from(t.dependencies.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if t.dependencies.is_some() {
+                        Some(PathBuf::from(t.dependencies.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
             },
@@ -209,37 +215,26 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                 crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Workspace,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if w.dependencies.is_some() {
-                            Some(PathBuf::from(w.dependencies.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if w.dependencies.is_some() {
+                        Some(PathBuf::from(w.dependencies.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
                 crate::manifest::VirtualManifest::Folder(f) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Folder,
                     manifest_path: pkg.0.clone(),
                     path: None,
-                    // path: {
-                    //     if f.dependencies.is_some() {
-                    //         Some(PathBuf::from(f.dependencies.clone().unwrap()))
-                    //     } else {
-                    //         None
-                    //     }
-                    // },
                 }),
             },
             crate::workspace::MaybePackage::Rift(rm) => match rm {
                 crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Plugin,
                     manifest_path: pkg.0.clone(),
-                    path: {
-                        if p.dependencies.is_some() {
-                            Some(PathBuf::from(p.dependencies.clone().unwrap()))
-                        } else {
-                            None
-                        }
+                    path: if p.dependencies.is_some() {
+                        Some(PathBuf::from(p.dependencies.clone().unwrap()))
+                    } else {
+                        None
                     },
                 }),
             },
@@ -362,7 +357,7 @@ mod test {
         let our_project_root = util::get_cargo_project_root().unwrap();
         let simple_workspace = our_project_root
             .join("sample")
-            .join("01_simple_target")
+            .join("02_single_target_with_project")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();

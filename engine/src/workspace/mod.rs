@@ -6,6 +6,7 @@ use crate::{
         MANIFEST_IDENTIFIER,
     },
     package::Package,
+    util::{errors::RiftResult, fs::{as_posix::PathBufExt, canonicalize_path}},
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -94,6 +95,96 @@ impl WorkspaceManager {
 
     pub fn is_loaded(&self) -> bool {
         self.status == WorkspaceStatus::OK
+    }
+
+    /// 拿到包的路径
+    /// 这时候没有Rift.toml
+    pub fn get_package_path_from_name(&self, package_name: &str) -> RiftResult<&Path> {
+        match self.get_manifest_path_from_name(package_name) {
+            Ok(path) => Ok(path.parent().unwrap()),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// 拿到包的Manifest路径
+    /// 注意，这时候是有Rift.toml的
+    pub fn get_manifest_path_from_name(&self, package_name: &str) -> RiftResult<&Path> {
+        for pkg in &self.packages.packages {
+            match pkg.1 /*: MaybePackage */ {
+                MaybePackage::Package(p) => match p.manifest() {
+                    Manifest::Project(p) => {
+                        if p.name == package_name {
+                            return Ok(pkg.0.as_path());
+                        }
+                    }
+                    Manifest::Target(t) => {
+                        if t.name == package_name {
+                            
+                            return Ok(pkg.0.as_path());
+                        }
+                    }
+                },
+                MaybePackage::Virtual(v) => match v {
+                    VirtualManifest::Workspace(w) => {
+                        if w.name == package_name {
+                            return Ok(pkg.0.as_path());
+                        }
+                    }
+                    VirtualManifest::Folder(f) => {
+                        if f.name == package_name {
+                            return Ok(pkg.0.as_path());
+                        }
+                    }
+                },
+                MaybePackage::Rift(r) => match r {
+                    RiftManifest::Plugin(p) => {
+                        if p.name == package_name {
+                            return Ok(pkg.0.as_path());
+                        }
+                    }
+                },
+            }
+        }
+        anyhow::bail!("Package not found: {}", package_name);
+    }
+
+    pub fn is_package_exist(&self, package_name: &str) -> bool {
+        for pkg in &self.packages.packages {
+            match pkg.1 /*: MaybePackage */ {
+                MaybePackage::Package(p) => match p.manifest() {
+                    Manifest::Project(p) => {
+                        if p.name == package_name {
+                            return true;
+                        }
+                    }
+                    Manifest::Target(t) => {
+                        if t.name == package_name {
+                            return true;
+                        }
+                    }
+                },
+                MaybePackage::Virtual(v) => match v {
+                    VirtualManifest::Workspace(w) => {
+                        if w.name == package_name {
+                            return true;
+                        }
+                    }
+                    VirtualManifest::Folder(f) => {
+                        if f.name == package_name {
+                            return true;
+                        }
+                    }
+                },
+                MaybePackage::Rift(r) => match r {
+                    RiftManifest::Plugin(p) => {
+                        if p.name == package_name {
+                            return true;
+                        }
+                    }
+                },
+            }
+        }
+        false
     }
 }
 
@@ -208,8 +299,6 @@ impl Packages {
 
 #[cfg(test)]
 mod test {
-
-    use relative_path::PathExt;
 
     use crate::util;
 

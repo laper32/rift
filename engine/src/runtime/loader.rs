@@ -4,6 +4,8 @@ use deno_core::{
 };
 use url::{ParseError, Url};
 
+use crate::{package, util::fs::canonicalize_path, workspace::WorkspaceManager};
+
 /// From deno_core's self module resolving rule, but made some modifications.
 pub fn resolve_import(
     specifier: &str,
@@ -73,12 +75,46 @@ impl deno_core::ModuleLoader for TsModuleLoader {
     ) -> deno_core::ModuleLoadResponse {
         let module_specifier = module_specifier.clone();
         let module_load = Box::pin(async move {
-            println!("load: {:?}", module_specifier);
-            if module_specifier.scheme() == "rift" {
-                // rift: => 至少现在，我们将会以Workspace的package为单位搜包
-            }
+            let path = if module_specifier.scheme() == "rift" {
+                let path = module_specifier.path();
+                let dummy: Vec<&str> = path.split("/").collect();
+                let rift_package = dummy[0];
+                let remaining_path = dummy[1..].join("/");
+                if WorkspaceManager::instance().is_package_exist(rift_package) {
+                    let package_path = WorkspaceManager::instance()
+                        .get_package_path_from_name(rift_package)
+                        .unwrap();
+                    let package_path = canonicalize_path(package_path).unwrap();
+                    let package_path =
+                        canonicalize_path(package_path.join(remaining_path)).unwrap();
+                    Ok(package_path)
+                } else {
+                    anyhow::bail!("Package not found: {:?}", rift_package);
+                }
+            } else {
+                module_specifier.to_file_path()
+            };
 
-            let path = module_specifier.to_file_path();
+            // if module_specifier.scheme() == "rift" {
+            //     let path = module_specifier.path();
+            //     let dummy: Vec<&str> = path.split("/").collect();
+            //     let rift_package = dummy[0];
+            //     let remaining_path = dummy[1..].join("/");
+            //     println!(
+            //         "rift_package: {:?}, remaining_path: {remaining_path}",
+            //         rift_package
+            //     );
+            //     if WorkspaceManager::instance().is_package_exist(rift_package) {
+            //         let package_path = WorkspaceManager::instance()
+            //             .get_package_path_from_name(rift_package)
+            //             .unwrap();
+            //         let package_path = canonicalize_path(package_path).unwrap();
+            //         let package_path =
+            //             canonicalize_path(package_path.join(remaining_path)).unwrap();
+            //     }
+            // }
+
+            // let path = module_specifier.to_file_path();
             if path.is_err() {
                 return Err(
                     ModuleResolutionError::InvalidUrl(ParseError::RelativeUrlWithoutBase).into(),
