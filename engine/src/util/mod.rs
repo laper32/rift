@@ -1,4 +1,8 @@
 pub mod errors;
+pub mod fs;
+pub mod os;
+pub mod path;
+pub mod specifier;
 
 use std::{
     env,

@@ -1,10 +1,9 @@
+use std::{env, path::PathBuf};
+
 use deno_core::extension;
-use std::env;
-use std::path::PathBuf;
 
 fn main() {
-    extension!(runjs, js = ["src/runtime/builtin.js",]);
-
+    extension!(runjs, js = ["../runtime/dist/index.js",]);
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let snapshot_path = out_dir.join("RUNJS_SNAPSHOT.bin");
 

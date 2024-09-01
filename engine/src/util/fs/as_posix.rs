@@ -1,3 +1,5 @@
+//! Copied, and modified from https://docs.rs/path-slash/latest/path_slash/
+//!
 //! A library for converting file paths to and from "slash paths".
 //!
 //! A "slash path" is a path whose components are always separated by `/` and never `\`.

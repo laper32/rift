@@ -1,140 +1,257 @@
-#[allow(dead_code)]
-use deno_ast::{MediaType, ParseParams, SourceTextInfo};
-use deno_core::anyhow::Error;
-use deno_core::error::AnyError;
-use deno_core::{
-    extension, op2, FastString, ModuleLoadResponse, ModuleSourceCode, ModuleSpecifier, ModuleType,
-    ResolutionKind,
+use std::{env, path::PathBuf, rc::Rc};
+
+use ops::runtime;
+
+use crate::{
+    util::{errors::RiftResult, fs::as_posix::PathBufExt},
+    workspace::WorkspaceManager,
 };
-use std::env;
-use std::rc::Rc;
 
-#[op2(async)]
-#[string]
-async fn op_read_file(#[string] path: String) -> Result<String, AnyError> {
-    let contents = tokio::fs::read_to_string(path).await?;
-    Ok(contents)
+mod loader;
+mod ops;
+
+#[derive(Clone, Debug)]
+pub enum ManifestScriptKind {
+    Workspace,
+    Project,
+    Folder,
+    Target,
+    Plugin,
 }
 
-#[op2(async)]
-#[string]
-async fn op_write_file(#[string] path: String, #[string] contents: String) -> Result<(), AnyError> {
-    tokio::fs::write(path, contents).await?;
-    Ok(())
+/// 只用于记录形如`plugins`, `dependencies`这些字段的信息，方便我们为图排序做准备。
+#[derive(Clone, Debug)]
+pub struct ManifestScript {
+    pub kind: ManifestScriptKind,
+    pub path: Option<PathBuf>,
+    pub manifest_path: PathBuf,
 }
 
-#[op2(async)]
-#[string]
-async fn op_fetch(#[string] url: String) -> Result<String, AnyError> {
-    let body = reqwest::get(url).await?.text().await?;
-    Ok(body)
-}
-
-#[op2(async)]
-async fn op_set_timeout(delay: f64) -> Result<(), AnyError> {
-    tokio::time::sleep(std::time::Duration::from_millis(delay as u64)).await;
-    Ok(())
-}
-
-#[op2(fast)]
-fn op_remove_file(#[string] path: String) -> Result<(), AnyError> {
-    std::fs::remove_file(path)?;
-    Ok(())
-}
-
-struct TsModuleLoader;
-
-impl deno_core::ModuleLoader for TsModuleLoader {
-    fn resolve(
-        &self,
-        specifier: &str,
-        referrer: &str,
-        _: ResolutionKind,
-    ) -> Result<ModuleSpecifier, Error> {
-        deno_core::resolve_import(specifier, referrer).map_err(|e| e.into())
+pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
+    if !WorkspaceManager::instance().is_loaded() {
+        return Err(anyhow::format_err!("Workspace is not loaded"));
     }
-
-    fn load(
-        &self,
-        module_specifier: &ModuleSpecifier,
-        _maybe_referrer: Option<&reqwest::Url>,
-        _is_dyn_import: bool,
-        _requested_module_type: deno_core::RequestedModuleType,
-    ) -> ModuleLoadResponse {
-        let module_specifier = module_specifier.clone();
-        let module_load = Box::pin(async move {
-            let path = module_specifier.to_file_path().unwrap();
-
-            let media_type = MediaType::from_path(&path);
-
-            let (module_type, should_transpile) = match MediaType::from_path(&path) {
-                MediaType::JavaScript | MediaType::Mjs | MediaType::Cjs => {
-                    (deno_core::ModuleType::JavaScript, false)
+    let mut ret: Vec<ManifestScript> = Vec::new();
+    WorkspaceManager::instance()
+        .get_packages()
+        .iter()
+        .for_each(|pkg| match pkg.1 {
+            crate::workspace::MaybePackage::Package(m) => match m.manifest() {
+                crate::manifest::Manifest::Project(p) => {
+                    ret.push(ManifestScript {
+                        kind: ManifestScriptKind::Project,
+                        manifest_path: pkg.0.clone(),
+                        path: if p.metadata.is_some() {
+                            Some(PathBuf::from(p.metadata.clone().unwrap()))
+                        } else {
+                            None
+                        },
+                    });
+                    if p.target.is_some() {
+                        let target = p.target.as_ref().unwrap();
+                        ret.push(ManifestScript {
+                            kind: ManifestScriptKind::Target,
+                            manifest_path: pkg.0.clone(),
+                            path: if target.metadata.is_some() {
+                                Some(PathBuf::from(target.metadata.clone().unwrap()))
+                            } else {
+                                None
+                            },
+                        })
+                    }
                 }
-                MediaType::Jsx => (deno_core::ModuleType::JavaScript, true),
-                MediaType::TypeScript
-                | MediaType::Mts
-                | MediaType::Cts
-                | MediaType::Dts
-                | MediaType::Dmts
-                | MediaType::Dcts
-                | MediaType::Tsx => (deno_core::ModuleType::JavaScript, true),
-                MediaType::Json => (deno_core::ModuleType::Json, false),
-                _ => panic!("Unknown extension {:?}", path.extension()),
-            };
-
-            let code = std::fs::read_to_string(&path)?;
-            let code = if should_transpile {
-                let parsed = deno_ast::parse_module(ParseParams {
-                    specifier: module_specifier.clone(),
-                    text: SourceTextInfo::from_string(code).text(),
-                    media_type,
-                    capture_tokens: false,
-                    scope_analysis: false,
-                    maybe_syntax: None,
-                })?;
-                parsed
-                    .transpile(&Default::default(), &Default::default())?
-                    .into_source()
-                    .into_string()
-                    .unwrap()
-                    .text
-            } else {
-                code
-            };
-            let module = deno_core::ModuleSource::new(
-                module_type,
-                ModuleSourceCode::String(FastString::from(code)),
-                &module_specifier,
-                None,
-            );
-            Ok(module)
+                crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Target,
+                    manifest_path: pkg.0.clone(),
+                    path: if t.metadata.is_some() {
+                        Some(PathBuf::from(t.metadata.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+            },
+            crate::workspace::MaybePackage::Virtual(vm) => match vm {
+                crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Workspace,
+                    manifest_path: pkg.0.clone(),
+                    path: if w.metadata.is_some() {
+                        Some(PathBuf::from(w.metadata.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+                crate::manifest::VirtualManifest::Folder(_) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Folder,
+                    manifest_path: pkg.0.clone(),
+                    path: None,
+                }),
+            },
+            crate::workspace::MaybePackage::Rift(rm) => match rm {
+                crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Plugin,
+                    manifest_path: pkg.0.clone(),
+                    path: if p.metadata.is_some() {
+                        Some(PathBuf::from(p.metadata.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+            },
         });
-        ModuleLoadResponse::Async(module_load)
-    }
+    Ok(ret)
 }
+
+pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
+    if !WorkspaceManager::instance().is_loaded() {
+        return Err(anyhow::format_err!("Workspace is not loaded"));
+    }
+
+    let mut ret: Vec<ManifestScript> = Vec::new();
+    WorkspaceManager::instance()
+        .get_packages()
+        .iter()
+        .for_each(|pkg| match pkg.1 {
+            crate::workspace::MaybePackage::Package(m) => match m.manifest() {
+                crate::manifest::Manifest::Project(p) => {
+                    ret.push(ManifestScript {
+                        kind: ManifestScriptKind::Project,
+                        manifest_path: pkg.0.clone(),
+                        path: if p.plugins.is_some() {
+                            Some(PathBuf::from(p.plugins.clone().unwrap()))
+                        } else {
+                            None
+                        },
+                    });
+                    if p.target.is_some() {
+                        let target = p.target.as_ref().unwrap();
+                        ret.push(ManifestScript {
+                            kind: ManifestScriptKind::Target,
+                            manifest_path: pkg.0.clone(),
+                            path: if target.plugins.is_some() {
+                                Some(PathBuf::from(target.plugins.clone().unwrap()))
+                            } else {
+                                None
+                            },
+                        })
+                    }
+                }
+                crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Target,
+                    manifest_path: pkg.0.clone(),
+                    path: if t.plugins.is_some() {
+                        Some(PathBuf::from(t.plugins.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+            },
+            crate::workspace::MaybePackage::Virtual(vm) => match vm {
+                crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Workspace,
+                    manifest_path: pkg.0.clone(),
+                    path: if w.plugins.is_some() {
+                        Some(PathBuf::from(w.plugins.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+                crate::manifest::VirtualManifest::Folder(_) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Folder,
+                    manifest_path: pkg.0.clone(),
+                    path: None,
+                }),
+            },
+            crate::workspace::MaybePackage::Rift(rm) => match rm {
+                crate::manifest::RiftManifest::Plugin(_) => { /* ... */ }
+            },
+        });
+    Ok(ret)
+}
+
+pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript>> {
+    if !WorkspaceManager::instance().is_loaded() {
+        return Err(anyhow::format_err!("Workspace is not loaded"));
+    }
+    let mut ret: Vec<ManifestScript> = Vec::new();
+    WorkspaceManager::instance()
+        .get_packages()
+        .iter()
+        .for_each(|pkg| match pkg.1 {
+            crate::workspace::MaybePackage::Package(m) => match m.manifest() {
+                crate::manifest::Manifest::Project(p) => {
+                    ret.push(ManifestScript {
+                        kind: ManifestScriptKind::Project,
+                        manifest_path: pkg.0.clone(),
+                        path: if p.dependencies.is_some() {
+                            Some(PathBuf::from(p.dependencies.clone().unwrap()))
+                        } else {
+                            None
+                        },
+                    });
+                    if p.target.is_some() {
+                        let target = p.target.as_ref().unwrap();
+                        ret.push(ManifestScript {
+                            kind: ManifestScriptKind::Target,
+                            manifest_path: pkg.0.clone(),
+                            path: if target.dependencies.is_some() {
+                                Some(PathBuf::from(target.dependencies.clone().unwrap()))
+                            } else {
+                                None
+                            },
+                        })
+                    }
+                }
+                crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Target,
+                    manifest_path: pkg.0.clone(),
+                    path: if t.dependencies.is_some() {
+                        Some(PathBuf::from(t.dependencies.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+            },
+            crate::workspace::MaybePackage::Virtual(vm) => match vm {
+                crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Workspace,
+                    manifest_path: pkg.0.clone(),
+                    path: if w.dependencies.is_some() {
+                        Some(PathBuf::from(w.dependencies.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+                crate::manifest::VirtualManifest::Folder(f) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Folder,
+                    manifest_path: pkg.0.clone(),
+                    path: None,
+                }),
+            },
+            crate::workspace::MaybePackage::Rift(rm) => match rm {
+                crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
+                    kind: ManifestScriptKind::Plugin,
+                    manifest_path: pkg.0.clone(),
+                    path: if p.dependencies.is_some() {
+                        Some(PathBuf::from(p.dependencies.clone().unwrap()))
+                    } else {
+                        None
+                    },
+                }),
+            },
+        });
+    Ok(ret)
+}
+
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
 
-extension! {
-    runjs,
-    ops = [
-        op_read_file,
-        op_write_file,
-        op_remove_file,
-        op_fetch,
-        op_set_timeout,
-    ]
-}
-
-async fn run_js(file_path: &str) -> Result<(), AnyError> {
+async fn run_js(file_path: &str) -> RiftResult<()> {
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
-        module_loader: Some(Rc::new(TsModuleLoader)),
-        startup_snapshot: Some(RUNTIME_SNAPSHOT),
-        extensions: vec![runjs::init_ops()],
+        module_loader: Some(Rc::new(loader::TsModuleLoader)),
+        startup_snapshot: Some(&RUNTIME_SNAPSHOT),
+        extensions: vec![runtime::init_ops()],
         ..Default::default()
     });
-
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
     let result = js_runtime.mod_evaluate(mod_id);
     js_runtime.run_event_loop(Default::default()).await?;
@@ -146,10 +263,104 @@ pub fn init() {
         .enable_all()
         .build()
         .unwrap();
-    // 只有等全部解析加载完成我们才能得知要运行哪些文件哦
-    if let Err(error) = runtime.block_on(run_js(todo!())) {
-        eprintln!("error: {error}");
-    }
+    let plugin_scripts = collect_workspace_plugins_scripts().unwrap();
+    let dependencies_scripts = collect_workspace_dependencies_scripts().unwrap();
+    let metadata_scripts = collect_workspace_metadata_scripts().unwrap();
+
+    plugin_scripts.iter().for_each(|script| {
+        let binding = script.manifest_path.clone();
+        let current_manifest_path = binding.parent();
+        match current_manifest_path {
+            Some(current_manifest_path) => {
+                let script_path = script.path.clone();
+                match script_path {
+                    Some(script_path) => {
+                        let actual_script_path = PathBuf::from(current_manifest_path)
+                            .join(script_path)
+                            .as_posix()
+                            .unwrap()
+                            .to_string();
+                        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => return,
+                }
+            }
+            None => return,
+        }
+    });
+
+    dependencies_scripts.iter().for_each(|script| {
+        let binding = script.manifest_path.clone();
+        let current_manifest_path = binding.parent();
+        match current_manifest_path {
+            Some(current_manifest_path) => {
+                let script_path = script.path.clone();
+                match script_path {
+                    Some(script_path) => {
+                        let actual_script_path = PathBuf::from(current_manifest_path)
+                            .join(script_path)
+                            .as_posix()
+                            .unwrap()
+                            .to_string();
+                        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => return,
+                }
+            }
+            None => return,
+        }
+    });
+
+    metadata_scripts.iter().for_each(|script| {
+        let binding = script.manifest_path.clone();
+        let current_manifest_path = binding.parent();
+        match current_manifest_path {
+            Some(current_manifest_path) => {
+                let script_path = script.path.clone();
+                match script_path {
+                    Some(script_path) => {
+                        let actual_script_path = PathBuf::from(current_manifest_path)
+                            .join(script_path)
+                            .as_posix()
+                            .unwrap()
+                            .to_string();
+                        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => return,
+                }
+            }
+            None => return,
+        }
+    });
 }
 
 pub fn shutdown() {}
+
+#[cfg(test)]
+mod test {
+
+    use crate::{
+        util::{self},
+        workspace::WorkspaceManager,
+    };
+
+    use super::init;
+
+    #[test]
+    fn workspace_dependencies_scripts() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("02_single_target_with_project")
+            .join("Rift.toml");
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
+        init()
+    }
+}
