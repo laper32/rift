@@ -10,6 +10,7 @@ use workspace::WorkspaceManager;
 
 mod manifest;
 mod package;
+mod plugin;
 mod runtime;
 mod schema;
 pub mod task;

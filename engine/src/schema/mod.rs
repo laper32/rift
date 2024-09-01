@@ -84,6 +84,7 @@ pub struct TomlPlugin {
     pub description: Option<String>,
     pub metadata: Option<String>,
     pub dependencies: Option<String>,
+    pub entry: Option<String>,
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {

@@ -2,11 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     manifest::{
-        find_root_manifest, read_manifest, EitherManifest, Manifest, RiftManifest, VirtualManifest,
-        MANIFEST_IDENTIFIER,
+        find_root_manifest, read_manifest, EitherManifest, Manifest, PluginManifest, RiftManifest, VirtualManifest, MANIFEST_IDENTIFIER
     },
     package::Package,
-    util::{errors::RiftResult, fs::{as_posix::PathBufExt, canonicalize_path}},
+    util::errors::RiftResult,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -78,6 +77,7 @@ impl WorkspaceManager {
             .as_ref()
             .unwrap_or(&self.current_manifest)
     }
+
     pub fn load_packages(&mut self) {
         self.status = WorkspaceStatus::Init;
         self.packages
@@ -95,6 +95,21 @@ impl WorkspaceManager {
 
     pub fn is_loaded(&self) -> bool {
         self.status == WorkspaceStatus::OK
+    }
+
+    pub fn get_plugins(&self) -> HashMap<PathBuf, PluginManifest> {
+        let mut ret: HashMap<PathBuf, PluginManifest> = HashMap::new();
+        for pkg in &self.packages.packages {
+            match pkg.1 /*: MaybePackage */ {
+                MaybePackage::Rift(r) => match r {
+                    RiftManifest::Plugin(p) => {
+                        ret.insert(pkg.0.clone(), p.clone());
+                    }
+                },
+                _ => {}
+            }
+        }
+        ret
     }
 
     /// 拿到包的路径

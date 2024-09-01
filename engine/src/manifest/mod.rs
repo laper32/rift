@@ -91,6 +91,7 @@ pub struct PluginManifest {
     pub description: Option<String>,
     pub metadata: Option<String>,
     pub dependencies: Option<String>,
+    pub entry: Option<String>,
 }
 
 /// 针对项目本身的。
@@ -287,6 +288,7 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         description: plugin_manifest.description,
                         metadata: plugin_manifest.metadata,
                         dependencies: plugin_manifest.dependencies,
+                        entry: plugin_manifest.entry,
                     })));
                 } else {
                     anyhow::bail!("No any schema field found.")
