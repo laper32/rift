@@ -16,7 +16,7 @@ pub struct Packages {
     packages: HashMap<PathBuf, MaybePackage>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MaybePackage {
     Package(Package),
     Virtual(VirtualManifest),
@@ -83,9 +83,15 @@ impl WorkspaceManager {
             .scan_all_possible_packages(&self.current_manifest);
         self.status = WorkspaceStatus::OK;
     }
+
     pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
         &self.packages.packages
     }
+
+    pub fn is_init(&self) -> bool {
+        self.status == WorkspaceStatus::Init
+    }
+
     pub fn is_loaded(&self) -> bool {
         self.status == WorkspaceStatus::OK
     }
@@ -116,10 +122,10 @@ impl Packages {
                         }
                     },
                     EitherManifest::Virtual(vm) => {
-                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Virtual(vm));
+                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Virtual(vm))
                     }
                     EitherManifest::Rift(rm) => {
-                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Rift(rm));
+                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Rift(rm))
                     }
                 }
             }
@@ -188,7 +194,7 @@ impl Packages {
                         self.load(manifest_path);
                     }
                 },
-                EitherManifest::Rift(rm) => {
+                EitherManifest::Rift(_) => {
                     if self.packages.contains_key(manifest_path) {
                         return;
                     }
@@ -202,6 +208,8 @@ impl Packages {
 
 #[cfg(test)]
 mod test {
+
+    use relative_path::PathExt;
 
     use crate::util;
 
@@ -238,17 +246,11 @@ mod test {
             .join("01_simple_target")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .scan_all_possible_packages(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .packages
-            .iter()
-            .for_each(|(k, v)| {
-                println!("Key: {:?}", k);
-                println!("Value: {:?}", v);
-            });
+        WorkspaceManager::instance().load_packages();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
+        );
     }
     #[test]
     fn test_single_target_with_project() {
@@ -258,10 +260,12 @@ mod test {
             .join("02_single_target_with_project")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 1);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
+        );
     }
     #[test]
     fn test_single_project_with_multiple_targets() {
@@ -271,11 +275,13 @@ mod test {
             .join("03_single_project_with_multiple_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
 
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
+        );
     }
     #[test]
     fn test_workspace_and_mutiple_projects() {
@@ -285,11 +291,14 @@ mod test {
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
+        );
     }
+
     #[test]
     fn test_project_folder_target() {
         let our_project_root = util::get_cargo_project_root().unwrap();
@@ -298,11 +307,14 @@ mod test {
             .join("05_project_folder_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 11);
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
+        );
     }
+
     #[test]
     fn test_workspace_folder_project_target() {
         let our_project_root = util::get_cargo_project_root().unwrap();
@@ -311,9 +323,11 @@ mod test {
             .join("06_workspace_folder_project_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance()
-            .packages
-            .scan_all_possible_packages(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 33); // ...是巧合吗？
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
+        );
     }
 }

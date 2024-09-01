@@ -7,7 +7,7 @@ use std::rc::Rc;
 /// Information about a package that is available somewhere in the file system.
 ///
 /// A package is a `Rift.toml` file plus all the files that are part of it.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Package {
     inner: Rc<PackageInner>,
 }

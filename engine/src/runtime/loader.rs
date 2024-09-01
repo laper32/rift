@@ -1,6 +1,56 @@
 use deno_ast::{MediaType, ParseParams, SourceTextInfo};
-use deno_core::{FastString, ModuleLoadResponse, ModuleSourceCode};
-use url::Url;
+use deno_core::{
+    FastString, ModuleLoadResponse, ModuleResolutionError, ModuleSourceCode, ModuleSpecifier,
+};
+use url::{ParseError, Url};
+
+/// From deno_core's self module resolving rule, but made some modifications.
+pub fn resolve_import(
+    specifier: &str,
+    base: &str,
+) -> Result<ModuleSpecifier, ModuleResolutionError> {
+    let url = match Url::parse(specifier) {
+        // 1. Apply the URL parser to specifier.
+        //    If the result is not failure, return he result.
+        Ok(url) => url,
+
+        // 2. If specifier does not start with the character U+002F SOLIDUS (/),
+        //    the two-character sequence U+002E FULL STOP, U+002F SOLIDUS (./),
+        //    or the three-character sequence U+002E FULL STOP, U+002E FULL STOP,
+        //    U+002F SOLIDUS (../), return failure.
+        Err(ParseError::RelativeUrlWithoutBase)
+            if !(specifier.starts_with('/')
+                || specifier.starts_with("./")
+                || specifier.starts_with("../")) =>
+        {
+            let maybe_referrer = if base.is_empty() {
+                None
+            } else {
+                Some(base.to_string())
+            };
+            return Err(ModuleResolutionError::ImportPrefixMissing(
+                specifier.to_string(),
+                maybe_referrer,
+            ));
+        }
+
+        // 3. Return the result of applying the URL parser to specifier with base
+        //    URL as the base URL.
+        Err(ParseError::RelativeUrlWithoutBase) => {
+            let base = Url::parse(base).map_err(ModuleResolutionError::InvalidBaseUrl)?;
+            base.join(specifier)
+                .map_err(ModuleResolutionError::InvalidUrl)?
+        }
+
+        // If parsing the specifier as a URL failed for a different reason than
+        // it being relative, always return the original error. We don't want to
+        // return `ImportPrefixMissing` or `InvalidBaseUrl` if the real
+        // problem lies somewhere else.
+        Err(err) => return Err(ModuleResolutionError::InvalidUrl(err)),
+    };
+
+    Ok(url)
+}
 
 pub struct TsModuleLoader;
 
@@ -11,8 +61,7 @@ impl deno_core::ModuleLoader for TsModuleLoader {
         referrer: &str,
         _kind: deno_core::ResolutionKind,
     ) -> Result<deno_core::ModuleSpecifier, anyhow::Error> {
-        let url = Url::parse(specifier);
-        deno_core::resolve_import(specifier, referrer).map_err(|e| e.into())
+        resolve_import(specifier, referrer).map_err(|e| e.into())
     }
 
     fn load(
@@ -24,7 +73,18 @@ impl deno_core::ModuleLoader for TsModuleLoader {
     ) -> deno_core::ModuleLoadResponse {
         let module_specifier = module_specifier.clone();
         let module_load = Box::pin(async move {
-            let path = module_specifier.to_file_path().unwrap();
+            println!("load: {:?}", module_specifier);
+            if module_specifier.scheme() == "rift" {
+                // rift: => 至少现在，我们将会以Workspace的package为单位搜包
+            }
+
+            let path = module_specifier.to_file_path();
+            if path.is_err() {
+                return Err(
+                    ModuleResolutionError::InvalidUrl(ParseError::RelativeUrlWithoutBase).into(),
+                );
+            }
+            let path = path.unwrap();
 
             let media_type = MediaType::from_path(&path);
 

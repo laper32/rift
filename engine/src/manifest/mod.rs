@@ -3,9 +3,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use relative_path::PathExt;
 use serde::{Deserialize, Serialize};
 
-use crate::{schema, util::errors::RiftResult};
+use crate::{
+    schema,
+    util::{errors::RiftResult, fs::as_posix::PathExt as _},
+    workspace::WorkspaceManager,
+};
 
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 
@@ -27,7 +32,7 @@ pub enum EitherManifest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceManifest {
-    pub name: Option<String>,
+    pub name: String,
     /// 没啥说的
     pub members: Vec<String>,
 
@@ -46,7 +51,7 @@ pub struct WorkspaceManifest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FolderManifest {
-    pub name: Option<String>,
+    pub name: String,
     pub members: Option<Vec<String>>,
     pub exclude: Option<Vec<String>>,
 }
@@ -96,7 +101,7 @@ pub enum Manifest {
 }
 
 ///组织项目结构
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum VirtualManifest {
     Workspace(WorkspaceManifest),
     Folder(FolderManifest),
@@ -104,7 +109,7 @@ pub enum VirtualManifest {
 
 // 给rift用的
 // 如：插件，内核扩展（如果以后有需要的话）
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RiftManifest {
     Plugin(PluginManifest),
 }
@@ -120,6 +125,10 @@ pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
 
 /// 解析Manifest，根据路劲内的信息为其分类至正确的enum。
 pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
+    if !WorkspaceManager::instance().is_init() {
+        return Err(anyhow::anyhow!("WorkspaceManager is not initialized."));
+    }
+
     let manifest = (|| {
         let deserialized_toml = schema::load_manifest(&path.to_path_buf());
         match deserialized_toml {
@@ -135,9 +144,22 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         )
                     }
                     let workspace_manifest = manifest.workspace.unwrap();
+                    // 如果workspace manifest里面没有指定名字，那么我们就认为这个workspace的文件夹名字就是其名字。
+                    // 毕竟按理说这里就是root。。。所以这么写也没什么问题。
+                    let mut workspace_name = "";
+                    if workspace_manifest.name.is_none() {
+                        let manifest_location = path.parent().unwrap();
+                        let workspace_root = WorkspaceManager::instance().root();
+                        if workspace_root.eq(manifest_location) {
+                            workspace_name =
+                                manifest_location.file_name().unwrap().to_str().unwrap();
+                        }
+                    } else {
+                        workspace_name = workspace_manifest.name.as_ref().unwrap();
+                    }
                     return Ok(EitherManifest::Virtual(VirtualManifest::Workspace(
                         WorkspaceManifest {
-                            name: workspace_manifest.name,
+                            name: workspace_name.to_string(),
                             members: workspace_manifest.members,
                             exclude: Some(workspace_manifest.exclude),
                             metadata: workspace_manifest.metadata,
@@ -156,9 +178,36 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         )
                     }
                     let folder_manifest = manifest.folder.unwrap();
+                    let folder_name = if folder_manifest.name.is_none() {
+                        // 这里用了一个trick：
+                        // 我们folder一定是在根目录底下的，换句话说folder不可能作为根目录存在。
+                        // 所以我们先得到当前root，然后取parent，再取当前folder所在manifest的路径
+                        // 然后我们取这两个路径之间的相对路径，归一化成"/"以后换成"."就是我们的结果。
+                        // 很tricky但很有效。
+                        let manifest_location = path.parent().unwrap();
+                        let workspace_root = WorkspaceManager::instance().root();
+                        if workspace_root.eq(manifest_location) {
+                            anyhow::bail!("You can't use folder manifest in workspace root.")
+                        }
+                        let dummy = workspace_root.parent().unwrap().to_path_buf();
+                        let calculated_result = manifest_location.relative_to(dummy);
+                        if calculated_result.is_err() {
+                            anyhow::bail!("Cannot calculate folder name.")
+                        }
+
+                        let calculated_result = calculated_result.unwrap().into_string().to_owned();
+                        Path::new(&calculated_result)
+                            .as_posix()
+                            .unwrap()
+                            .to_string()
+                            .replace("/", ".")
+                    } else {
+                        folder_manifest.name.as_ref().unwrap().to_string()
+                    };
+
                     return Ok(EitherManifest::Virtual(VirtualManifest::Folder(
                         FolderManifest {
-                            name: folder_manifest.name,
+                            name: folder_name,
                             members: Some(folder_manifest.members),
                             exclude: Some(folder_manifest.exclude),
                         },
