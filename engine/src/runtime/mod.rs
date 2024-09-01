@@ -1,6 +1,5 @@
 use std::{env, path::PathBuf, rc::Rc};
 
-use deno_core::extension;
 use ops::runtime;
 
 use crate::{
@@ -250,9 +249,6 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
 }
 
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
-/*
-按照一般情况来说，应该是先确定我们要启用什么插件，然后看需要什么依赖，最后再加载对应的metadata？
-*/
 
 async fn run_js(file_path: &str) -> RiftResult<()> {
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
@@ -279,43 +275,73 @@ pub fn init() {
 
     plugin_scripts.iter().for_each(|script| {
         let binding = script.manifest_path.clone();
-        let current_manifest_path = binding.parent().unwrap();
-        let script_path = script.path.clone().unwrap();
-        let actual_script_path = PathBuf::from(current_manifest_path)
-            .join(script_path)
-            .as_posix()
-            .unwrap()
-            .to_string();
-        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
-            eprintln!("error: {error}");
+        let current_manifest_path = binding.parent();
+        match current_manifest_path {
+            Some(current_manifest_path) => {
+                let script_path = script.path.clone();
+                match script_path {
+                    Some(script_path) => {
+                        let actual_script_path = PathBuf::from(current_manifest_path)
+                            .join(script_path)
+                            .as_posix()
+                            .unwrap()
+                            .to_string();
+                        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => return,
+                }
+            }
+            None => return,
         }
     });
 
     dependencies_scripts.iter().for_each(|script| {
         let binding = script.manifest_path.clone();
-        let current_manifest_path = binding.parent().unwrap();
-        let script_path = script.path.clone().unwrap();
-        let actual_script_path = PathBuf::from(current_manifest_path)
-            .join(script_path)
-            .as_posix()
-            .unwrap()
-            .to_string();
-        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
-            eprintln!("error: {error}");
+        let current_manifest_path = binding.parent();
+        match current_manifest_path {
+            Some(current_manifest_path) => {
+                let script_path = script.path.clone();
+                match script_path {
+                    Some(script_path) => {
+                        let actual_script_path = PathBuf::from(current_manifest_path)
+                            .join(script_path)
+                            .as_posix()
+                            .unwrap()
+                            .to_string();
+                        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => return,
+                }
+            }
+            None => return,
         }
     });
 
     metadata_scripts.iter().for_each(|script| {
         let binding = script.manifest_path.clone();
-        let current_manifest_path = binding.parent().unwrap();
-        let script_path = script.path.clone().unwrap();
-        let actual_script_path = PathBuf::from(current_manifest_path)
-            .join(script_path)
-            .as_posix()
-            .unwrap()
-            .to_string();
-        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
-            eprintln!("error: {error}");
+        let current_manifest_path = binding.parent();
+        match current_manifest_path {
+            Some(current_manifest_path) => {
+                let script_path = script.path.clone();
+                match script_path {
+                    Some(script_path) => {
+                        let actual_script_path = PathBuf::from(current_manifest_path)
+                            .join(script_path)
+                            .as_posix()
+                            .unwrap()
+                            .to_string();
+                        if let Err(error) = runtime.block_on(run_js(&actual_script_path)) {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => return,
+                }
+            }
+            None => return,
         }
     });
 }
