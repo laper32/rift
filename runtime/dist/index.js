@@ -30,6 +30,31 @@ const runjs = {
     },
 };
 
+const rift = {
+    internal: {
+        getRiftExePath: () => {
+            return ops.get_rift_exe();
+        },
+        getHomePath: () => {
+            return ops.get_home_path();
+        },
+        getInstallationPath: () => {
+            return ops.get_installation_path();
+        },
+    },
+
+    getRiftExePath: () => {
+        return rift.internal.getRiftExePath();
+    },
+    getHomePath: () => {
+        return rift.internal.getHomePath();
+    },
+    getInstallationPath: () => {
+        return rift.internal.getInstallationPath();
+    },
+}
+
+
 globalThis.setTimeout = (callback, delay) => {
     ops.op_set_timeout(delay).then(callback);
 };

@@ -1,12 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Context;
+use deno_core::extension;
 use lazycell::LazyCell;
 use util::{
     errors::RiftResult,
     fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
 };
-use workspace::WorkspaceManager;
 
 mod manifest;
 mod package;
@@ -34,7 +34,7 @@ pub struct Rift {
     rift_exe: LazyCell<PathBuf>,
 }
 
-/// Returns the absolute path of where the given executable is located based
+/// Returns the canonicalized absolute path of where the given executable is located based
 /// on searching the `PATH` environment variable.
 ///
 /// Returns an error if it cannot be found.
@@ -52,13 +52,13 @@ pub fn resolve_executable(exec: &Path) -> RiftResult<PathBuf> {
         });
         for candidate in candidates {
             if candidate.is_file() {
-                return Ok(candidate);
+                return canonicalize_path(candidate);
             }
         }
 
         anyhow::bail!("no executable for `{}` found in PATH", exec.display())
     } else {
-        Ok(exec.into())
+        canonicalize_path(exec)
     }
 }
 
@@ -77,22 +77,28 @@ impl Rift {
 
     // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。
     // Linux的话，如果你是直接把它放在/usr/bin里面的话，这个就没用了
-    pub fn installation_path(&self) -> RiftResult<&Path> {
-        self.rift_exe().map(|exe| {
-            exe // ${InstallationPath}/bin/rift.exe
-                .parent() // ${InstallationPath}/bin
-                .unwrap()
-                .parent() // ${InstallationPath}
-                .unwrap()
-        })
+    pub fn installation_path(&self) -> RiftResult<PathBuf> {
+        let installation_path = self.rift_exe()?.parent().unwrap().parent().unwrap();
+        canonicalize_path(installation_path)
     }
 
     // 用户目录, aka: ~/.rift
     pub fn home_path(&self) -> RiftResult<PathBuf> {
-        Ok(homedir::my_home()
-            .unwrap()
-            .unwrap()
-            .join(NON_INSTALLATION_PATH_NAME))
+        match homedir::my_home() {
+            Ok(path) => match path {
+                Some(path) => {
+                    let path = path.join(NON_INSTALLATION_PATH_NAME);
+                    match canonicalize_path(path) {
+                        Ok(path) => Ok(path),
+                        Err(e) => Err(e).with_context(|| {
+                            format!("Failed to get home path. Rift installation may be corrupted.")
+                        }),
+                    }
+                }
+                None => anyhow::bail!("Homedir is None."),
+            },
+            Err(_) => anyhow::bail!("Trying to get home directory"),
+        }
     }
 
     pub fn rift_exe(&self) -> RiftResult<&Path> {
@@ -144,17 +150,67 @@ impl Rift {
     }
 }
 
+mod ops {
+    use std::string;
+
+    use deno_core::{error::AnyError, op2};
+
+    use crate::Rift;
+
+    #[op2]
+    #[string]
+    pub(super) fn get_rift_exe() -> Result<String, AnyError> {
+        match Rift::instance().rift_exe() {
+            Ok(path) => match path.to_str() {
+                Some(path) => Ok(path.to_string()),
+                None => anyhow::bail!("Failed to convert path to string."),
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    #[op2]
+    #[string]
+    pub(super) fn get_home_path() -> Result<String, AnyError> {
+        match Rift::instance().home_path() {
+            Ok(path) => match path.to_str() {
+                Some(path) => Ok(path.to_string()),
+                None => anyhow::bail!("Failed to convert path to string."),
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    #[op2]
+    #[string]
+    pub(super) fn get_installation_path() -> Result<String, AnyError> {
+        match Rift::instance().installation_path() {
+            Ok(path) => match path.to_str() {
+                Some(path) => Ok(path.to_string()),
+                None => anyhow::bail!("Failed to convert path to string."),
+            },
+            Err(e) => Err(e),
+        }
+    }
+}
+
+extension! {
+    rift,
+    ops = [
+        ops::get_rift_exe,
+        ops::get_home_path,
+        ops::get_installation_path
+    ]
+}
+
 #[cfg(test)]
 mod test {
 
     #[test]
-    fn test_rift_exe() {
+    fn test_necessary_paths() {
         println!("{:?}", super::Rift::instance().rift_exe().unwrap());
-        println!(
-            "{:?}",
-            url::Url::from_file_path(super::Rift::instance().rift_exe().unwrap())
-                .unwrap()
-                .path()
-        )
+        println!("{:?}", super::Rift::instance().installation_path().unwrap());
+        println!("{:?}", super::Rift::instance().home_path().unwrap());
+        // println!("{:?}", super::Rift::instance().home_path());
     }
 }

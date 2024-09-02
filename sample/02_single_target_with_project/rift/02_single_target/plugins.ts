@@ -8,3 +8,6 @@
 
 import * as single_project from "rift:02_single_project/rift/02_single_project/plugins.ts";
 single_project.call();
+console.log(rift.getRiftExePath());
+console.log(rift.getHomePath());
+console.log(rift.getInstallationPath());

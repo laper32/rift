@@ -3,6 +3,7 @@ use std::{env, path::PathBuf, rc::Rc};
 use ops::runtime;
 
 use crate::{
+    rift,
     util::{errors::RiftResult, fs::as_posix::PathBufExt},
     workspace::WorkspaceManager,
 };
@@ -249,13 +250,15 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
         module_loader: Some(Rc::new(loader::TsModuleLoader)),
         startup_snapshot: Some(&RUNTIME_SNAPSHOT),
-        extensions: vec![runtime::init_ops()],
+        extensions: vec![runtime::init_ops(), rift::init_ops()],
         ..Default::default()
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
     let result = js_runtime.mod_evaluate(mod_id);
     js_runtime.run_event_loop(Default::default()).await?;
-    result.await
+    let result = result.await;
+    println!("{:?}", result);
+    result
 }
 
 pub fn init() {
