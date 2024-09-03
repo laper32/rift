@@ -87,6 +87,15 @@ pub struct TomlPlugin {
     pub entry: Option<String>,
 }
 
+/// 给脚本用的
+/// 因为脚本是TS写的，所以我们需要一个TS的类型来描述这个结构
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TomlPluginManifestDeclarator {
+    pub name: String,
+    pub version: String,
+}
+
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
     let raw_content = std::fs::read_to_string(path)?;
     let content = toml::from_str::<TomlManifest>(raw_content.as_str());

@@ -1,11 +1,16 @@
-use std::{env, path::PathBuf, rc::Rc};
+use std::{
+    env,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 
 use ops::runtime;
 
 use crate::{
     rift,
     util::{errors::RiftResult, fs::as_posix::PathBufExt},
-    workspace::WorkspaceManager,
+    workspace::{self, WorkspaceManager},
+    Rift,
 };
 
 mod loader;
@@ -42,8 +47,8 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                     ret.push(ManifestScript {
                         kind: ManifestScriptKind::Project,
                         manifest_path: pkg.0.clone(),
-                        path: if p.metadata.is_some() {
-                            Some(PathBuf::from(p.metadata.clone().unwrap()))
+                        path: if p.metadata_script_path.is_some() {
+                            Some(PathBuf::from(p.metadata_script_path.clone().unwrap()))
                         } else {
                             None
                         },
@@ -53,8 +58,8 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                         ret.push(ManifestScript {
                             kind: ManifestScriptKind::Target,
                             manifest_path: pkg.0.clone(),
-                            path: if target.metadata.is_some() {
-                                Some(PathBuf::from(target.metadata.clone().unwrap()))
+                            path: if target.metadata_script_path.is_some() {
+                                Some(PathBuf::from(target.metadata_script_path.clone().unwrap()))
                             } else {
                                 None
                             },
@@ -64,8 +69,8 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Target,
                     manifest_path: pkg.0.clone(),
-                    path: if t.metadata.is_some() {
-                        Some(PathBuf::from(t.metadata.clone().unwrap()))
+                    path: if t.metadata_script_path.is_some() {
+                        Some(PathBuf::from(t.metadata_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -75,8 +80,8 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Workspace,
                     manifest_path: pkg.0.clone(),
-                    path: if w.metadata.is_some() {
-                        Some(PathBuf::from(w.metadata.clone().unwrap()))
+                    path: if w.metadata_script_path.is_some() {
+                        Some(PathBuf::from(w.metadata_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -91,8 +96,8 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Plugin,
                     manifest_path: pkg.0.clone(),
-                    path: if p.metadata.is_some() {
-                        Some(PathBuf::from(p.metadata.clone().unwrap()))
+                    path: if p.metadata_script_path.is_some() {
+                        Some(PathBuf::from(p.metadata_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -117,8 +122,8 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
                     ret.push(ManifestScript {
                         kind: ManifestScriptKind::Project,
                         manifest_path: pkg.0.clone(),
-                        path: if p.plugins.is_some() {
-                            Some(PathBuf::from(p.plugins.clone().unwrap()))
+                        path: if p.plugins_script_path.is_some() {
+                            Some(PathBuf::from(p.plugins_script_path.clone().unwrap()))
                         } else {
                             None
                         },
@@ -128,8 +133,8 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
                         ret.push(ManifestScript {
                             kind: ManifestScriptKind::Target,
                             manifest_path: pkg.0.clone(),
-                            path: if target.plugins.is_some() {
-                                Some(PathBuf::from(target.plugins.clone().unwrap()))
+                            path: if target.plugins_script_path.is_some() {
+                                Some(PathBuf::from(target.plugins_script_path.clone().unwrap()))
                             } else {
                                 None
                             },
@@ -139,8 +144,8 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Target,
                     manifest_path: pkg.0.clone(),
-                    path: if t.plugins.is_some() {
-                        Some(PathBuf::from(t.plugins.clone().unwrap()))
+                    path: if t.plugins_script_path.is_some() {
+                        Some(PathBuf::from(t.plugins_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -150,8 +155,8 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
                 crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Workspace,
                     manifest_path: pkg.0.clone(),
-                    path: if w.plugins.is_some() {
-                        Some(PathBuf::from(w.plugins.clone().unwrap()))
+                    path: if w.plugins_script_path.is_some() {
+                        Some(PathBuf::from(w.plugins_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -183,8 +188,8 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                     ret.push(ManifestScript {
                         kind: ManifestScriptKind::Project,
                         manifest_path: pkg.0.clone(),
-                        path: if p.dependencies.is_some() {
-                            Some(PathBuf::from(p.dependencies.clone().unwrap()))
+                        path: if p.dependencies_script_path.is_some() {
+                            Some(PathBuf::from(p.dependencies_script_path.clone().unwrap()))
                         } else {
                             None
                         },
@@ -194,8 +199,10 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                         ret.push(ManifestScript {
                             kind: ManifestScriptKind::Target,
                             manifest_path: pkg.0.clone(),
-                            path: if target.dependencies.is_some() {
-                                Some(PathBuf::from(target.dependencies.clone().unwrap()))
+                            path: if target.dependencies_script_path.is_some() {
+                                Some(PathBuf::from(
+                                    target.dependencies_script_path.clone().unwrap(),
+                                ))
                             } else {
                                 None
                             },
@@ -205,8 +212,8 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                 crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Target,
                     manifest_path: pkg.0.clone(),
-                    path: if t.dependencies.is_some() {
-                        Some(PathBuf::from(t.dependencies.clone().unwrap()))
+                    path: if t.dependencies_script_path.is_some() {
+                        Some(PathBuf::from(t.dependencies_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -216,8 +223,8 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                 crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Workspace,
                     manifest_path: pkg.0.clone(),
-                    path: if w.dependencies.is_some() {
-                        Some(PathBuf::from(w.dependencies.clone().unwrap()))
+                    path: if w.dependencies_script_path.is_some() {
+                        Some(PathBuf::from(w.dependencies_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -232,8 +239,8 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                 crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
                     kind: ManifestScriptKind::Plugin,
                     manifest_path: pkg.0.clone(),
-                    path: if p.dependencies.is_some() {
-                        Some(PathBuf::from(p.dependencies.clone().unwrap()))
+                    path: if p.dependencies_script_path.is_some() {
+                        Some(PathBuf::from(p.dependencies_script_path.clone().unwrap()))
                     } else {
                         None
                     },
@@ -250,14 +257,18 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
         module_loader: Some(Rc::new(loader::TsModuleLoader)),
         startup_snapshot: Some(&RUNTIME_SNAPSHOT),
-        extensions: vec![runtime::init_ops(), rift::init_ops()],
+        extensions: vec![runtime::init_ops(), rift::init_ops(), {
+            use workspace::ops::workspace;
+            workspace::init_ops()
+        }],
         ..Default::default()
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
+    Rift::instance().set_current_evaluation_script(PathBuf::from(file_path));
+    // 既然没有执行脚本的return value，那么我们就改变策略，重点让大家去调用提供的API.
     let result = js_runtime.mod_evaluate(mod_id);
     js_runtime.run_event_loop(Default::default()).await?;
     let result = result.await;
-    println!("{:?}", result);
     result
 }
 

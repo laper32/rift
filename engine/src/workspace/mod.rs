@@ -1,3 +1,5 @@
+pub mod ops;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
