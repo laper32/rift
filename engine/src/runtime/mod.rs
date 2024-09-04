@@ -32,7 +32,7 @@ pub struct ManifestScript {
 }
 
 pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
-    if !WorkspaceManager::instance().is_loaded() {
+    if !WorkspaceManager::instance().is_package_loaded() {
         return Err(anyhow::format_err!("Workspace is not loaded"));
     }
     let mut ret: Vec<ManifestScript> = Vec::new();
@@ -141,7 +141,7 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
 }
 
 pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
-    if !WorkspaceManager::instance().is_loaded() {
+    if !WorkspaceManager::instance().is_package_loaded() {
         return Err(anyhow::format_err!("Workspace is not loaded"));
     }
 
@@ -238,7 +238,7 @@ pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
 }
 
 pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript>> {
-    if !WorkspaceManager::instance().is_loaded() {
+    if !WorkspaceManager::instance().is_package_loaded() {
         return Err(anyhow::format_err!("Workspace is not loaded"));
     }
     let mut ret: Vec<ManifestScript> = Vec::new();
@@ -490,7 +490,6 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();
         init();
-        PluginManager::instance().print();
         // println!("{:?}", PluginManager::instance().print());
     }
 }

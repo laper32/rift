@@ -1,6 +1,7 @@
 pub mod ops;
 pub mod plugin_manager;
 
+use plugin_manager::PluginManager;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -37,11 +38,12 @@ impl MaybePackage {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum WorkspaceStatus {
     Unknown,
     Init,
-    OK,
+    PackageLoaded,
+    PluginLoaded,
 }
 
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
@@ -96,7 +98,34 @@ impl WorkspaceManager {
         self.status = WorkspaceStatus::Init;
         self.packages
             .scan_all_possible_packages(&self.current_manifest);
-        self.status = WorkspaceStatus::OK;
+        self.status = WorkspaceStatus::PackageLoaded;
+    }
+
+    pub fn load_plugins(&mut self) {
+        let pending_load_plugins = PluginManager::instance().enumerate_all_pending_load_plugins();
+        pending_load_plugins.iter().for_each(|manifest_path| {
+            self.packages.scan_all_possible_packages(manifest_path);
+        });
+        // let notified_plugins = PluginManager::instance().
+        // let all_possible_plugins = PluginManager::instance().enumerate_all_possible_plugins();
+        // let mut pending_load_plugins: Vec<PathBuf> = Vec::new();
+        // for plugin in all_possible_plugins {
+        //     if !pending_load_plugins.contains(&plugin) {
+        //         pending_load_plugins.push(plugin);
+        //     }
+        // }
+
+        self.status = WorkspaceStatus::PluginLoaded;
+        // let plugins = self.get_plugins();
+        // for (manifest_path, plugin) in plugins {
+        //     let plugin_path = manifest_path.parent().unwrap();
+        //     let plugin_manager = plugin_manager::PluginManager::instance();
+        //     plugin_manager.register_manifest_plugin(
+        //         plugin.name.clone(),
+        //         plugin.version.clone(),
+        //         plugin_path.to_path_buf(),
+        //     );
+        // }
     }
 
     pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
@@ -109,11 +138,11 @@ impl WorkspaceManager {
     }
 
     pub fn is_init(&self) -> bool {
-        self.status == WorkspaceStatus::Init
+        self.status >= WorkspaceStatus::Init
     }
 
-    pub fn is_loaded(&self) -> bool {
-        self.status == WorkspaceStatus::OK
+    pub fn is_package_loaded(&self) -> bool {
+        self.status == WorkspaceStatus::PackageLoaded
     }
 
     pub fn get_plugins(&self) -> HashMap<PathBuf, PluginManifest> {
