@@ -41,13 +41,13 @@ pub struct WorkspaceManifest {
     pub exclude: Option<Vec<String>>,
 
     /// 指向的是文件路径
-    pub metadata_script_path: Option<String>,
+    pub metadata: Option<String>,
 
     /// 指向的是文件路径
-    pub plugins_script_path: Option<String>,
+    pub plugins: Option<String>,
 
     /// 指向的是文件路径
-    pub dependencies_script_path: Option<String>,
+    pub dependencies: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,10 +63,9 @@ pub struct ProjectManifest {
     pub authors: Vec<String>,
     pub version: String,
     pub description: Option<String>,
-    pub plugins_script_path: Option<String>,
-    pub plugins: Vec<PluginManifestDeclarator>,
-    pub dependencies_script_path: Option<String>,
-    pub metadata_script_path: Option<String>,
+    pub plugins: Option<String>,
+    pub dependencies: Option<String>,
+    pub metadata: Option<String>,
     // 如果project和target同时存在，那么members和exclude将无法使用，就算里面写东西也会被忽略
     // 除此之外无限制。
     pub members: Option<Vec<String>>,
@@ -80,9 +79,9 @@ pub struct ProjectManifest {
 pub struct TargetManifest {
     pub name: String,
     pub build_type: String,
-    pub plugins_script_path: Option<String>,
-    pub dependencies_script_path: Option<String>,
-    pub metadata_script_path: Option<String>,
+    pub plugins: Option<String>,
+    pub dependencies: Option<String>,
+    pub metadata: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,8 +90,8 @@ pub struct PluginManifest {
     pub version: String,
     pub authors: Vec<String>,
     pub description: Option<String>,
-    pub metadata_script_path: Option<String>,
-    pub dependencies_script_path: Option<String>,
+    pub metadata: Option<String>,
+    pub dependencies: Option<String>,
     pub entry: Option<String>,
 }
 
@@ -109,6 +108,15 @@ pub enum Manifest {
     Target(TargetManifest),
 }
 
+impl Manifest {
+    pub fn name(&self) -> String {
+        match self {
+            Manifest::Project(p) => p.name.clone(),
+            Manifest::Target(t) => t.name.clone(),
+        }
+    }
+}
+
 ///组织项目结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum VirtualManifest {
@@ -116,11 +124,28 @@ pub enum VirtualManifest {
     Folder(FolderManifest),
 }
 
+impl VirtualManifest {
+    pub fn name(&self) -> String {
+        match self {
+            VirtualManifest::Workspace(w) => w.name.clone(),
+            VirtualManifest::Folder(f) => f.name.clone(),
+        }
+    }
+}
+
 // 给rift用的
 // 如：插件，内核扩展（如果以后有需要的话）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RiftManifest {
     Plugin(PluginManifest),
+}
+
+impl RiftManifest {
+    pub fn name(&self) -> String {
+        match self {
+            RiftManifest::Plugin(p) => p.name.clone(),
+        }
+    }
 }
 
 pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
@@ -171,9 +196,9 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                             name: workspace_name.to_string(),
                             members: workspace_manifest.members,
                             exclude: Some(workspace_manifest.exclude),
-                            metadata_script_path: workspace_manifest.metadata,
-                            plugins_script_path: workspace_manifest.plugins,
-                            dependencies_script_path: workspace_manifest.dependencies,
+                            metadata: workspace_manifest.metadata,
+                            plugins: workspace_manifest.plugins,
+                            dependencies: workspace_manifest.dependencies,
                         },
                     )));
                 } else if manifest.folder.is_some() {
@@ -235,10 +260,9 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         authors: project_manifest.authors,
                         version: project_manifest.version,
                         description: project_manifest.description,
-                        plugins_script_path: project_manifest.plugins,
-                        plugins: Vec::new(),
-                        dependencies_script_path: project_manifest.dependencies,
-                        metadata_script_path: project_manifest.metadata,
+                        plugins: project_manifest.plugins,
+                        dependencies: project_manifest.dependencies,
+                        metadata: project_manifest.metadata,
                         members: project_manifest.members,
                         exclude: project_manifest.exclude,
                         target: None,
@@ -252,9 +276,10 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                             result_manifest.target = Some(TargetManifest {
                                 name: target_manifest.name,
                                 build_type: target_manifest.build_type,
-                                plugins_script_path: target_manifest.plugins,
-                                dependencies_script_path: target_manifest.dependencies,
-                                metadata_script_path: target_manifest.metadata,
+                                // 单Project，单Target架构的情况下，只认Project。
+                                plugins: None,
+                                dependencies: None,
+                                metadata: None,
                             });
                         }
                     }
@@ -272,9 +297,9 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                     return Ok(EitherManifest::Real(Manifest::Target(TargetManifest {
                         name: target_manifest.name,
                         build_type: target_manifest.build_type,
-                        plugins_script_path: target_manifest.plugins,
-                        dependencies_script_path: target_manifest.dependencies,
-                        metadata_script_path: target_manifest.metadata,
+                        plugins: target_manifest.plugins,
+                        dependencies: target_manifest.dependencies,
+                        metadata: target_manifest.metadata,
                     })));
                 } else if manifest.plugin.is_some() {
                     let plugin_manifest = manifest.plugin.unwrap();
@@ -295,8 +320,8 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         version: plugin_manifest.version,
                         authors: plugin_manifest.authors,
                         description: plugin_manifest.description,
-                        metadata_script_path: plugin_manifest.metadata,
-                        dependencies_script_path: plugin_manifest.dependencies,
+                        metadata: plugin_manifest.metadata,
+                        dependencies: plugin_manifest.dependencies,
                         entry: plugin_manifest.entry,
                     })));
                 } else {

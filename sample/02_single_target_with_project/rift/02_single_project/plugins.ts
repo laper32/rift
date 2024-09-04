@@ -1,1 +1,0 @@
-rift.plugins.add(new rift.Plugin("docker").setVersion("0.1.0"))

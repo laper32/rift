@@ -1,7 +1,5 @@
 use deno_core::{error::AnyError, extension, op2};
 
-use crate::Rift;
-
 #[op2(async)]
 #[string]
 async fn op_read_file(#[string] path: String) -> Result<String, AnyError> {

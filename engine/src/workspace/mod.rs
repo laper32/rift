@@ -1,10 +1,12 @@
 pub mod ops;
+pub mod plugin_manager;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     manifest::{
-        find_root_manifest, read_manifest, EitherManifest, Manifest, PluginManifest, RiftManifest, VirtualManifest, MANIFEST_IDENTIFIER
+        find_root_manifest, read_manifest, EitherManifest, Manifest, PluginManifest, RiftManifest,
+        VirtualManifest, MANIFEST_IDENTIFIER,
     },
     package::Package,
     util::errors::RiftResult,
@@ -23,6 +25,16 @@ pub enum MaybePackage {
     Package(Package),
     Virtual(VirtualManifest),
     Rift(RiftManifest),
+}
+
+impl MaybePackage {
+    pub fn name(&self) -> String {
+        match self {
+            MaybePackage::Package(p) => p.name(),
+            MaybePackage::Virtual(v) => v.name(),
+            MaybePackage::Rift(r) => r.name(),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -90,6 +102,11 @@ impl WorkspaceManager {
     pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
         &self.packages.packages
     }
+    pub fn find_package(&self, manifest_path: &PathBuf) -> RiftResult<&MaybePackage> {
+        self.packages.packages.get(manifest_path).ok_or_else(|| {
+            anyhow::anyhow!("Package not found: {:?}", manifest_path.to_str().unwrap())
+        })
+    }
 
     pub fn is_init(&self) -> bool {
         self.status == WorkspaceStatus::Init
@@ -136,7 +153,6 @@ impl WorkspaceManager {
                     }
                     Manifest::Target(t) => {
                         if t.name == package_name {
-                            
                             return Ok(pkg.0.as_path());
                         }
                     }
