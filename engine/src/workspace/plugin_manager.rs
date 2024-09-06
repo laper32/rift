@@ -11,21 +11,20 @@ use crate::{
 use super::WorkspaceManager;
 
 #[derive(Debug)]
-pub struct ManifestPluginIdentifer {
+pub struct ManifestPluginIdentifier {
     pub name: String,
     pub version: String,
 }
 
-/// 这里管的是插件本身的运行。。。
-/// 为什么WorkspaceManager那边还要有一个Plugin？因为在运行插件之前，我们需要知道哪些插件需要加载，而知道哪些插件需要加载的过程，就是Workspace处理的
+/// 插件系统
 pub struct PluginManager {
-    plugins: HashMap<String, Vec<ManifestPluginIdentifer>>,
+    pending_load_plugins: HashMap<String, Vec<ManifestPluginIdentifier>>,
 }
 
 impl PluginManager {
     fn new() -> Self {
         Self {
-            plugins: HashMap::new(),
+            pending_load_plugins: HashMap::new(),
         }
     }
 
@@ -39,9 +38,9 @@ impl PluginManager {
     pub fn register_manifest_plugin(
         &mut self,
         pkg_name: String,
-        identifier: ManifestPluginIdentifer,
+        identifier: ManifestPluginIdentifier,
     ) {
-        self.plugins
+        self.pending_load_plugins
             .entry(pkg_name)
             .or_insert(Vec::new())
             .push(identifier);
@@ -173,18 +172,24 @@ impl PluginManager {
             }
         }
         possible_plugins.iter().for_each(|(path, manifest)| {
-            self.plugins.iter().for_each(|(_, identifiers)| {
-                for identifier in identifiers {
-                    if identifier.name.eq(&manifest.name)
-                        && identifier.version.eq(&manifest.version)
-                    {
-                        pending_load_plugins
-                            .push(PathBuf::from(path.as_posix().unwrap().to_string()));
+            self.pending_load_plugins
+                .iter()
+                .for_each(|(_, identifiers)| {
+                    for identifier in identifiers {
+                        if identifier.name.eq(&manifest.name)
+                            && identifier.version.eq(&manifest.version)
+                        {
+                            pending_load_plugins
+                                .push(PathBuf::from(path.as_posix().unwrap().to_string()));
+                        }
                     }
-                }
-            });
+                });
         });
         pending_load_plugins
+    }
+
+    pub fn collect_pending_load_plugins_dependency_manifests(&self) -> Vec<PathBuf> {
+        todo!()
     }
 }
 
@@ -202,9 +207,5 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();
         runtime::init();
-        println!(
-            "{:?}",
-            super::PluginManager::instance().enumerate_all_pending_load_plugins()
-        );
     }
 }

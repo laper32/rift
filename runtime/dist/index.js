@@ -59,6 +59,16 @@ var rift;
         }
         plugins.add = add;
     })(plugins = rift.plugins || (rift.plugins = {}));
+    let metadata;
+    (function (metadata) {
+        function add(key, value) {
+            var kv = {};
+            kv[`${key}`] = value;
+            ops.op_add_manifest_metadata(kv);
+            // ops.op_add_manifest_metadata({`${}`: value})
+        }
+        metadata.add = add;
+    })(metadata = rift.metadata || (rift.metadata = {}));
     function getRiftPath() {
         return ops.get_rift_exe();
     }

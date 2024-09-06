@@ -5,6 +5,7 @@ authors = [""]
 description = ""
 url = ""
 plugins = "rift/plugins.ts"
+metadata = "rift/metadata.ts"
 
 
 [target]

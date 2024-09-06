@@ -1,16 +1,16 @@
 pub mod ops;
 pub mod plugin_manager;
 
-use plugin_manager::PluginManager;
 use serde::{Deserialize, Serialize};
 
+use crate::util::fs::as_posix::PathExt;
 use crate::{
     manifest::{
-        find_root_manifest, read_manifest, EitherManifest, Manifest, PluginManifest, RiftManifest,
-        VirtualManifest, MANIFEST_IDENTIFIER,
+        find_root_manifest, read_manifest, EitherManifest, Manifest, VirtualManifest,
+        MANIFEST_IDENTIFIER,
     },
     package::Package,
-    util::errors::RiftResult,
+    util::{errors::RiftResult, fs::as_posix::PathBufExt},
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -25,7 +25,6 @@ pub struct Packages {
 pub enum MaybePackage {
     Package(Package),
     Virtual(VirtualManifest),
-    Rift(RiftManifest),
 }
 
 impl MaybePackage {
@@ -33,7 +32,6 @@ impl MaybePackage {
         match self {
             MaybePackage::Package(p) => p.name(),
             MaybePackage::Virtual(v) => v.name(),
-            MaybePackage::Rift(r) => r.name(),
         }
     }
 }
@@ -46,6 +44,16 @@ pub enum WorkspaceStatus {
     PluginLoaded,
 }
 
+pub type PackageMetadata = HashMap<String, serde_json::Value>;
+pub type PackageMetadataMap = HashMap<String, PackageMetadata>;
+
+struct PackageDependency {
+    name: String,
+    version: String,
+}
+
+pub type PackageDependencyMap = HashMap<String, Vec<PackageDependency>>;
+
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
 pub struct WorkspaceManager {
     // 我们需要知道是在哪里调用的rift
@@ -57,6 +65,8 @@ pub struct WorkspaceManager {
     // 有多少包
     packages: Packages,
     status: WorkspaceStatus,
+    pkg_metadata: PackageMetadataMap,
+    pkg_dependencies: PackageDependencyMap,
 }
 
 impl WorkspaceManager {
@@ -68,6 +78,8 @@ impl WorkspaceManager {
                 packages: HashMap::new(),
             },
             status: WorkspaceStatus::Unknown,
+            pkg_metadata: HashMap::new(),
+            pkg_dependencies: HashMap::new(),
         }
     }
 
@@ -101,31 +113,22 @@ impl WorkspaceManager {
         self.status = WorkspaceStatus::PackageLoaded;
     }
 
-    pub fn load_plugins(&mut self) {
-        let pending_load_plugins = PluginManager::instance().enumerate_all_pending_load_plugins();
-        pending_load_plugins.iter().for_each(|manifest_path| {
-            self.packages.scan_all_possible_packages(manifest_path);
-        });
-        // let notified_plugins = PluginManager::instance().
-        // let all_possible_plugins = PluginManager::instance().enumerate_all_possible_plugins();
-        // let mut pending_load_plugins: Vec<PathBuf> = Vec::new();
-        // for plugin in all_possible_plugins {
-        //     if !pending_load_plugins.contains(&plugin) {
-        //         pending_load_plugins.push(plugin);
-        //     }
-        // }
+    pub fn get_package_metadata(&self, pkg_name: String) -> HashMap<String, serde_json::Value> {
+        self.pkg_metadata
+            .get(&pkg_name)
+            .unwrap_or(&HashMap::new())
+            .clone()
+    }
+    pub fn get_all_metadata(&self) -> &PackageMetadataMap {
+        &self.pkg_metadata
+    }
 
-        self.status = WorkspaceStatus::PluginLoaded;
-        // let plugins = self.get_plugins();
-        // for (manifest_path, plugin) in plugins {
-        //     let plugin_path = manifest_path.parent().unwrap();
-        //     let plugin_manager = plugin_manager::PluginManager::instance();
-        //     plugin_manager.register_manifest_plugin(
-        //         plugin.name.clone(),
-        //         plugin.version.clone(),
-        //         plugin_path.to_path_buf(),
-        //     );
-        // }
+    pub fn set_package_metadata(
+        &mut self,
+        pkg_name: String,
+        metadata: HashMap<String, serde_json::Value>,
+    ) {
+        self.pkg_metadata.insert(pkg_name, metadata);
     }
 
     pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
@@ -143,21 +146,6 @@ impl WorkspaceManager {
 
     pub fn is_package_loaded(&self) -> bool {
         self.status == WorkspaceStatus::PackageLoaded
-    }
-
-    pub fn get_plugins(&self) -> HashMap<PathBuf, PluginManifest> {
-        let mut ret: HashMap<PathBuf, PluginManifest> = HashMap::new();
-        for pkg in &self.packages.packages {
-            match pkg.1 /*: MaybePackage */ {
-                MaybePackage::Rift(r) => match r {
-                    RiftManifest::Plugin(p) => {
-                        ret.insert(pkg.0.clone(), p.clone());
-                    }
-                },
-                _ => {}
-            }
-        }
-        ret
     }
 
     /// 拿到包的路径
@@ -198,16 +186,9 @@ impl WorkspaceManager {
                         }
                     }
                 },
-                MaybePackage::Rift(r) => match r {
-                    RiftManifest::Plugin(p) => {
-                        if p.name == package_name {
-                            return Ok(pkg.0.as_path());
-                        }
-                    }
-                },
             }
         }
-        anyhow::bail!("Package not found: {}", package_name);
+        anyhow::bail!("Package not found: {}", package_name)
     }
 
     pub fn is_package_exist(&self, package_name: &str) -> bool {
@@ -237,16 +218,124 @@ impl WorkspaceManager {
                         }
                     }
                 },
-                MaybePackage::Rift(r) => match r {
-                    RiftManifest::Plugin(p) => {
-                        if p.name == package_name {
-                            return true;
-                        }
-                    }
-                },
             }
         }
         false
+    }
+
+    pub fn collect_all_manifest_metadata_scripts(
+        &self,
+    ) -> Option<HashMap<String, Option<PathBuf>>> {
+        if !self.is_package_loaded() {
+            return None;
+        }
+        let mut result: HashMap<String, Option<PathBuf>> = HashMap::new();
+        self.get_packages().iter().for_each(|pkg| match pkg.1 {
+            MaybePackage::Package(p) => match p.manifest() {
+                Manifest::Project(p) => {
+                    let path = match &p.metadata {
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                        None => None,
+                    };
+                    result.insert(p.name.clone(), path);
+                }
+                Manifest::Target(t) => {
+                    let path = match &t.metadata {
+                        None => None,
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                    };
+                    result.insert(t.name.clone(), path);
+                }
+            },
+            MaybePackage::Virtual(v) => match v {
+                VirtualManifest::Workspace(w) => {
+                    let path = match &w.metadata {
+                        None => None,
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                    };
+                    result.insert(w.name.clone(), path);
+                }
+                VirtualManifest::Folder(_) => {}
+            },
+        });
+        Some(result)
+    }
+
+    pub fn collect_all_manifest_dependency_scripts(
+        &self,
+    ) -> Option<HashMap<String, Option<PathBuf>>> {
+        if !self.is_package_loaded() {
+            return None;
+        }
+        let mut result: HashMap<String, Option<PathBuf>> = HashMap::new();
+        self.get_packages().iter().for_each(|pkg| match pkg.1 {
+            MaybePackage::Package(p) => match p.manifest() {
+                Manifest::Project(p) => {
+                    let path = match &p.dependencies {
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                        None => None,
+                    };
+                    result.insert(p.name.clone(), path);
+                }
+                Manifest::Target(t) => {
+                    let path = match &t.dependencies {
+                        None => None,
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                    };
+                    result.insert(t.name.clone(), path);
+                }
+            },
+            MaybePackage::Virtual(v) => match v {
+                VirtualManifest::Workspace(w) => {
+                    let path = match &w.dependencies {
+                        None => None,
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                    };
+                    result.insert(w.name.clone(), path);
+                }
+                VirtualManifest::Folder(_) => {}
+            },
+        });
+        Some(result)
+    }
+
+    pub fn collect_all_manifest_plugin_scripts(&self) -> Option<HashMap<String, Option<PathBuf>>> {
+        if !self.is_package_loaded() {
+            return None;
+        }
+        let mut result: HashMap<String, Option<PathBuf>> = HashMap::new();
+        self.get_packages().iter().for_each(|pkg| match pkg.1 {
+            MaybePackage::Package(p) => match p.manifest() {
+                Manifest::Project(p) => {
+                    let path = match &p.plugins {
+                        // N.B. 单Project/Target的情况下，Target将会直接被Project覆盖
+                        // 所以我们不需要考虑这种情况下Target的脚本是否需要加载。
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                        None => None,
+                    };
+                    result.insert(p.name.clone(), path);
+                }
+                Manifest::Target(t) => {
+                    let path = match &t.plugins {
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                        None => None,
+                    };
+                    result.insert(t.name.clone(), path);
+                }
+            },
+            MaybePackage::Virtual(v) => match v {
+                VirtualManifest::Workspace(w) => {
+                    let path = match &w.plugins {
+                        Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                        None => None,
+                    };
+                    result.insert(w.name.clone(), path);
+                }
+                VirtualManifest::Folder(_) => {}
+            },
+        });
+
+        Some(result)
     }
 }
 
@@ -277,9 +366,7 @@ impl Packages {
                     EitherManifest::Virtual(vm) => {
                         self.insert_package(manifest_path.to_path_buf(), MaybePackage::Virtual(vm))
                     }
-                    EitherManifest::Rift(rm) => {
-                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Rift(rm))
-                    }
+                    _ => {}
                 }
             }
         }
@@ -357,6 +444,18 @@ impl Packages {
             Err(e) => eprintln!("Error: {:?}", e),
         }
     }
+}
+
+fn get_actual_script_path(manifest_path: PathBuf, script_path: &String) -> PathBuf {
+    PathBuf::from(
+        PathBuf::from(manifest_path)
+            .parent()
+            .unwrap()
+            .join(script_path)
+            .as_posix()
+            .unwrap()
+            .to_string(),
+    )
 }
 
 #[cfg(test)]

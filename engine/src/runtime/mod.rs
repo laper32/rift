@@ -1,6 +1,6 @@
-use std::{collections::HashMap, env, path::PathBuf, rc::Rc};
-
 use ops::runtime;
+use std::{collections::HashMap, env, path::PathBuf, rc::Rc};
+use tokio::runtime::Runtime;
 
 use crate::{
     rift,
@@ -118,121 +118,6 @@ pub fn collect_workspace_metadata_scripts() -> RiftResult<Vec<ManifestScript>> {
                     pkg_name: f.name.clone(),
                 }),
             },
-            crate::workspace::MaybePackage::Rift(rm) => match rm {
-                crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Plugin,
-                    path: if p.metadata.is_some() {
-                        let actual_script_path = PathBuf::from(pkg.0.clone())
-                            .parent()
-                            .unwrap()
-                            .join(p.metadata.clone().unwrap())
-                            .as_posix()
-                            .unwrap()
-                            .to_string();
-                        Some(PathBuf::from(actual_script_path))
-                    } else {
-                        None
-                    },
-                    pkg_name: p.name.clone(),
-                }),
-            },
-        });
-    Ok(ret)
-}
-
-pub fn collect_workspace_plugins_scripts() -> RiftResult<Vec<ManifestScript>> {
-    if !WorkspaceManager::instance().is_package_loaded() {
-        return Err(anyhow::format_err!("Workspace is not loaded"));
-    }
-
-    let mut ret: Vec<ManifestScript> = Vec::new();
-    WorkspaceManager::instance()
-        .get_packages()
-        .iter()
-        .for_each(|pkg| match pkg.1 {
-            crate::workspace::MaybePackage::Package(m) => match m.manifest() {
-                crate::manifest::Manifest::Project(p) => {
-                    ret.push(ManifestScript {
-                        kind: ManifestScriptKind::Project,
-                        path: if p.plugins.is_some() {
-                            let actual_script_path = PathBuf::from(pkg.0.clone())
-                                .parent()
-                                .unwrap()
-                                .join(p.plugins.clone().unwrap())
-                                .as_posix()
-                                .unwrap()
-                                .to_string();
-                            Some(PathBuf::from(actual_script_path))
-                        } else {
-                            None
-                        },
-                        pkg_name: p.name.clone(),
-                    });
-                    if p.target.is_some() {
-                        let target = p.target.as_ref().unwrap();
-                        ret.push(ManifestScript {
-                            kind: ManifestScriptKind::Target,
-                            path: if target.plugins.is_some() {
-                                let actual_script_path = PathBuf::from(pkg.0.clone())
-                                    .parent()
-                                    .unwrap()
-                                    .join(target.plugins.clone().unwrap())
-                                    .as_posix()
-                                    .unwrap()
-                                    .to_string();
-                                Some(PathBuf::from(actual_script_path))
-                            } else {
-                                None
-                            },
-                            pkg_name: target.name.clone(),
-                        })
-                    }
-                }
-                crate::manifest::Manifest::Target(t) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Target,
-                    path: if t.plugins.is_some() {
-                        let actual_script_path = PathBuf::from(pkg.0.clone())
-                            .parent()
-                            .unwrap()
-                            .join(t.plugins.clone().unwrap())
-                            .as_posix()
-                            .unwrap()
-                            .to_string();
-
-                        Some(PathBuf::from(actual_script_path))
-                    } else {
-                        None
-                    },
-                    pkg_name: t.name.clone(),
-                }),
-            },
-            crate::workspace::MaybePackage::Virtual(vm) => match vm {
-                crate::manifest::VirtualManifest::Workspace(w) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Workspace,
-                    path: if w.plugins.is_some() {
-                        let actual_script_path = PathBuf::from(pkg.0.clone())
-                            .parent()
-                            .unwrap()
-                            .join(w.plugins.clone().unwrap())
-                            .as_posix()
-                            .unwrap()
-                            .to_string();
-
-                        Some(PathBuf::from(actual_script_path))
-                    } else {
-                        None
-                    },
-                    pkg_name: w.name.clone(),
-                }),
-                crate::manifest::VirtualManifest::Folder(f) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Folder,
-                    path: None,
-                    pkg_name: f.name.clone(),
-                }),
-            },
-            crate::workspace::MaybePackage::Rift(rm) => match rm {
-                crate::manifest::RiftManifest::Plugin(_) => { /* ... */ }
-            },
         });
     Ok(ret)
 }
@@ -324,77 +209,42 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
                     pkg_name: f.name.clone(),
                 }),
             },
-            crate::workspace::MaybePackage::Rift(rm) => match rm {
-                crate::manifest::RiftManifest::Plugin(p) => ret.push(ManifestScript {
-                    kind: ManifestScriptKind::Plugin,
-                    path: if p.dependencies.is_some() {
-                        let actual_script_path = PathBuf::from(pkg.0.clone())
-                            .parent()
-                            .unwrap()
-                            .join(p.dependencies.clone().unwrap())
-                            .as_posix()
-                            .unwrap()
-                            .to_string();
-                        Some(PathBuf::from(actual_script_path))
-                    } else {
-                        None
-                    },
-                    pkg_name: p.name.clone(),
-                }),
-            },
         });
     Ok(ret)
 }
 
-pub fn collect_all_workspace_scripts() -> Vec<ManifestScript> {
-    let mut ret: Vec<ManifestScript> = Vec::new();
-    match collect_workspace_dependencies_scripts() {
-        Ok(dependencies_scripts) => ret.extend(dependencies_scripts),
-        Err(_) => {}
-    }
-    match collect_workspace_metadata_scripts() {
-        Ok(metadata_scripts) => ret.extend(metadata_scripts),
-        Err(_) => {}
-    }
-    match collect_workspace_plugins_scripts() {
-        Ok(plugins_scripts) => ret.extend(plugins_scripts),
-        Err(_) => {}
-    }
-    ret
-}
+// fn check_workspace_execution_scripts_unique() -> RiftResult<()> {
+//     let execution_scripts = collect_all_workspace_scripts();
 
-fn check_workspace_execution_scripts_unique() -> RiftResult<()> {
-    let execution_scripts = collect_all_workspace_scripts();
-
-    // make sure all script unique
-    // otherwise false
-    let mut occurence_map: HashMap<PathBuf, u32> = HashMap::new();
-    for script in execution_scripts {
-        if script.path.is_some() {
-            occurence_map
-                .entry(script.path.clone().unwrap())
-                .and_modify(|e| *e += 1)
-                .or_insert(1);
-        }
-    }
-    if occurence_map.values().any(|&count| count > 1) {
-        // get count > 1's keys
-        let mut keys: Vec<PathBuf> = Vec::new();
-        for (key, value) in occurence_map.iter() {
-            if *value > 1 {
-                keys.push(key.clone());
-            }
-        }
-        let fmt_message = keys
-            .iter()
-            .map(|key| key.to_string_lossy())
-            .collect::<Vec<_>>()
-            .join("\n");
-        anyhow::bail!("Execution scripts are not unique, these are: \n{fmt_message}");
-    } else {
-        Ok(())
-    }
-}
+//     // make sure all script unique
+//     // otherwise false
+//     let mut occurence_map: HashMap<PathBuf, u32> = HashMap::new();
+//     for script in execution_scripts {
+//         if script.path.is_some() {
+//             occurence_map
+//                 .entry(script.path.clone().unwrap())
+//                 .and_modify(|e| *e += 1)
+//                 .or_insert(1);
+//         }
+//     }
+//     if occurence_map.values().any(|&count| count > 1) {
+//         // get count > 1's keys
+//         let mut keys: Vec<PathBuf> = Vec::new();
+//         for (key, value) in occurence_map.iter() {
+//             if *value > 1 {
+//                 keys.push(key.clone());
+//             }
+//         }
+//         let fmt_message = keys
+//             .iter()
+//             .map(|key| key.to_string_lossy())
+//             .collect::<Vec<_>>()
+//             .join("\n");
+//         anyhow::bail!("Execution scripts are not unique, these are: \n{fmt_message}");
+//     } else {
+//         Ok(())
+//     }
+// }
 
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
 
@@ -418,54 +268,71 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     result
 }
 
-pub fn init() {
-    match check_workspace_execution_scripts_unique() {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("error: {e}");
-            return;
+fn execute_workspace_scripts(runtime: &Runtime) {
+    let plugin_scripts = WorkspaceManager::instance().collect_all_manifest_plugin_scripts();
+    match plugin_scripts {
+        Some(scripts) => {
+            scripts
+                .iter()
+                .for_each(|(_, script_path)| match script_path {
+                    Some(script_path) => {
+                        if let Err(error) = runtime.block_on(run_js(&script_path.to_str().unwrap()))
+                        {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => {}
+                });
         }
+        None => {}
     }
 
+    let dependency_scripts = WorkspaceManager::instance().collect_all_manifest_dependency_scripts();
+    match dependency_scripts {
+        Some(scripts) => {
+            scripts
+                .iter()
+                .for_each(|(_, script_path)| match script_path {
+                    Some(script_path) => {
+                        if let Err(error) = runtime.block_on(run_js(&script_path.to_str().unwrap()))
+                        {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => {}
+                });
+        }
+        None => {}
+    }
+
+    let metadata_scripts = WorkspaceManager::instance().collect_all_manifest_metadata_scripts();
+    match metadata_scripts {
+        Some(scripts) => {
+            scripts
+                .iter()
+                .for_each(|(_, script_path)| match script_path {
+                    Some(script_path) => {
+                        if let Err(error) = runtime.block_on(run_js(&script_path.to_str().unwrap()))
+                        {
+                            eprintln!("error: {error}");
+                        }
+                    }
+                    None => {}
+                });
+        }
+        None => {}
+    }
+}
+
+fn execute_plugin_scripts(runtime: &Runtime) {}
+
+pub fn init() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    let plugin_scripts = collect_workspace_plugins_scripts().unwrap();
-    let dependencies_scripts = collect_workspace_dependencies_scripts().unwrap();
-    let metadata_scripts = collect_workspace_metadata_scripts().unwrap();
-
-    plugin_scripts
-        .iter()
-        .for_each(|script| match script.path.clone() {
-            Some(path) => {
-                if let Err(error) = runtime.block_on(run_js(&path.to_str().unwrap())) {
-                    eprintln!("error: {error}");
-                }
-            }
-            None => return,
-        });
-    dependencies_scripts
-        .iter()
-        .for_each(|script| match script.path.clone() {
-            Some(path) => {
-                if let Err(error) = runtime.block_on(run_js(&path.to_str().unwrap())) {
-                    eprintln!("error: {error}");
-                }
-            }
-            None => return,
-        });
-
-    metadata_scripts
-        .iter()
-        .for_each(|script| match script.path.clone() {
-            Some(path) => {
-                if let Err(error) = runtime.block_on(run_js(&path.to_str().unwrap())) {
-                    eprintln!("error: {error}");
-                }
-            }
-            None => return,
-        });
+    execute_workspace_scripts(&runtime);
+    execute_plugin_scripts(&runtime);
 }
 
 pub fn shutdown() {}
@@ -475,7 +342,7 @@ mod test {
 
     use crate::{
         util::{self},
-        workspace::{plugin_manager::PluginManager, WorkspaceManager},
+        workspace::WorkspaceManager,
     };
 
     use super::init;
@@ -490,6 +357,8 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();
         init();
+        println!("{:?}", WorkspaceManager::instance().get_all_metadata());
+
         // println!("{:?}", PluginManager::instance().print());
     }
 }
