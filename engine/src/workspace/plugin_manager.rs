@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use walkdir::WalkDir;
 
 use crate::{
-    manifest::{self, read_manifest, PluginManifest},
+    manifest::{read_manifest, PluginManifest},
     util::fs::{as_posix::PathBufExt, NON_INSTALLATION_PATH_NAME},
     Rift,
 };
