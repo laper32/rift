@@ -2,6 +2,7 @@ use deno_core::{error::AnyError, extension, op2};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crate::schema::TomlDependencyManifestDeclarator;
 use crate::workspace::plugin_manager::{ManifestPluginIdentifier, PluginManager};
 use crate::{schema::TomlPluginManifestDeclarator, workspace::WorkspaceManager, Rift};
 
@@ -82,8 +83,11 @@ fn op_add_manifest_metadata(#[serde] metadata: ScriptMetadataMap) -> Result<(), 
     Ok(())
 }
 
-#[op2(fast)]
-fn op_add_manifest_dependencies() -> Result<(), AnyError> {
+#[op2]
+fn op_add_manifest_dependencies(
+    #[serde] dependency: TomlDependencyManifestDeclarator,
+) -> Result<(), AnyError> {
+    println!("dependency: {:?}", dependency);
     // 这一步是为了知道现在我们在跑哪个脚本文件。
     let current_evaluation_script = Rift::instance().get_current_evaluation_script();
     // 然后，我们枚举所有的Metadata脚本, a.k.a: `metadata`这个字段。

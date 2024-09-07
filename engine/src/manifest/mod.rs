@@ -101,6 +101,14 @@ pub struct PluginManifestDeclarator {
     pub version: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DependencyManifestDeclarator {
+    pub name: String,
+
+    #[serde(flatten)]
+    pub data: HashMap<String, serde_json::Value>,
+}
+
 /// 针对项目本身的。
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Manifest {
@@ -366,6 +374,8 @@ pub fn print_manifest_structure(path: &Path, prefix: String, is_last: bool) {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use super::print_manifest_structure;
     use crate::{
         manifest::{find_root_manifest, read_manifest},
@@ -394,5 +404,30 @@ mod test {
 
         println!("Manifest Structure:");
         print_manifest_structure(&project_root, String::new(), true);
+    }
+
+    #[test]
+    fn test_capture_not_predifined_fields() {
+        #[derive(std::fmt::Debug, serde::Deserialize)]
+        struct Example {
+            a: String,
+            b: String,
+            c: i32,
+            #[serde(flatten)]
+            others: HashMap<String, serde_json::Value>,
+        }
+        let data = r#"{
+        "a": "hello",
+        "b": "world",
+        "c": 1,
+        "d": "ddd",
+        "git": "git://github.com/xxx/xxx.git",
+        "nested": {
+            "key": "Value"
+            }
+        }"#;
+        let descrialzed = serde_json::from_str::<Example>(data);
+        println!("{:?}", descrialzed);
+        // let deserialized: serde_json::Value = serde_json::from_str(data).unwrap();
     }
 }

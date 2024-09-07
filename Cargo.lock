@@ -745,6 +745,7 @@ dependencies = [
  "homedir",
  "junction",
  "lazycell",
+ "npm_rs",
  "once_cell",
  "rand",
  "relative-path",
@@ -1484,6 +1485,15 @@ checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
 dependencies = [
  "memchr",
  "minimal-lexical",
+]
+
+[[package]]
+name = "npm_rs"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1454347ca3c562570eff8af4a09445783dc4b7ccd00853390a7f88f76037b55"
+dependencies = [
+ "cfg-if",
 ]
 
 [[package]]

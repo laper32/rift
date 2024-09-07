@@ -4,7 +4,6 @@
   "type": "module",
   "description": "",
   "scripts": {
-    "check": "tsc --noEmit",
     "build": "node --loader=ts-node/esm build.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

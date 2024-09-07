@@ -87,13 +87,28 @@ pub struct TomlPlugin {
     pub entry: Option<String>,
 }
 
-/// 给脚本用的
-/// 因为脚本是TS写的，所以我们需要一个TS的类型来描述这个结构
+/// 给脚本用的<br/>
+/// 因为脚本是TS写的，所以我们需要一个TS的类型来描述这个结构<br/>
+/// 然后这里就有一个问题：如果这个插件/依赖的来源并不是从包管理器那来的，<br/>
+/// 比如说从特定的路径来，又或者是从git那边来<br/>
+/// 这时候这么写会被直接干碎
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TomlPluginManifestDeclarator {
     pub name: String,
     pub version: String,
+}
+
+/// 给脚本用的<br/>
+/// 因为脚本是TS写的，所以我们需要一个TS的类型来描述这个结构<br/>
+/// 然后这里就有一个问题：如果这个插件/依赖的来源并不是从包管理器那来的，<br/>
+/// 比如说从特定的路径来，又或者是从git那边来<br/>
+/// 这时候这么写会被直接干碎
+#[derive(Debug, Default, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TomlDependencyManifestDeclarator {
+    pub name: String,
+    pub version: Option<String>, // 总得考虑这玩意是个本地包吧？
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {

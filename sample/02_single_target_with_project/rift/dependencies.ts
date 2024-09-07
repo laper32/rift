@@ -1,0 +1,1 @@
+rift.dependencies.add(new CppDependency("boost").setVersion("1.72.0"));

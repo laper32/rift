@@ -1,8 +1,27 @@
 use std::{env, path::PathBuf};
 
 use deno_core::extension;
+use npm_rs::{NodeEnv, NpmEnv};
+
+fn compile_runtime() {
+    NpmEnv::default()
+        .with_node_env(&NodeEnv::from_cargo_profile().unwrap_or_default())
+        .set_path(
+            PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+                .parent()
+                .unwrap()
+                .join("runtime"),
+        )
+        // .with_env("FOO", "bar")
+        .init_env()
+        .install(None)
+        .run("build")
+        .exec()
+        .unwrap();
+}
 
 fn main() {
+    compile_runtime();
     extension!(runjs, js = ["../runtime/dist/index.js",]);
     let out_dir = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let snapshot_path = out_dir.join("RUNJS_SNAPSHOT.bin");
