@@ -3,6 +3,7 @@ pub mod plugin_manager;
 
 use serde::{Deserialize, Serialize};
 
+use crate::manifest::DependencyManifestDeclarator;
 use crate::util::fs::as_posix::PathExt;
 use crate::{
     manifest::{
@@ -47,12 +48,7 @@ pub enum WorkspaceStatus {
 pub type PackageMetadata = HashMap<String, serde_json::Value>;
 pub type PackageMetadataMap = HashMap<String, PackageMetadata>;
 
-struct PackageDependency {
-    name: String,
-    version: String,
-}
-
-pub type PackageDependencyMap = HashMap<String, Vec<PackageDependency>>;
+pub type PackageDependencyMap = HashMap<String, Vec<DependencyManifestDeclarator>>;
 
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
 pub struct WorkspaceManager {
@@ -336,6 +332,27 @@ impl WorkspaceManager {
         });
 
         Some(result)
+    }
+
+    /// 为包添加依赖。
+    /// 注意：这时候并不会做任何的排序，只是添加依赖。
+    /// 涉及到包的排序将会推迟到全部的包（插件，Workspace等）全部加载完成以后进行。
+    pub fn add_package_dependency(
+        &mut self,
+        pkg_name: String,
+        dependency: DependencyManifestDeclarator,
+    ) {
+        match self.pkg_dependencies.get_mut(&pkg_name) {
+            Some(deps) => {
+                deps.push(dependency);
+            }
+            None => {
+                self.pkg_dependencies.insert(pkg_name, vec![dependency]);
+            }
+        }
+    }
+    pub fn get_all_package_dependencies(&self) -> &PackageDependencyMap {
+        &self.pkg_dependencies
     }
 }
 

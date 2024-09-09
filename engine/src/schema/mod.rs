@@ -122,7 +122,7 @@ pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {
 #[cfg(test)]
 mod test {
     // use crate::schema::load_manifest;
-    use std::path::PathBuf;
+    use std::{collections::HashMap, path::PathBuf};
 
     use super::TomlManifest;
 
@@ -152,5 +152,30 @@ mod test {
 
         // let manifest = load_manifest(&identifier_path);
         // println!("{:?}", manifest);
+    }
+
+    #[test]
+    fn test_capture_not_predifined_fields() {
+        #[derive(std::fmt::Debug, serde::Deserialize)]
+        struct Example {
+            a: String,
+            b: String,
+            c: i32,
+            #[serde(flatten)]
+            others: HashMap<String, serde_json::Value>,
+        }
+        let data = r#"{
+        "a": "hello",
+        "b": "world",
+        "c": 1,
+        "d": "ddd",
+        "git": "git://github.com/xxx/xxx.git",
+        "nested": {
+            "key": "Value"
+            }
+        }"#;
+        let descrialzed = serde_json::from_str::<Example>(data);
+        println!("{:?}", descrialzed);
+        // let deserialized: serde_json::Value = serde_json::from_str(data).unwrap();
     }
 }

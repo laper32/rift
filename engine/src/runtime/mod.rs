@@ -361,7 +361,9 @@ mod test {
             "WorkspaceManager::Instance()->GetAllMetadata() => {:?}",
             WorkspaceManager::instance().get_all_metadata()
         );
-
-        // println!("{:?}", PluginManager::instance().print());
+        println!(
+            "WorkspaceManager::Instance()->GetAllPackageDependencies() => {:?}",
+            WorkspaceManager::instance().get_all_package_dependencies()
+        );
     }
 }
