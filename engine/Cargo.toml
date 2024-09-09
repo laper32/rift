@@ -57,4 +57,3 @@ winapi = { workspace = true, features = [
 [build-dependencies]
 deno_ast.workspace = true
 deno_core.workspace = true
-npm_rs = "1.0.0"

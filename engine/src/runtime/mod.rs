@@ -246,7 +246,7 @@ pub fn collect_workspace_dependencies_scripts() -> RiftResult<Vec<ManifestScript
 //     }
 // }
 
-static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNJS_SNAPSHOT.bin"));
+static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
 async fn run_js(file_path: &str) -> RiftResult<()> {
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
@@ -357,7 +357,10 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();
         init();
-        println!("{:?}", WorkspaceManager::instance().get_all_metadata());
+        println!(
+            "WorkspaceManager::Instance()->GetAllMetadata() => {:?}",
+            WorkspaceManager::instance().get_all_metadata()
+        );
 
         // println!("{:?}", PluginManager::instance().print());
     }

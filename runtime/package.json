@@ -1,19 +1,17 @@
 {
   "name": "runtime",
   "version": "1.0.0",
-  "type": "module",
   "description": "",
+  "main": "src/index.ts",
+  "dependencies": {
+    "typescript": "^5.5.4"
+  },
+  "devDependencies": {},
   "scripts": {
-    "build": "node --loader=ts-node/esm build.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsinit": "tsc --init"
   },
   "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "esbuild": "^0.23.1"
-  },
-  "dependencies": {
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
-  }
+  "license": "ISC"
 }

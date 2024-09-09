@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 use crate::util::errors::RiftResult;
 
@@ -108,7 +108,9 @@ pub struct TomlPluginManifestDeclarator {
 #[serde(rename_all = "camelCase")]
 pub struct TomlDependencyManifestDeclarator {
     pub name: String,
-    pub version: Option<String>, // 总得考虑这玩意是个本地包吧？
+    #[serde(flatten)]
+    pub data: HashMap<String, serde_json::Value>,
+    // pub version: Option<String>, // 总得考虑这玩意是个本地包吧？
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {

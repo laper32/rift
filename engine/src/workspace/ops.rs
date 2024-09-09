@@ -8,6 +8,7 @@ use crate::{schema::TomlPluginManifestDeclarator, workspace::WorkspaceManager, R
 
 #[op2]
 fn op_add_manifest_plugin(#[serde] content: TomlPluginManifestDeclarator) -> Result<(), AnyError> {
+    println!("content: {:?}", content);
     // 这一步是为了知道现在我们在跑哪个脚本文件。
     let current_evaluation_script = Rift::instance().get_current_evaluation_script();
     // 然后，我们枚举所有的插件脚本, a.k.a: `plugins`这个字段。
