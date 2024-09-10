@@ -96,7 +96,10 @@ pub struct TomlPlugin {
 #[serde(rename_all = "camelCase")]
 pub struct TomlPluginManifestDeclarator {
     pub name: String,
-    pub version: String,
+    pub data: HashMap<
+        String,            // 依赖的信息
+        serde_json::Value, // 对应的值
+    >,
 }
 
 /// 给脚本用的<br/>

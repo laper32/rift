@@ -2,7 +2,6 @@ use deno_core::{error::AnyError, extension, op2};
 use std::collections::HashMap;
 
 use crate::schema::TomlDependencyManifestDeclarator;
-use crate::workspace::plugin_manager::{ManifestPluginIdentifier, PluginManager};
 use crate::{schema::TomlPluginManifestDeclarator, workspace::WorkspaceManager, Rift};
 
 #[op2]
@@ -35,13 +34,13 @@ fn op_add_manifest_plugin(#[serde] content: TomlPluginManifestDeclarator) -> Res
     }
     let current_evaluation_related_manifest = current_evaluation_related_manifest.unwrap();
     // 然后把插件信息加到注册表里
-    PluginManager::instance().register_manifest_plugin(
-        current_evaluation_related_manifest.0.clone(),
-        ManifestPluginIdentifier {
-            name: content.name.clone(),
-            version: content.version.clone(),
-        },
-    );
+    // PluginManager::instance().register_manifest_plugin(
+    //     current_evaluation_related_manifest.0.clone(),
+    //     ManifestPluginIdentifier {
+    //         name: content.name.clone(),
+    //         version: content.version.clone(),
+    //     },
+    // );
 
     Ok(())
 }
