@@ -4,6 +4,8 @@ use anyhow::Context;
 use deno_core::extension;
 use lazycell::LazyCell;
 use manifest::EitherManifest;
+
+use parking_lot::Mutex;
 use util::{
     errors::RiftResult,
     fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
@@ -18,13 +20,13 @@ pub mod util;
 mod workspace;
 
 #[derive(Debug)]
-pub struct CurrentEvaluatingPackage<'a> {
-    manifest: &'a EitherManifest,
-    manifest_path: &'a PathBuf,
+pub struct CurrentEvaluatingPackage {
+    manifest: EitherManifest,
+    manifest_path: PathBuf,
 }
 
-impl<'a> CurrentEvaluatingPackage<'a> {
-    pub fn new(manifest: &'a EitherManifest, manifest_path: &'a PathBuf) -> Self {
+impl CurrentEvaluatingPackage {
+    pub fn new(manifest: EitherManifest, manifest_path: PathBuf) -> Self {
         Self {
             manifest,
             manifest_path,
@@ -53,7 +55,7 @@ pub fn shutdown() {
 pub struct Rift {
     /// rift.exe的路径
     rift_exe: LazyCell<PathBuf>,
-    // current_evaluating_package: Option<&CurrentEvaluatingPackage>,
+    current_evaluating_package: Mutex<Option<CurrentEvaluatingPackage>>,
 }
 
 /// Returns the canonicalized absolute path of where the given executable is located based
@@ -88,7 +90,8 @@ impl Rift {
     fn new() -> Self {
         Self {
             rift_exe: LazyCell::new(),
-            // current_evaluating_package: None,
+            current_evaluating_package: Mutex::new(None),
+            // current_evaluating_package: Mutex::new(None),
         }
     }
 
@@ -98,12 +101,13 @@ impl Rift {
         unsafe { &mut *INSTANCE }
     }
 
-    // pub fn set_current_evaluating_package(&mut self, package: CurrentEvaluatingPackage) {
-    //     self.current_evaluating_package = Some(package);
-    // }
-    // pub fn get_current_evaluating_package(&self) -> Option<&CurrentEvaluatingPackage> {
-    //     self.current_evaluating_package.as_ref()
-    // }
+    pub fn set_current_evaluating_package(&mut self, package: CurrentEvaluatingPackage) {
+        *self.current_evaluating_package.lock() = Some(package);
+    }
+
+    pub fn get_current_evaluating_package(&self) -> Option<CurrentEvaluatingPackage> {
+        self.current_evaluating_package.lock().take()
+    }
 
     // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。
     // Linux的话，如果你是直接把它放在/usr/bin里面的话，这个就没用了
@@ -181,8 +185,6 @@ impl Rift {
 }
 
 mod ops {
-    use std::string;
-
     use deno_core::{error::AnyError, op2};
 
     use crate::Rift;

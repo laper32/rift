@@ -8,11 +8,11 @@ use crate::Rift;
 #[op2]
 fn op_add_manifest_plugin(#[serde] content: TomlPluginManifestDeclarator) -> Result<(), AnyError> {
     // println!("content: {:?}", content);
-    // let current_evaluating_package = Rift::instance().get_current_evaluating_package();
-    // println!(
-    //     "op_add_manifest_plugin => current_evaluating_package: {:?}",
-    //     current_evaluating_package
-    // );
+    let current_evaluating_package = Rift::instance().get_current_evaluating_package();
+    println!(
+        "op_add_manifest_plugin => current_evaluating_package: {:?}",
+        current_evaluating_package
+    );
     // // 这一步是为了知道现在我们在跑哪个脚本文件。
     // let current_evaluation_script = Rift::instance().get_current_evaluation_script();
     // // 然后，我们枚举所有的插件脚本, a.k.a: `plugins`这个字段。
@@ -54,11 +54,11 @@ fn op_add_manifest_plugin(#[serde] content: TomlPluginManifestDeclarator) -> Res
 type ScriptMetadataMap = HashMap<String, serde_json::Value>;
 #[op2]
 fn op_add_manifest_metadata(#[serde] metadata: ScriptMetadataMap) -> Result<(), AnyError> {
-    // let current_evaluating_package = Rift::instance().get_current_evaluating_package();
-    // println!(
-    //     "op_add_manifest_metadata => current_evaluating_package: {:?}",
-    //     current_evaluating_package
-    // );
+    let current_evaluating_package = Rift::instance().get_current_evaluating_package();
+    println!(
+        "op_add_manifest_metadata => current_evaluating_package: {:?}",
+        current_evaluating_package
+    );
 
     // println!("metadata: {:?}", metadata);
     // // 这一步是为了知道现在我们在跑哪个脚本文件。
@@ -98,11 +98,11 @@ fn op_add_manifest_metadata(#[serde] metadata: ScriptMetadataMap) -> Result<(), 
 fn op_add_manifest_dependencies(
     #[serde] dependency: TomlDependencyManifestDeclarator,
 ) -> Result<(), AnyError> {
-    // let current_evaluating_package = Rift::instance().get_current_evaluating_package();
-    // println!(
-    //     "op_add_manifest_dependencies => current_evaluating_package: {:?}",
-    //     current_evaluating_package
-    // );
+    let current_evaluating_package = Rift::instance().get_current_evaluating_package();
+    println!(
+        "op_add_manifest_dependencies => current_evaluating_package: {:?}",
+        current_evaluating_package
+    );
 
     // // 这一步是为了知道现在我们在跑哪个脚本文件。
     // let current_evaluation_script = Rift::instance().get_current_evaluation_script();

@@ -5,7 +5,8 @@ use tokio::runtime::Runtime;
 use crate::{
     rift,
     util::errors::RiftResult,
-    workspace::{self, WorkspaceManager},
+    workspace::{self, plugin_manager::PluginManager, WorkspaceManager},
+    CurrentEvaluatingPackage, Rift,
 };
 
 mod loader;
@@ -14,29 +15,31 @@ mod ops;
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
 async fn run_js(file_path: &str) -> RiftResult<()> {
-    // fn set_current_evaluating_package(file_path: &str) {
-    //     let pkg =
-    //         WorkspaceManager::instance().find_package_from_script_path(&PathBuf::from(file_path));
-    //     match pkg {
-    //         Some(pkg) => {
-    //             let this_pkg =
-    //                 CurrentEvaluatingPackage::new(pkg.1.clone().into(), pkg.0.to_path_buf());
-    //             Rift::instance().set_current_evaluating_package(this_pkg);
-    //         }
-    //         None => {
-    //             let pl = PluginManager::instance()
-    //                 .find_plugin_from_script_path(&PathBuf::from(file_path));
-    //             match pl {
-    //                 Some(pl) => {
-    //                     let this_pl =
-    //                         CurrentEvaluatingPackage::new(pl.1.clone().into(), pl.0.to_path_buf());
-    //                     Rift::instance().set_current_evaluating_package(this_pl);
-    //                 }
-    //                 None => {}
-    //             }
-    //         }
-    //     }
-    // }
+    fn set_current_evaluating_package(file_path: &str) {
+        let pkg =
+            WorkspaceManager::instance().find_package_from_script_path(&PathBuf::from(file_path));
+        match pkg {
+            Some(pkg) => {
+                let this_pkg =
+                    CurrentEvaluatingPackage::new(pkg.1.clone().into(), pkg.0.to_path_buf());
+                Rift::instance().set_current_evaluating_package(this_pkg);
+            }
+            None => {
+                let pl = PluginManager::instance()
+                    .find_plugin_from_script_path(&PathBuf::from(file_path));
+                match pl {
+                    Some(pl) => {
+                        let this_pl =
+                            CurrentEvaluatingPackage::new(pl.1.clone().into(), pl.0.to_path_buf());
+                        Rift::instance().set_current_evaluating_package(this_pl);
+                    }
+                    None => {
+                        println!("No package or plugin found, path => {}", file_path);
+                    }
+                }
+            }
+        }
+    }
 
     // let current_evaluaating_package = (|| {
     //     let pkg =
@@ -73,7 +76,7 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
 
-    // set_current_evaluating_package(file_path);
+    set_current_evaluating_package(file_path);
     // Rift::instance().set_current_evaluating_package(current_evaluaating_package);
     // Rift::instance().set_current_evaluation_script(PathBuf::from(file_path));
     // 既然没有执行脚本的return value，那么我们就改变策略，重点让大家去调用提供的API.
