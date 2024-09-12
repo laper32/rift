@@ -175,13 +175,13 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();
         init();
-        println!(
-            "WorkspaceManager::Instance()->GetAllMetadata() => {:?}",
-            WorkspaceManager::instance().get_all_metadata()
-        );
-        println!(
-            "WorkspaceManager::Instance()->GetAllPackageDependencies() => {:?}",
-            WorkspaceManager::instance().get_all_package_dependencies()
-        );
+        // println!(
+        //     "WorkspaceManager::Instance()->GetAllMetadata() => {:?}",
+        //     WorkspaceManager::instance().get_all_metadata()
+        // );
+        // println!(
+        //     "WorkspaceManager::Instance()->GetAllPackageDependencies() => {:?}",
+        //     WorkspaceManager::instance().get_all_package_dependencies()
+        // );
     }
 }

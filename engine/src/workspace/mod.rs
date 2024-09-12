@@ -173,101 +173,70 @@ impl WorkspaceManager {
         for pkg in self.get_packages() {
             match pkg.1 {
                 MaybePackage::Package(p) => match p.manifest() {
-                    Manifest::Project(_) => todo!(),
-                    Manifest::Target(_) => todo!(),
+                    Manifest::Project(p) => {
+                        let dependencies =
+                            get_actual_script_path(pkg.0.clone(), p.dependencies.as_ref()?);
+                        let plugins = get_actual_script_path(pkg.0.clone(), p.plugins.as_ref()?);
+                        let metadata = get_actual_script_path(pkg.0.clone(), p.metadata.as_ref()?);
+                        let is_dependencies = script_path.eq(&dependencies);
+                        let is_plugins = script_path.eq(&plugins);
+                        let is_metadata = script_path.eq(&metadata);
+                        println!(
+                            "Script path: {:?}, dependencies: {:?}, plugins: {:?}, metadata: {:?}",
+                            script_path, dependencies, plugins, metadata
+                        );
+                        if is_dependencies {
+                            return Some((pkg.0, pkg.1));
+                        } else if is_plugins {
+                            return Some((pkg.0, pkg.1));
+                        } else if is_metadata {
+                            return Some((pkg.0, pkg.1));
+                        } else {
+                            return None;
+                        }
+                    }
+                    Manifest::Target(t) => {
+                        let dependencies =
+                            get_actual_script_path(pkg.0.clone(), t.dependencies.as_ref()?);
+                        let plugins = get_actual_script_path(pkg.0.clone(), t.plugins.as_ref()?);
+                        let metadata = get_actual_script_path(pkg.0.clone(), t.metadata.as_ref()?);
+                        let is_dependencies = script_path.eq(&dependencies);
+                        let is_plugins = script_path.eq(&plugins);
+                        let is_metadata = script_path.eq(&metadata);
+                        if is_dependencies {
+                            return Some((pkg.0, pkg.1));
+                        } else if is_plugins {
+                            return Some((pkg.0, pkg.1));
+                        } else if is_metadata {
+                            return Some((pkg.0, pkg.1));
+                        } else {
+                            return None;
+                        }
+                    }
                 },
-                MaybePackage::Virtual(v) => {}
+                MaybePackage::Virtual(v) => match v {
+                    VirtualManifest::Workspace(w) => {
+                        let dependencies =
+                            get_actual_script_path(pkg.0.clone(), w.dependencies.as_ref()?);
+                        let plugins = get_actual_script_path(pkg.0.clone(), w.plugins.as_ref()?);
+                        let metadata = get_actual_script_path(pkg.0.clone(), w.metadata.as_ref()?);
+                        let is_dependencies = script_path.eq(&dependencies);
+                        let is_plugins = script_path.eq(&plugins);
+                        let is_metadata = script_path.eq(&metadata);
+                        if is_dependencies {
+                            return Some((pkg.0, pkg.1));
+                        } else if is_plugins {
+                            return Some((pkg.0, pkg.1));
+                        } else if is_metadata {
+                            return Some((pkg.0, pkg.1));
+                        } else {
+                            return None;
+                        }
+                    }
+                    VirtualManifest::Folder(_) => return None,
+                },
             }
         }
-        // for pkg in self.get_packages() {
-        //     match pkg.1 {
-        //         MaybePackage::Package(p) => match p.manifest() {
-        //             Manifest::Project(p) => {
-        //                 let script = (|| {
-        //                     if p.dependencies.is_some() {
-        //                         Some(PathBuf::from(p.dependencies.as_ref().unwrap()))
-        //                     } else if p.metadata.is_some() {
-        //                         Some(PathBuf::from(p.metadata.as_ref().unwrap()))
-        //                     } else if p.plugins.is_some() {
-        //                         Some(PathBuf::from(p.plugins.as_ref().unwrap()))
-        //                     } else {
-        //                         None
-        //                     }
-        //                 })();
-
-        //                 match script {
-        //                     Some(script) => {
-        //                         let script = get_actual_script_path(
-        //                             pkg.0.clone(),
-        //                             &script.to_str().unwrap().to_string(),
-        //                         );
-        //                         if script_path.eq(&script) {
-        //                             return Some((pkg.0, pkg.1));
-        //                         }
-        //                     }
-        //                     None => return None,
-        //                 }
-        //             }
-        //             Manifest::Target(t) => {
-        //                 let script = (|| {
-        //                     if t.dependencies.is_some() {
-        //                         Some(PathBuf::from(t.dependencies.as_ref().unwrap()))
-        //                     } else if t.metadata.is_some() {
-        //                         Some(PathBuf::from(t.metadata.as_ref().unwrap()))
-        //                     } else if t.plugins.is_some() {
-        //                         Some(PathBuf::from(t.plugins.as_ref().unwrap()))
-        //                     } else {
-        //                         None
-        //                     }
-        //                 })();
-        //                 match script {
-        //                     Some(script) => {
-        //                         let script = get_actual_script_path(
-        //                             pkg.0.clone(),
-        //                             &script.to_str().unwrap().to_string(),
-        //                         );
-        //                         if script_path.eq(&script) {
-        //                             return Some((pkg.0, pkg.1));
-        //                         }
-        //                     }
-        //                     None => return None,
-        //                 }
-        //             }
-        //         },
-        //         MaybePackage::Virtual(v) => match v {
-        //             VirtualManifest::Workspace(w) => {
-        //                 let script = (|| {
-        //                     if w.dependencies.is_some() {
-        //                         // Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
-        //                         Some(PathBuf::from(w.dependencies.as_ref().unwrap()))
-        //                     } else if w.metadata.is_some() {
-        //                         Some(PathBuf::from(w.metadata.as_ref().unwrap()))
-        //                     } else if w.plugins.is_some() {
-        //                         Some(PathBuf::from(w.plugins.as_ref().unwrap()))
-        //                     } else {
-        //                         None
-        //                     }
-        //                 })();
-
-        //                 match script {
-        //                     Some(script) => {
-        //                         let script = get_actual_script_path(
-        //                             pkg.0.clone(),
-        //                             &script.to_str().unwrap().to_string(),
-        //                         );
-        //                         if script_path.eq(&script) {
-        //                             return Some((pkg.0, pkg.1));
-        //                         }
-        //                     }
-        //                     None => return None,
-        //                 }
-        //             }
-        //             VirtualManifest::Folder(_) => {
-        //                 return None;
-        //             }
-        //         },
-        //     }
-        // }
 
         None
     }

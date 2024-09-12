@@ -55,7 +55,7 @@ pub fn shutdown() {
 pub struct Rift {
     /// rift.exe的路径
     rift_exe: LazyCell<PathBuf>,
-    current_evaluating_package: Mutex<Option<CurrentEvaluatingPackage>>,
+    current_evaluating_package: Option<CurrentEvaluatingPackage>,
 }
 
 /// Returns the canonicalized absolute path of where the given executable is located based
@@ -90,7 +90,7 @@ impl Rift {
     fn new() -> Self {
         Self {
             rift_exe: LazyCell::new(),
-            current_evaluating_package: Mutex::new(None),
+            current_evaluating_package: None,
             // current_evaluating_package: Mutex::new(None),
         }
     }
@@ -102,11 +102,11 @@ impl Rift {
     }
 
     pub fn set_current_evaluating_package(&mut self, package: CurrentEvaluatingPackage) {
-        *self.current_evaluating_package.lock() = Some(package);
+        self.current_evaluating_package = Some(package);
     }
 
-    pub fn get_current_evaluating_package(&self) -> Option<CurrentEvaluatingPackage> {
-        self.current_evaluating_package.lock().take()
+    pub fn get_current_evaluating_package(&self) -> &Option<CurrentEvaluatingPackage> {
+        &self.current_evaluating_package
     }
 
     // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。
