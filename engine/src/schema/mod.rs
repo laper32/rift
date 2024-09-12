@@ -96,6 +96,7 @@ pub struct TomlPlugin {
 #[serde(rename_all = "camelCase")]
 pub struct TomlPluginManifestDeclarator {
     pub name: String,
+    #[serde(flatten)]
     pub data: HashMap<
         String,            // 依赖的信息
         serde_json::Value, // 对应的值
@@ -179,6 +180,5 @@ mod test {
         }"#;
         let descrialzed = serde_json::from_str::<Example>(data);
         println!("{:?}", descrialzed);
-        // let deserialized: serde_json::Value = serde_json::from_str(data).unwrap();
     }
 }

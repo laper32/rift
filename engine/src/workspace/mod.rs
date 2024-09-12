@@ -4,7 +4,6 @@ pub mod plugin_manager;
 use serde::{Deserialize, Serialize};
 
 use crate::manifest::DependencyManifestDeclarator;
-use crate::util::fs::as_posix::PathExt;
 use crate::{
     manifest::{
         find_root_manifest, read_manifest, EitherManifest, Manifest, VirtualManifest,
@@ -19,13 +18,33 @@ use std::{
 };
 
 pub struct Packages {
-    packages: HashMap<PathBuf, MaybePackage>,
+    packages: HashMap<
+        PathBuf, // Manifest路径
+        MaybePackage,
+    >,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MaybePackage {
     Package(Package),
     Virtual(VirtualManifest),
+}
+
+impl Into<EitherManifest> for MaybePackage {
+    fn into(self) -> EitherManifest {
+        match self {
+            MaybePackage::Package(p) => match p.manifest() {
+                Manifest::Project(p) => EitherManifest::Real(Manifest::Project(p.clone())),
+                Manifest::Target(t) => EitherManifest::Real(Manifest::Target(t.clone())),
+            },
+            MaybePackage::Virtual(v) => match v {
+                VirtualManifest::Workspace(w) => {
+                    EitherManifest::Virtual(VirtualManifest::Workspace(w))
+                }
+                VirtualManifest::Folder(f) => EitherManifest::Virtual(VirtualManifest::Folder(f)),
+            },
+        }
+    }
 }
 
 impl MaybePackage {
@@ -142,6 +161,106 @@ impl WorkspaceManager {
 
     pub fn is_package_loaded(&self) -> bool {
         self.status == WorkspaceStatus::PackageLoaded
+    }
+
+    pub fn find_package_from_script_path(
+        &self,
+        script_path: &PathBuf,
+    ) -> Option<(
+        &PathBuf,      // Manifest path
+        &MaybePackage, // Package itself
+    )> {
+        for pkg in self.get_packages() {
+            match pkg.1 {
+                MaybePackage::Package(p) => match p.manifest() {
+                    Manifest::Project(p) => {
+                        let script = (|| {
+                            if p.dependencies.is_some() {
+                                Some(PathBuf::from(p.dependencies.as_ref().unwrap()))
+                            } else if p.metadata.is_some() {
+                                Some(PathBuf::from(p.metadata.as_ref().unwrap()))
+                            } else if p.plugins.is_some() {
+                                Some(PathBuf::from(p.plugins.as_ref().unwrap()))
+                            } else {
+                                None
+                            }
+                        })();
+
+                        match script {
+                            Some(script) => {
+                                let script = get_actual_script_path(
+                                    pkg.0.clone(),
+                                    &script.to_str().unwrap().to_string(),
+                                );
+                                if script_path.eq(&script) {
+                                    return Some((pkg.0, pkg.1));
+                                }
+                            }
+                            None => return None,
+                        }
+                    }
+                    Manifest::Target(t) => {
+                        let script = (|| {
+                            if t.dependencies.is_some() {
+                                Some(PathBuf::from(t.dependencies.as_ref().unwrap()))
+                            } else if t.metadata.is_some() {
+                                Some(PathBuf::from(t.metadata.as_ref().unwrap()))
+                            } else if t.plugins.is_some() {
+                                Some(PathBuf::from(t.plugins.as_ref().unwrap()))
+                            } else {
+                                None
+                            }
+                        })();
+                        match script {
+                            Some(script) => {
+                                let script = get_actual_script_path(
+                                    pkg.0.clone(),
+                                    &script.to_str().unwrap().to_string(),
+                                );
+                                if script_path.eq(&script) {
+                                    return Some((pkg.0, pkg.1));
+                                }
+                            }
+                            None => return None,
+                        }
+                    }
+                },
+                MaybePackage::Virtual(v) => match v {
+                    VirtualManifest::Workspace(w) => {
+                        let script = (|| {
+                            if w.dependencies.is_some() {
+                                // Some(path) => Some(get_actual_script_path(pkg.0.clone(), path)),
+                                Some(PathBuf::from(w.dependencies.as_ref().unwrap()))
+                            } else if w.metadata.is_some() {
+                                Some(PathBuf::from(w.metadata.as_ref().unwrap()))
+                            } else if w.plugins.is_some() {
+                                Some(PathBuf::from(w.plugins.as_ref().unwrap()))
+                            } else {
+                                None
+                            }
+                        })();
+
+                        match script {
+                            Some(script) => {
+                                let script = get_actual_script_path(
+                                    pkg.0.clone(),
+                                    &script.to_str().unwrap().to_string(),
+                                );
+                                if script_path.eq(&script) {
+                                    return Some((pkg.0, pkg.1));
+                                }
+                            }
+                            None => return None,
+                        }
+                    }
+                    VirtualManifest::Folder(_) => {
+                        return None;
+                    }
+                },
+            }
+        }
+
+        None
     }
 
     /// 拿到包的路径

@@ -98,7 +98,7 @@ pub struct PluginManifest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginManifestDeclarator {
     pub name: String,
-    pub version: String,
+    pub data: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

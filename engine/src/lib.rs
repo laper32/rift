@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context;
 use deno_core::extension;
 use lazycell::LazyCell;
+use manifest::EitherManifest;
 use util::{
     errors::RiftResult,
     fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
@@ -15,6 +16,27 @@ mod schema;
 pub mod task;
 pub mod util;
 mod workspace;
+
+#[derive(Debug)]
+pub struct CurrentEvaluatingPackage<'a> {
+    manifest: &'a EitherManifest,
+    manifest_path: &'a PathBuf,
+}
+
+impl<'a> CurrentEvaluatingPackage<'a> {
+    pub fn new(manifest: &'a EitherManifest, manifest_path: &'a PathBuf) -> Self {
+        Self {
+            manifest,
+            manifest_path,
+        }
+    }
+    pub fn manifest(&self) -> &EitherManifest {
+        &self.manifest
+    }
+    pub fn manifest_path(&self) -> &PathBuf {
+        &self.manifest_path
+    }
+}
 
 pub fn init() -> bool {
     // let cwd = std::env::current_dir().unwrap();
@@ -31,7 +53,7 @@ pub fn shutdown() {
 pub struct Rift {
     /// rift.exe的路径
     rift_exe: LazyCell<PathBuf>,
-    current_evaluation_script: PathBuf,
+    // current_evaluating_package: Option<&CurrentEvaluatingPackage>,
 }
 
 /// Returns the canonicalized absolute path of where the given executable is located based
@@ -66,7 +88,7 @@ impl Rift {
     fn new() -> Self {
         Self {
             rift_exe: LazyCell::new(),
-            current_evaluation_script: PathBuf::new(),
+            // current_evaluating_package: None,
         }
     }
 
@@ -75,12 +97,13 @@ impl Rift {
             once_cell::sync::Lazy::new(|| Rift::new());
         unsafe { &mut *INSTANCE }
     }
-    pub fn get_current_evaluation_script(&self) -> PathBuf {
-        self.current_evaluation_script.clone()
-    }
-    pub fn set_current_evaluation_script(&mut self, path: PathBuf) {
-        self.current_evaluation_script = path;
-    }
+
+    // pub fn set_current_evaluating_package(&mut self, package: CurrentEvaluatingPackage) {
+    //     self.current_evaluating_package = Some(package);
+    // }
+    // pub fn get_current_evaluating_package(&self) -> Option<&CurrentEvaluatingPackage> {
+    //     self.current_evaluating_package.as_ref()
+    // }
 
     // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。
     // Linux的话，如果你是直接把它放在/usr/bin里面的话，这个就没用了

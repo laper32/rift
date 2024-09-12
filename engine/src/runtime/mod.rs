@@ -1,72 +1,66 @@
 use ops::runtime;
-use std::{collections::HashMap, env, path::PathBuf, rc::Rc};
+use std::{env, path::PathBuf, rc::Rc};
 use tokio::runtime::Runtime;
 
 use crate::{
     rift,
-    util::{errors::RiftResult, fs::as_posix::PathBufExt},
+    util::errors::RiftResult,
     workspace::{self, WorkspaceManager},
-    Rift,
 };
 
 mod loader;
 mod ops;
 
-#[derive(Clone, Debug)]
-pub enum ManifestScriptKind {
-    Workspace,
-    Project,
-    Folder,
-    Target,
-    Plugin,
-}
-
-/// 只用于记录形如`plugins`, `dependencies`这些字段的信息，方便我们为图排序做准备。
-#[derive(Clone, Debug)]
-pub struct ManifestScript {
-    pub kind: ManifestScriptKind,
-    // 需要执行的脚本路径
-    pub path: Option<PathBuf>,
-
-    pub pkg_name: String,
-}
-
-// fn check_workspace_execution_scripts_unique() -> RiftResult<()> {
-//     let execution_scripts = collect_all_workspace_scripts();
-
-//     // make sure all script unique
-//     // otherwise false
-//     let mut occurence_map: HashMap<PathBuf, u32> = HashMap::new();
-//     for script in execution_scripts {
-//         if script.path.is_some() {
-//             occurence_map
-//                 .entry(script.path.clone().unwrap())
-//                 .and_modify(|e| *e += 1)
-//                 .or_insert(1);
-//         }
-//     }
-//     if occurence_map.values().any(|&count| count > 1) {
-//         // get count > 1's keys
-//         let mut keys: Vec<PathBuf> = Vec::new();
-//         for (key, value) in occurence_map.iter() {
-//             if *value > 1 {
-//                 keys.push(key.clone());
-//             }
-//         }
-//         let fmt_message = keys
-//             .iter()
-//             .map(|key| key.to_string_lossy())
-//             .collect::<Vec<_>>()
-//             .join("\n");
-//         anyhow::bail!("Execution scripts are not unique, these are: \n{fmt_message}");
-//     } else {
-//         Ok(())
-//     }
-// }
-
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
 async fn run_js(file_path: &str) -> RiftResult<()> {
+    // fn set_current_evaluating_package(file_path: &str) {
+    //     let pkg =
+    //         WorkspaceManager::instance().find_package_from_script_path(&PathBuf::from(file_path));
+    //     match pkg {
+    //         Some(pkg) => {
+    //             let this_pkg =
+    //                 CurrentEvaluatingPackage::new(pkg.1.clone().into(), pkg.0.to_path_buf());
+    //             Rift::instance().set_current_evaluating_package(this_pkg);
+    //         }
+    //         None => {
+    //             let pl = PluginManager::instance()
+    //                 .find_plugin_from_script_path(&PathBuf::from(file_path));
+    //             match pl {
+    //                 Some(pl) => {
+    //                     let this_pl =
+    //                         CurrentEvaluatingPackage::new(pl.1.clone().into(), pl.0.to_path_buf());
+    //                     Rift::instance().set_current_evaluating_package(this_pl);
+    //                 }
+    //                 None => {}
+    //             }
+    //         }
+    //     }
+    // }
+
+    // let current_evaluaating_package = (|| {
+    //     let pkg =
+    //         WorkspaceManager::instance().find_package_from_script_path(&PathBuf::from(file_path));
+    //     match pkg {
+    //         Some(pkg) => Some(CurrentEvaluatingPackage::new(
+    //             pkg.1.clone().into(),
+    //             pkg.0.to_path_buf(),
+    //         )),
+    //         None => {
+    //             let pl = PluginManager::instance()
+    //                 .find_plugin_from_script_path(&PathBuf::from(file_path));
+    //             match pl {
+    //                 Some(pl) => Some(CurrentEvaluatingPackage::new(
+    //                     pl.1.clone().into(),
+    //                     pl.0.to_path_buf(),
+    //                 )),
+    //                 None => None,
+    //             }
+    //         }
+    //     }
+    // })()
+    // .unwrap();
+
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
         module_loader: Some(Rc::new(loader::TsModuleLoader)),
@@ -78,7 +72,10 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
         ..Default::default()
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
-    Rift::instance().set_current_evaluation_script(PathBuf::from(file_path));
+
+    // set_current_evaluating_package(file_path);
+    // Rift::instance().set_current_evaluating_package(current_evaluaating_package);
+    // Rift::instance().set_current_evaluation_script(PathBuf::from(file_path));
     // 既然没有执行脚本的return value，那么我们就改变策略，重点让大家去调用提供的API.
     let result = js_runtime.mod_evaluate(mod_id);
     js_runtime.run_event_loop(Default::default()).await?;
