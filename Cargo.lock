@@ -746,6 +746,7 @@ dependencies = [
  "junction",
  "lazycell",
  "once_cell",
+ "parking_lot 0.12.3",
  "rand",
  "relative-path",
  "reqwest",
