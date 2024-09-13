@@ -39,31 +39,50 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
 }
 
 fn declare_workspace_plugins(runtime: &Runtime) {
-    // let packages = WorkspaceManager::instance().get_packages();
-    // let manifests = packages.get_manifest_paths();
-    // // Plugins
-    // manifests.iter().for_each(|manifest_path| {
-    //     let plugin_path = packages.package_plugins(manifest_path);
-    //     match plugin_path {
-    //         Some(plugin_path) => {
-    //             println!("plugin_path: {}", plugin_path.display());
-    //             let pkg: EitherManifest = WorkspaceManager::instance()
-    //                 .find_package_from_manifest_path(manifest_path)
-    //                 .unwrap()
-    //                 .pkg()
-    //                 .clone()
-    //                 .into();
-    //             Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
-    //                 pkg,
-    //                 manifest_path.clone(),
-    //             ));
-    //             if let Err(error) = runtime.block_on(run_js(&plugin_path.to_str().unwrap())) {
-    //                 eprintln!("error: {error}");
-    //             }
-    //         }
-    //         None => {}
-    //     }
-    // });
+    let packages = WorkspaceManager::instance().get_packages();
+    let manifests = packages.get_manifest_paths();
+    // Plugins
+    manifests.iter().for_each(|manifest_path| {
+        let pkg = WorkspaceManager::instance()
+            .find_package_from_manifest_path(manifest_path)
+            .unwrap();
+
+        match pkg.pkg().plugins() {
+            Some(plugins) => {
+                Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                    pkg.pkg().clone().into(),
+                    manifest_path.clone(),
+                ));
+                if let Err(error) = runtime.block_on(run_js(&plugins.to_str().unwrap())) {
+                    eprintln!("error: {error}");
+                }
+            }
+            None => {
+                println!("\"{}\" => Plugins => Not found, skip", pkg.pkg().name());
+            }
+        }
+
+        /* let plugin_path = packages.package_plugins(manifest_path);
+        match plugin_path {
+            Some(plugin_path) => {
+                println!("plugin_path: {}", plugin_path.display());
+                let pkg: EitherManifest = WorkspaceManager::instance()
+                    .find_package_from_manifest_path(manifest_path)
+                    .unwrap()
+                    .pkg()
+                    .clone()
+                    .into();
+                Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                    pkg,
+                    manifest_path.clone(),
+                ));
+                if let Err(error) = runtime.block_on(run_js(&plugin_path.to_str().unwrap())) {
+                    eprintln!("error: {error}");
+                }
+            }
+            None => {}
+        } */
+    });
 }
 
 pub fn init() {
@@ -115,5 +134,6 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         WorkspaceManager::instance().load_packages();
         init();
+        WorkspaceManager::instance().print_packages();
     }
 }

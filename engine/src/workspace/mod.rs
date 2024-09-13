@@ -191,6 +191,12 @@ impl WorkspaceManager {
     pub fn get_packages(&self) -> &Packages {
         &self.packages
     }
+    pub fn print_packages(&self) {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&self.packages.packages).unwrap()
+        );
+    }
 
     pub fn find_package_from_manifest_path(
         &self,
