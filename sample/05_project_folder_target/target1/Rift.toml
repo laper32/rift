@@ -2,3 +2,4 @@
 name = "target1"
 type = "bin"
 metadata = "rift/metadata.ts"
+plugins = "rift/plugins.ts"

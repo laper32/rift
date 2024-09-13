@@ -12,7 +12,6 @@ use util::{
 };
 
 mod manifest;
-mod package;
 mod runtime;
 mod schema;
 pub mod task;

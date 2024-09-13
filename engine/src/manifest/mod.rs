@@ -30,6 +30,15 @@ pub enum EitherManifest {
     Virtual(VirtualManifest),
     Rift(RiftManifest),
 }
+impl EitherManifest {
+    pub fn name(&self) -> String {
+        match self {
+            EitherManifest::Real(m) => m.name(),
+            EitherManifest::Virtual(m) => m.name(),
+            EitherManifest::Rift(m) => m.name(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WorkspaceManifest {
@@ -109,7 +118,7 @@ pub struct DependencyManifestDeclarator {
 }
 
 /// 针对项目本身的。
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Manifest {
     Project(ProjectManifest),
     Target(TargetManifest),
@@ -120,6 +129,25 @@ impl Manifest {
         match self {
             Manifest::Project(p) => p.name.clone(),
             Manifest::Target(t) => t.name.clone(),
+        }
+    }
+
+    pub fn dependencies(&self) -> Option<String> {
+        match self {
+            Manifest::Project(p) => p.dependencies.clone(),
+            Manifest::Target(t) => t.dependencies.clone(),
+        }
+    }
+    pub fn plugins(&self) -> Option<String> {
+        match self {
+            Manifest::Project(p) => p.plugins.clone(),
+            Manifest::Target(t) => t.plugins.clone(),
+        }
+    }
+    pub fn metadata(&self) -> Option<String> {
+        match self {
+            Manifest::Project(p) => p.metadata.clone(),
+            Manifest::Target(t) => t.metadata.clone(),
         }
     }
 }
@@ -138,6 +166,41 @@ impl VirtualManifest {
             VirtualManifest::Folder(f) => f.name.clone(),
         }
     }
+
+    pub fn members(&self) -> Option<Vec<String>> {
+        match self {
+            VirtualManifest::Workspace(w) => Some(w.members.clone()),
+            VirtualManifest::Folder(f) => f.members.clone(),
+        }
+    }
+
+    pub fn excludes(&self) -> Option<Vec<String>> {
+        match self {
+            VirtualManifest::Workspace(w) => w.exclude.clone(),
+            VirtualManifest::Folder(f) => f.exclude.clone(),
+        }
+    }
+
+    pub fn dependencies(&self) -> Option<String> {
+        match self {
+            VirtualManifest::Workspace(w) => w.dependencies.clone(),
+            VirtualManifest::Folder(_) => None,
+        }
+    }
+
+    pub fn plugins(&self) -> Option<String> {
+        match self {
+            VirtualManifest::Workspace(w) => w.plugins.clone(),
+            VirtualManifest::Folder(_) => None,
+        }
+    }
+
+    pub fn metadata(&self) -> Option<String> {
+        match self {
+            VirtualManifest::Workspace(w) => w.metadata.clone(),
+            VirtualManifest::Folder(_) => None,
+        }
+    }
 }
 
 // 给rift用的
@@ -151,6 +214,16 @@ impl RiftManifest {
     pub fn name(&self) -> String {
         match self {
             RiftManifest::Plugin(p) => p.name.clone(),
+        }
+    }
+    pub fn dependencies(&self) -> Option<String> {
+        match self {
+            RiftManifest::Plugin(p) => p.dependencies.clone(),
+        }
+    }
+    pub fn metadata(&self) -> Option<String> {
+        match self {
+            RiftManifest::Plugin(p) => p.metadata.clone(),
         }
     }
 }

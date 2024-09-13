@@ -1,8 +1,10 @@
+use deno_ast::swc::common::plugin;
 use ops::runtime;
 use std::{env, path::PathBuf, rc::Rc};
 use tokio::runtime::Runtime;
 
 use crate::{
+    manifest::EitherManifest,
     rift,
     util::errors::RiftResult,
     workspace::{self, plugin_manager::PluginManager, WorkspaceManager},
@@ -15,55 +17,6 @@ mod ops;
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
 async fn run_js(file_path: &str) -> RiftResult<()> {
-    fn set_current_evaluating_package(file_path: &str) {
-        let pkg =
-            WorkspaceManager::instance().find_package_from_script_path(&PathBuf::from(file_path));
-        match pkg {
-            Some(pkg) => {
-                let this_pkg =
-                    CurrentEvaluatingPackage::new(pkg.1.clone().into(), pkg.0.to_path_buf());
-                Rift::instance().set_current_evaluating_package(this_pkg);
-            }
-            None => {
-                let pl = PluginManager::instance()
-                    .find_plugin_from_script_path(&PathBuf::from(file_path));
-                match pl {
-                    Some(pl) => {
-                        let this_pl =
-                            CurrentEvaluatingPackage::new(pl.1.clone().into(), pl.0.to_path_buf());
-                        Rift::instance().set_current_evaluating_package(this_pl);
-                    }
-                    None => {
-                        println!("No package or plugin found, path => {}", file_path);
-                    }
-                }
-            }
-        }
-    }
-
-    // let current_evaluaating_package = (|| {
-    //     let pkg =
-    //         WorkspaceManager::instance().find_package_from_script_path(&PathBuf::from(file_path));
-    //     match pkg {
-    //         Some(pkg) => Some(CurrentEvaluatingPackage::new(
-    //             pkg.1.clone().into(),
-    //             pkg.0.to_path_buf(),
-    //         )),
-    //         None => {
-    //             let pl = PluginManager::instance()
-    //                 .find_plugin_from_script_path(&PathBuf::from(file_path));
-    //             match pl {
-    //                 Some(pl) => Some(CurrentEvaluatingPackage::new(
-    //                     pl.1.clone().into(),
-    //                     pl.0.to_path_buf(),
-    //                 )),
-    //                 None => None,
-    //             }
-    //         }
-    //     }
-    // })()
-    // .unwrap();
-
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
         module_loader: Some(Rc::new(loader::TsModuleLoader)),
@@ -76,7 +29,6 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
 
-    set_current_evaluating_package(file_path);
     // Rift::instance().set_current_evaluating_package(current_evaluaating_package);
     // Rift::instance().set_current_evaluation_script(PathBuf::from(file_path));
     // 既然没有执行脚本的return value，那么我们就改变策略，重点让大家去调用提供的API.
@@ -86,71 +38,40 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     result
 }
 
-fn execute_workspace_scripts(runtime: &Runtime) {
-    let plugin_scripts = WorkspaceManager::instance().collect_all_manifest_plugin_scripts();
-    match plugin_scripts {
-        Some(scripts) => {
-            scripts
-                .iter()
-                .for_each(|(_, script_path)| match script_path {
-                    Some(script_path) => {
-                        if let Err(error) = runtime.block_on(run_js(&script_path.to_str().unwrap()))
-                        {
-                            eprintln!("error: {error}");
-                        }
-                    }
-                    None => {}
-                });
-        }
-        None => {}
-    }
-
-    let dependency_scripts = WorkspaceManager::instance().collect_all_manifest_dependency_scripts();
-    match dependency_scripts {
-        Some(scripts) => {
-            scripts
-                .iter()
-                .for_each(|(_, script_path)| match script_path {
-                    Some(script_path) => {
-                        if let Err(error) = runtime.block_on(run_js(&script_path.to_str().unwrap()))
-                        {
-                            eprintln!("error: {error}");
-                        }
-                    }
-                    None => {}
-                });
-        }
-        None => {}
-    }
-
-    let metadata_scripts = WorkspaceManager::instance().collect_all_manifest_metadata_scripts();
-    match metadata_scripts {
-        Some(scripts) => {
-            scripts
-                .iter()
-                .for_each(|(_, script_path)| match script_path {
-                    Some(script_path) => {
-                        if let Err(error) = runtime.block_on(run_js(&script_path.to_str().unwrap()))
-                        {
-                            eprintln!("error: {error}");
-                        }
-                    }
-                    None => {}
-                });
-        }
-        None => {}
-    }
+fn declare_workspace_plugins(runtime: &Runtime) {
+    // let packages = WorkspaceManager::instance().get_packages();
+    // let manifests = packages.get_manifest_paths();
+    // // Plugins
+    // manifests.iter().for_each(|manifest_path| {
+    //     let plugin_path = packages.package_plugins(manifest_path);
+    //     match plugin_path {
+    //         Some(plugin_path) => {
+    //             println!("plugin_path: {}", plugin_path.display());
+    //             let pkg: EitherManifest = WorkspaceManager::instance()
+    //                 .find_package_from_manifest_path(manifest_path)
+    //                 .unwrap()
+    //                 .pkg()
+    //                 .clone()
+    //                 .into();
+    //             Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+    //                 pkg,
+    //                 manifest_path.clone(),
+    //             ));
+    //             if let Err(error) = runtime.block_on(run_js(&plugin_path.to_str().unwrap())) {
+    //                 eprintln!("error: {error}");
+    //             }
+    //         }
+    //         None => {}
+    //     }
+    // });
 }
-
-fn execute_plugin_scripts(runtime: &Runtime) {}
 
 pub fn init() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    execute_workspace_scripts(&runtime);
-    execute_plugin_scripts(&runtime);
+    declare_workspace_plugins(&runtime);
 }
 
 pub fn shutdown() {}
@@ -183,5 +104,16 @@ mod test {
         //     "WorkspaceManager::Instance()->GetAllPackageDependencies() => {:?}",
         //     WorkspaceManager::instance().get_all_package_dependencies()
         // );
+    }
+    #[test]
+    fn workspace_with_project_folder_target() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("05_project_folder_target")
+            .join("Rift.toml");
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        WorkspaceManager::instance().load_packages();
+        init();
     }
 }
