@@ -100,7 +100,7 @@ mod test {
 
     use crate::{
         util::{self},
-        workspace::WorkspaceManager,
+        workspace::{plugin_manager::PluginManager, WorkspaceManager},
     };
 
     use super::init;
@@ -113,16 +113,15 @@ mod test {
             .join("02_single_target_with_project")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
-        init();
-        // println!(
-        //     "WorkspaceManager::Instance()->GetAllMetadata() => {:?}",
-        //     WorkspaceManager::instance().get_all_metadata()
-        // );
-        // println!(
-        //     "WorkspaceManager::Instance()->GetAllPackageDependencies() => {:?}",
-        //     WorkspaceManager::instance().get_all_package_dependencies()
-        // );
+        match WorkspaceManager::instance().load_packages() {
+            Ok(_) => {
+                init();
+                PluginManager::instance().load_plugins();
+            }
+            Err(error) => {
+                println!("error: {:?}", error);
+            }
+        }
     }
     #[test]
     fn workspace_with_project_folder_target() {
@@ -132,8 +131,15 @@ mod test {
             .join("05_project_folder_target")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
-        init();
-        WorkspaceManager::instance().print_packages();
+        match WorkspaceManager::instance().load_packages() {
+            Ok(_) => {
+                init();
+                PluginManager::instance().load_plugins();
+            }
+            Err(error) => {
+                eprintln!("{}", error);
+            }
+        }
+        // WorkspaceManager::instance().print_packages();
     }
 }

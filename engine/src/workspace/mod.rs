@@ -131,6 +131,7 @@ pub enum WorkspaceStatus {
     Init,
     PackageLoaded,
     PluginLoaded,
+    Failed,
 }
 
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
@@ -181,11 +182,33 @@ impl WorkspaceManager {
             .unwrap_or(&self.current_manifest)
     }
 
-    pub fn load_packages(&mut self) {
+    pub fn load_packages(&mut self) -> RiftResult<()> {
         self.status = WorkspaceStatus::Init;
         self.packages
             .scan_all_possible_packages(&self.current_manifest);
-        self.status = WorkspaceStatus::PackageLoaded;
+        match self.is_package_name_unique() {
+            Some(conflict_package) => {
+                self.status = WorkspaceStatus::Failed;
+                let error_message = conflict_package
+                    .iter()
+                    .map(|(package_name, paths)| {
+                        format!(
+                            "Package name conflict: {}\n{}",
+                            package_name,
+                            paths.iter().fold(String::new(), |acc, path| {
+                                format!("{}  - {}\n", acc, path.display())
+                            })
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                anyhow::bail!("Package name conflict: {}", error_message);
+            }
+            None => {
+                self.status = WorkspaceStatus::PackageLoaded;
+                Ok(())
+            }
+        }
     }
 
     pub fn get_packages(&self) -> &Packages {
@@ -196,6 +219,37 @@ impl WorkspaceManager {
             "{}",
             serde_json::to_string_pretty(&self.packages.packages).unwrap()
         );
+    }
+
+    fn is_package_name_unique(&self) -> Option<HashMap<String, Vec<PathBuf>>> {
+        let mut name_counts: HashMap<String, i32> = HashMap::new();
+        for (_, instance) in &self.packages.packages {
+            let name = instance.name();
+            let count = name_counts.entry(name).or_insert(0);
+            *count += 1;
+        }
+        let mut name_manifest: HashMap<String, Vec<PathBuf>> = HashMap::new();
+        for (package_name, count) in &name_counts {
+            if *count <= 1 {
+                continue;
+            }
+            self.packages
+                .packages
+                .iter()
+                .for_each(|(manifest_path, instance)| {
+                    if instance.name().eq(package_name) {
+                        let paths = name_manifest
+                            .entry(package_name.clone())
+                            .or_insert(Vec::new());
+                        paths.push(manifest_path.clone());
+                    }
+                });
+        }
+        if name_manifest.is_empty() {
+            None
+        } else {
+            Some(name_manifest)
+        }
     }
 
     pub fn find_package_from_manifest_path(

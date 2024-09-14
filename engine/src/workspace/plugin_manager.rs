@@ -1,6 +1,13 @@
 use std::{collections::HashMap, path::PathBuf, rc::Rc};
 
-use crate::manifest::{EitherManifest, PluginManifest, PluginManifestDeclarator};
+use walkdir::WalkDir;
+
+use crate::{
+    manifest::{EitherManifest, PluginManifest},
+    Rift,
+};
+
+use super::WorkspaceManager;
 
 pub struct PluginInstance {
     inner: Rc<PluginInstanceInner>,
@@ -30,10 +37,6 @@ impl PluginInstance {
 }
 
 pub struct PluginManager {
-    pub pending_plugins: HashMap<
-        String,                        // 需要加载插件的包
-        Vec<PluginManifestDeclarator>, // 对应的插件
-    >,
     plugins: HashMap<
         String,         // 插件名
         PluginInstance, // 插件实例信息
@@ -49,7 +52,6 @@ impl Into<EitherManifest> for PluginManifest {
 impl PluginManager {
     fn new() -> Self {
         Self {
-            pending_plugins: HashMap::new(),
             plugins: HashMap::new(),
         }
     }
@@ -58,48 +60,72 @@ impl PluginManager {
             once_cell::sync::Lazy::new(|| PluginManager::new());
         unsafe { &mut *INSTANCE }
     }
+    /// 列举所有可能的插件包目录
+    /// 只处理如下目录:
+    /// - ${env:HOME}/.rift/plugins
+    /// - ${installationPath}/plugins
+    /// - ${workspaceRoot}/.rift/plugins
+    fn enumerate_all_possible_plugins(&self) -> Option<Vec<PathBuf>> {
+        if !WorkspaceManager::instance().is_package_loaded() {
+            return None;
+        }
+        let mut ret: Vec<PathBuf> = Vec::new();
+        let installation_path = Rift::instance()
+            .rift_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("plugins");
+        let home_path = Rift::instance().home_path().unwrap().join("plugins");
+        let workspace_root = WorkspaceManager::instance()
+            .root()
+            .join(".rift")
+            .join("plugins");
 
-    pub fn register_plugin(&mut self, pkg_name: String, plugin: PluginManifestDeclarator) {
-        self.pending_plugins
-            .entry(pkg_name)
-            .or_insert(Vec::new())
-            .push(plugin);
-    }
-
-    pub fn load_plugin(&mut self) {}
-
-    pub fn find_plugin_from_script_path(
-        &self,
-        script_path: &PathBuf,
-    ) -> Option<(
-        PathBuf,        // 插件Manifest路径
-        PluginManifest, // 插件Manifest
-    )> {
-        for pl in &self.plugins {
-            let instance = pl.1;
-            let script = (|| {
-                if instance.manifest().dependencies.is_some() {
-                    Some(PathBuf::from(
-                        instance.manifest().dependencies.clone().unwrap(),
-                    ))
-                } else if instance.manifest().metadata.is_some() {
-                    Some(PathBuf::from(instance.manifest().metadata.clone().unwrap()))
-                } else {
-                    return None;
-                }
-            })();
-            match script {
-                Some(script) => {
-                    if script.eq(script_path) {
-                        return Some((
-                            instance.manifest_path().clone(),
-                            instance.manifest().clone(),
-                        ));
+        for dir in WalkDir::new(installation_path) {
+            match dir {
+                Ok(dir) => {
+                    if dir.file_type().is_file() {
+                        if dir.path().ends_with("Rift.toml") {
+                            ret.push(dir.into_path());
+                        }
                     }
                 }
-                None => return None,
+                Err(_) => continue,
             }
         }
-        None
+        for dir in WalkDir::new(home_path) {
+            match dir {
+                Ok(dir) => {
+                    if dir.file_type().is_file() {
+                        if dir.path().ends_with("Rift.toml") {
+                            ret.push(dir.into_path());
+                        }
+                    }
+                }
+                Err(_) => continue,
+            }
+        }
+        for dir in WalkDir::new(workspace_root) {
+            match dir {
+                Ok(dir) => {
+                    if dir.file_type().is_file() {
+                        if dir.path().ends_with("Rift.toml") {
+                            ret.push(dir.into_path());
+                        }
+                    }
+                }
+                Err(_) => continue,
+            }
+        }
+        Some(ret)
+    }
+
+    pub fn load_plugins(&mut self) {
+        let possible_plugins = self.enumerate_all_possible_plugins().unwrap_or(Vec::new());
+
+        possible_plugins.iter().for_each(|path| {
+            println!("plugin_path: {}", path.display());
+        });
     }
 }
