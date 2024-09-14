@@ -40,6 +40,9 @@ impl PluginInstance {
     pub fn pkg(&self) -> &RiftPackage {
         &self.inner.pkg
     }
+    pub fn entry(&self) -> Option<PathBuf> {
+        self.inner.pkg.entry()
+    }
 
     pub fn manifest_path(&self) -> &PathBuf {
         &self.inner.manifest_path
@@ -196,5 +199,23 @@ impl PluginManager {
             .iter_mut()
             .find(|(_, instance)| instance.name() == plugin_name)
             .map(|(_, instance)| instance.add_metadata(metadata));
+    }
+
+    pub fn activate_plugins(&self) {
+        self.plugins.iter().for_each(|(_, instance)| {
+            let entry = instance.entry();
+            match entry {
+                Some(entry) => {
+
+                    /* let _ = std::process::Command::new("node")
+                    .arg(entry)
+                    .spawn()
+                    .expect("Failed to start plugin"); */
+                }
+                None => {
+                    eprintln!("Plugin {} has no entry", instance.name());
+                }
+            }
+        });
     }
 }

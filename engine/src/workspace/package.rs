@@ -40,6 +40,14 @@ impl RiftPackage {
     pub fn name(&self) -> String {
         self.manifest().name()
     }
+    pub fn entry(&self) -> Option<PathBuf> {
+        match self.manifest() {
+            RiftManifest::Plugin(plugin) => Some(get_actual_script_path(
+                self.manifest_path().to_path_buf(),
+                &plugin.entry,
+            )),
+        }
+    }
 
     /// 依赖脚本路径，此时一定是绝对路径
     pub fn dependencies(&self) -> Option<PathBuf> {

@@ -101,7 +101,7 @@ pub struct PluginManifest {
     pub description: Option<String>,
     pub metadata: Option<String>,
     pub dependencies: Option<String>,
-    pub entry: Option<String>,
+    pub entry: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

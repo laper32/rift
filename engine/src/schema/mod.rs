@@ -84,7 +84,8 @@ pub struct TomlPlugin {
     pub description: Option<String>,
     pub metadata: Option<String>,
     pub dependencies: Option<String>,
-    pub entry: Option<String>,
+    // 如果是模板生成的话就是src/main.ts，当然用户可以自己编辑
+    pub entry: String,
 }
 
 /// 给脚本用的<br/>
