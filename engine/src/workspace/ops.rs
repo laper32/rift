@@ -47,7 +47,6 @@ fn op_add_manifest_metadata(
                         .add_metadata_for_plugin(pkg.manifest().name(), metadata.clone());
                 }
             },
-            _ => {}
         },
         None => println!("No current evaluating package, impossible!"),
     }

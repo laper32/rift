@@ -161,6 +161,7 @@ mod test {
     #[test]
     fn test_capture_not_predifined_fields() {
         #[derive(std::fmt::Debug, serde::Deserialize)]
+        #[allow(dead_code)]
         struct Example {
             a: String,
             b: String,

@@ -421,6 +421,8 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
     Ok(manifest?)
 }
 
+/// 暂时用不着，之后再说
+#[allow(dead_code)]
 pub fn print_manifest_structure(path: &Path, prefix: String, is_last: bool) {
     // Current folder
     let indent = if is_last { "└─" } else { "├─" };

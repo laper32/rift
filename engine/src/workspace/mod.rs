@@ -128,7 +128,6 @@ pub enum WorkspaceStatus {
     Unknown,
     Init,
     PackageLoaded,
-    PluginLoaded,
     Failed,
 }
 
@@ -500,7 +499,7 @@ mod test {
             .join("01_simple_target")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         println!(
             "{}",
             serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
@@ -514,7 +513,7 @@ mod test {
             .join("02_single_target_with_project")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 1);
         println!(
             "{}",
@@ -529,7 +528,7 @@ mod test {
             .join("03_single_project_with_multiple_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
 
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
         println!(
@@ -545,7 +544,7 @@ mod test {
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
         println!(
             "{}",
@@ -561,7 +560,7 @@ mod test {
             .join("05_project_folder_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 11);
         println!(
             "{}",
@@ -577,7 +576,7 @@ mod test {
             .join("06_workspace_folder_project_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 33); // ...是巧合吗？
         println!(
             "{}",
