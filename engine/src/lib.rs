@@ -40,15 +40,12 @@ impl CurrentEvaluatingPackage {
 }
 
 pub fn init() -> bool {
-    // let cwd = std::env::current_dir().unwrap();
-    // let ws = WorkspaceManager::new(&cwd);
-    // println!("Workspace root: {:?}", ws.root());
-    // println!("Workspace root manifest: {:?}", ws.root_manifest());
+    runtime::init();
     true
 }
 
 pub fn shutdown() {
-    // runtime::shutdown();
+    runtime::shutdown();
 }
 
 pub struct Rift {

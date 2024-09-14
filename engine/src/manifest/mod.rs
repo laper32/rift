@@ -228,6 +228,12 @@ impl RiftManifest {
     }
 }
 
+impl Into<EitherManifest> for RiftManifest {
+    fn into(self) -> EitherManifest {
+        EitherManifest::Rift(self)
+    }
+}
+
 pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
     let parent_manifest_path = current_path.parent()?.join(MANIFEST_IDENTIFIER);
     if parent_manifest_path.exists() {

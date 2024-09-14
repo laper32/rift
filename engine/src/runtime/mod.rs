@@ -1,6 +1,5 @@
-use deno_ast::swc::common::plugin;
 use ops::runtime;
-use std::{env, path::PathBuf, rc::Rc};
+use std::{env, rc::Rc};
 use tokio::runtime::Runtime;
 
 use crate::{
@@ -29,8 +28,6 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
 
-    // Rift::instance().set_current_evaluating_package(current_evaluaating_package);
-    // Rift::instance().set_current_evaluation_script(PathBuf::from(file_path));
     // 既然没有执行脚本的return value，那么我们就改变策略，重点让大家去调用提供的API.
     let result = js_runtime.mod_evaluate(mod_id);
     js_runtime.run_event_loop(Default::default()).await?;
@@ -57,31 +54,96 @@ fn declare_workspace_plugins(runtime: &Runtime) {
                     eprintln!("error: {error}");
                 }
             }
-            None => {
-                println!("\"{}\" => Plugins => Not found, skip", pkg.pkg().name());
-            }
+            None => {}
         }
+    });
+}
 
-        /* let plugin_path = packages.package_plugins(manifest_path);
-        match plugin_path {
-            Some(plugin_path) => {
-                println!("plugin_path: {}", plugin_path.display());
-                let pkg: EitherManifest = WorkspaceManager::instance()
-                    .find_package_from_manifest_path(manifest_path)
-                    .unwrap()
-                    .pkg()
-                    .clone()
-                    .into();
+fn declare_dependencies(runtime: &Runtime) {
+    // Workspace dependencies
+    let packages = WorkspaceManager::instance().get_packages();
+    let manifests = packages.get_manifest_paths();
+    manifests.iter().for_each(|manifest_path| {
+        let pkg = WorkspaceManager::instance()
+            .find_package_from_manifest_path(manifest_path)
+            .unwrap();
+        match pkg.pkg().dependencies() {
+            Some(dependencies) => {
                 Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
-                    pkg,
+                    pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&plugin_path.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(run_js(&dependencies.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
             None => {}
-        } */
+        }
+    });
+    // plugin dependencies, since plugins have been already declared.
+    let manifests = PluginManager::instance().get_manifests();
+    manifests.iter().for_each(|manifest_path| {
+        let pkg = PluginManager::instance()
+            .find_plugin_from_manifest_path(manifest_path)
+            .unwrap();
+        match pkg.pkg().dependencies() {
+            Some(dependencies) => {
+                let evaluating: EitherManifest = pkg.pkg().manifest().clone().into();
+                Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                    evaluating,
+                    manifest_path.clone(),
+                ));
+                if let Err(error) = runtime.block_on(run_js(&dependencies.to_str().unwrap())) {
+                    eprintln!("error: {error}");
+                }
+            }
+            None => {}
+        }
+    });
+}
+
+fn declare_metadata(runtime: &Runtime) {
+    // Workspace metadaata.
+    let packages = WorkspaceManager::instance().get_packages();
+    let manifests = packages.get_manifest_paths();
+    manifests.iter().for_each(|manifest_path| {
+        let pkg = WorkspaceManager::instance()
+            .find_package_from_manifest_path(manifest_path)
+            .unwrap();
+        match pkg.pkg().metadata() {
+            Some(metadata) => {
+                Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                    pkg.pkg().clone().into(),
+                    manifest_path.clone(),
+                ));
+                if let Err(error) = runtime.block_on(run_js(&metadata.to_str().unwrap())) {
+                    eprintln!("error: {error}");
+                }
+            }
+            None => {}
+        }
+    });
+
+    // plugin metadata, since plugins has been already declared.
+    // plugin dependencies, since plugins have been already declared.
+    let manifests = PluginManager::instance().get_manifests();
+    manifests.iter().for_each(|manifest_path| {
+        let pkg = PluginManager::instance()
+            .find_plugin_from_manifest_path(manifest_path)
+            .unwrap();
+        match pkg.pkg().metadata() {
+            Some(metadata) => {
+                let evaluating: EitherManifest = pkg.pkg().manifest().clone().into();
+                Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                    evaluating,
+                    manifest_path.clone(),
+                ));
+                if let Err(error) = runtime.block_on(run_js(&metadata.to_str().unwrap())) {
+                    eprintln!("error: {error}");
+                }
+            }
+            None => {}
+        }
     });
 }
 
@@ -91,6 +153,9 @@ pub fn init() {
         .build()
         .unwrap();
     declare_workspace_plugins(&runtime);
+    PluginManager::instance().load_plugins();
+    declare_dependencies(&runtime);
+    declare_metadata(&runtime);
 }
 
 pub fn shutdown() {}
@@ -119,7 +184,7 @@ mod test {
                 PluginManager::instance().load_plugins();
             }
             Err(error) => {
-                println!("error: {:?}", error);
+                eprintln!("{}", error);
             }
         }
     }
@@ -134,12 +199,13 @@ mod test {
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
                 init();
-                PluginManager::instance().load_plugins();
             }
             Err(error) => {
                 eprintln!("{}", error);
             }
         }
+
         // WorkspaceManager::instance().print_packages();
+        PluginManager::instance().print_plugins();
     }
 }

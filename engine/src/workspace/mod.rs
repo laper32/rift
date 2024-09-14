@@ -18,8 +18,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub type PackageMetadata = HashMap<String, serde_json::Value>;
-
 pub struct Packages {
     packages: HashMap<
         PathBuf,         // Manifest路径
@@ -30,7 +28,7 @@ pub struct Packages {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageInstance {
     pkg: MaybePackage,
-    metadata: PackageMetadata,
+    metadata: HashMap<String, serde_json::Value>,
     dependencies: Vec<DependencyManifestDeclarator>,
     plugins: Vec<PluginManifestDeclarator>,
 }
@@ -57,7 +55,7 @@ impl PackageInstance {
     pub fn add_dependency(&mut self, dependency: DependencyManifestDeclarator) {
         self.dependencies.push(dependency);
     }
-    pub fn metadata(&self) -> &PackageMetadata {
+    pub fn metadata(&self) -> &HashMap<String, serde_json::Value> {
         &self.metadata
     }
     pub fn add_metadata(&mut self, metadata: HashMap<String, serde_json::Value>) {

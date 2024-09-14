@@ -1,38 +1,66 @@
 use std::{collections::HashMap, path::PathBuf, rc::Rc};
 
+use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 use crate::{
-    manifest::{EitherManifest, PluginManifest},
+    manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
     Rift,
 };
 
-use super::WorkspaceManager;
+use super::{package::RiftPackage, WorkspaceManager};
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PluginInstance {
-    inner: Rc<PluginInstanceInner>,
+    inner: PluginInstanceInner,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 struct PluginInstanceInner {
-    manifest: PluginManifest,
+    pkg: RiftPackage,
     manifest_path: PathBuf,
+    metadata: HashMap<String, serde_json::Value>,
+    dependencies: Vec<DependencyManifestDeclarator>,
 }
 
 impl PluginInstance {
     pub fn new(manifest: PluginManifest, manifest_path: PathBuf) -> Self {
         Self {
-            inner: Rc::new(PluginInstanceInner {
-                manifest,
+            inner: PluginInstanceInner {
+                pkg: RiftPackage::new(
+                    crate::manifest::RiftManifest::Plugin(manifest),
+                    &manifest_path,
+                ),
                 manifest_path,
-            }),
+                metadata: HashMap::new(),
+                dependencies: Vec::new(),
+            },
         }
     }
-    pub fn manifest(&self) -> &PluginManifest {
-        &self.inner.manifest
+    pub fn pkg(&self) -> &RiftPackage {
+        &self.inner.pkg
     }
 
     pub fn manifest_path(&self) -> &PathBuf {
         &self.inner.manifest_path
+    }
+
+    pub fn name(&self) -> String {
+        self.inner.pkg.name()
+    }
+    pub fn dependencies(&self) -> &Vec<DependencyManifestDeclarator> {
+        &self.inner.dependencies
+    }
+    pub fn add_dependency(&mut self, dependency: DependencyManifestDeclarator) {
+        self.inner.dependencies.push(dependency);
+    }
+    pub fn metadata(&self) -> &HashMap<String, serde_json::Value> {
+        &self.inner.metadata
+    }
+    pub fn add_metadata(&mut self, metadata: HashMap<String, serde_json::Value>) {
+        metadata.iter().for_each(|(k, v)| {
+            self.inner.metadata.insert(k.clone(), v.clone());
+        });
     }
 }
 
@@ -82,42 +110,23 @@ impl PluginManager {
             .join(".rift")
             .join("plugins");
 
-        for dir in WalkDir::new(installation_path) {
-            match dir {
-                Ok(dir) => {
-                    if dir.file_type().is_file() {
-                        if dir.path().ends_with("Rift.toml") {
-                            ret.push(dir.into_path());
+        let mut enumerate_impl = |path_for_enumerate: PathBuf| {
+            for dir in WalkDir::new(path_for_enumerate) {
+                match dir {
+                    Ok(dir) => {
+                        if dir.file_type().is_file() {
+                            if dir.path().ends_with("Rift.toml") {
+                                ret.push(dir.into_path());
+                            }
                         }
                     }
+                    Err(_) => continue,
                 }
-                Err(_) => continue,
             }
-        }
-        for dir in WalkDir::new(home_path) {
-            match dir {
-                Ok(dir) => {
-                    if dir.file_type().is_file() {
-                        if dir.path().ends_with("Rift.toml") {
-                            ret.push(dir.into_path());
-                        }
-                    }
-                }
-                Err(_) => continue,
-            }
-        }
-        for dir in WalkDir::new(workspace_root) {
-            match dir {
-                Ok(dir) => {
-                    if dir.file_type().is_file() {
-                        if dir.path().ends_with("Rift.toml") {
-                            ret.push(dir.into_path());
-                        }
-                    }
-                }
-                Err(_) => continue,
-            }
-        }
+        };
+        enumerate_impl(installation_path);
+        enumerate_impl(home_path);
+        enumerate_impl(workspace_root);
         Some(ret)
     }
 
@@ -125,7 +134,67 @@ impl PluginManager {
         let possible_plugins = self.enumerate_all_possible_plugins().unwrap_or(Vec::new());
 
         possible_plugins.iter().for_each(|path| {
-            println!("plugin_path: {}", path.display());
+            self.read_plugin_manifest(path);
         });
+    }
+
+    pub fn plugins_count(&self) -> usize {
+        self.plugins.len()
+    }
+
+    fn read_plugin_manifest(&mut self, manifest_path: &PathBuf) {
+        let manifest = read_manifest(&manifest_path.as_path());
+        match manifest {
+            Ok(manifest) => match manifest {
+                EitherManifest::Rift(rm) => match rm {
+                    crate::manifest::RiftManifest::Plugin(ref pm) => {
+                        let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
+                        self.plugins.insert(instance.name(), instance);
+                    }
+                },
+                _ => { /* Do nothing */ }
+            },
+            Err(_) => { /* Do nothing */ }
+        }
+    }
+
+    pub fn get_manifests(&self) -> Vec<PathBuf> {
+        self.plugins
+            .values()
+            .map(|p| p.manifest_path().clone())
+            .collect()
+    }
+    pub fn find_plugin_from_manifest_path(
+        &self,
+        manifest_path: &PathBuf,
+    ) -> Option<&PluginInstance> {
+        self.plugins
+            .values()
+            .find(|x| x.manifest_path().eq(manifest_path))
+    }
+
+    pub fn print_plugins(&self) {
+        println!("{}", serde_json::to_string_pretty(&self.plugins).unwrap());
+    }
+    pub fn add_dependency_for_plugin(
+        &mut self,
+        plugin_name: String,
+        dependency: DependencyManifestDeclarator,
+    ) {
+        self.plugins
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == plugin_name)
+            .map(|(_, instance)| instance.add_dependency(dependency));
+    }
+
+    pub fn add_metadata_for_plugin(
+        &mut self,
+        plugin_name: String,
+        metadata: HashMap<String, serde_json::Value>,
+    ) {
+        self.plugins
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == plugin_name)
+            .map(|(_, instance)| instance.add_metadata(metadata));
     }
 }
