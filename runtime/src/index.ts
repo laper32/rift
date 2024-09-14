@@ -25,6 +25,21 @@ namespace rift {
         export function add(plugin: Plugin) {
             ops.op_add_manifest_plugin(plugin)
         }
+        export namespace onLoad {
+            export function addListener(callback: Function) {
+                ops.op_plugin_on_load(callback)
+            }
+        }
+        export namespace onUnload {
+            export function addListener(callback: Function) {
+                ops.op_plugin_on_unload(callback)
+            }
+        }
+        export namespace onAllLoaded {
+            export function addListener(callback: Function) {
+                ops.op_plugon_on_all_loaded(callback)
+            }
+        }
     }
     export namespace metadata {
         export function add(key: String, value: String) {
