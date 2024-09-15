@@ -36,6 +36,8 @@ pub struct PackageInstance {
     plugins: Vec<PluginManifestDeclarator>,
 }
 
+// TODO: These will be used in the future.
+#[allow(dead_code)]
 impl PackageInstance {
     fn new(pkg: MaybePackage) -> Self {
         Self {

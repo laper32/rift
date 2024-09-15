@@ -49,3 +49,27 @@ extension! {
         op_on_plugin_unload,
     ],
 }
+
+#[cfg(test)]
+mod test {
+    use crate::{plsys::PluginManager, runtime::init, util, workspace::WorkspaceManager};
+
+    #[test]
+    fn test_load_plugins() {
+        let our_project_root = util::get_cargo_project_root().unwrap();
+        let simple_workspace = our_project_root
+            .join("sample")
+            .join("02_single_target_with_project")
+            .join("Rift.toml");
+        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
+        match WorkspaceManager::instance().load_packages() {
+            Ok(_) => {
+                init();
+                PluginManager::instance().activate_plugins();
+            }
+            Err(error) => {
+                eprintln!("{}", error);
+            }
+        }
+    }
+}

@@ -7,6 +7,7 @@ use walkdir::WalkDir;
 
 use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
+    runtime,
     workspace::{package::RiftPackage, WorkspaceManager},
     Rift,
 };
@@ -177,12 +178,19 @@ impl PluginManager {
                 EitherManifest::Rift(rm) => match rm {
                     crate::manifest::RiftManifest::Plugin(ref pm) => {
                         let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
+
                         self.plugins.insert(instance.name(), instance);
                     }
                 },
                 _ => { /* Do nothing */ }
             },
-            Err(_) => { /* Do nothing */ }
+            Err(e) => {
+                eprintln!(
+                    "Error when parsing manifest \"{}\"\n{}",
+                    manifest_path.display(),
+                    e.to_string()
+                )
+            }
         }
     }
 
@@ -231,11 +239,15 @@ impl PluginManager {
             let entry = instance.entry();
             match entry {
                 Some(entry) => {
-
-                    /* let _ = std::process::Command::new("node")
-                    .arg(entry)
-                    .spawn()
-                    .expect("Failed to start plugin"); */
+                    let runtime = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
+                    if let Err(error) =
+                        runtime.block_on(runtime::evaluate(&entry.to_str().unwrap()))
+                    {
+                        eprintln!("error: {error}");
+                    }
                 }
                 None => {
                     eprintln!("Plugin {} has no entry", instance.name());

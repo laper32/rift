@@ -26,7 +26,7 @@ fn init_engine_ops() -> Vec<deno_core::Extension> {
 
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
-async fn run_js(file_path: &str) -> RiftResult<()> {
+pub async fn evaluate(file_path: &str) -> RiftResult<()> {
     let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
         module_loader: Some(Rc::new(loader::TsModuleLoader)),
@@ -58,7 +58,7 @@ fn declare_workspace_plugins(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&plugins.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&plugins.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -81,7 +81,7 @@ fn declare_dependencies(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&dependencies.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&dependencies.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -101,7 +101,7 @@ fn declare_dependencies(runtime: &Runtime) {
                     evaluating,
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&dependencies.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&dependencies.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -124,7 +124,7 @@ fn declare_metadata(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&metadata.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&metadata.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -146,7 +146,7 @@ fn declare_metadata(runtime: &Runtime) {
                     evaluating,
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&metadata.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&metadata.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
