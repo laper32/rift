@@ -11,6 +11,7 @@ use util::{
 };
 
 mod manifest;
+pub mod plsys;
 mod runtime;
 mod schema;
 pub mod task;

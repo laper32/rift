@@ -1,6 +1,5 @@
-pub mod ops;
-mod package;
-pub mod plugin_manager;
+mod ops;
+pub mod package;
 
 use package::{Package, VirtualPackage};
 use serde::{Deserialize, Serialize};
@@ -17,6 +16,10 @@ use std::{
     collections::{hash_map::Entry, HashMap},
     path::{Path, PathBuf},
 };
+
+pub fn init_ops() -> deno_core::Extension {
+    ops::workspace::init_ops()
+}
 
 pub struct Packages {
     packages: HashMap<

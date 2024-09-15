@@ -3,15 +3,26 @@ use std::{env, rc::Rc};
 use tokio::runtime::Runtime;
 
 use crate::{
-    manifest::EitherManifest,
+    manifest::{self, EitherManifest},
+    plsys::{self, PluginManager},
     rift,
     util::errors::RiftResult,
-    workspace::{self, plugin_manager::PluginManager, WorkspaceManager},
+    workspace::{self, WorkspaceManager},
     CurrentEvaluatingPackage, Rift,
 };
 
 mod loader;
 mod ops;
+
+fn init_engine_ops() -> Vec<deno_core::Extension> {
+    vec![
+        runtime::init_ops(),
+        rift::init_ops(),
+        manifest::init_ops(),
+        plsys::init_ops(),
+        workspace::init_ops(),
+    ]
+}
 
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
@@ -20,10 +31,7 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
         module_loader: Some(Rc::new(loader::TsModuleLoader)),
         startup_snapshot: Some(&RUNTIME_SNAPSHOT),
-        extensions: vec![runtime::init_ops(), rift::init_ops(), {
-            use workspace::ops::workspace;
-            workspace::init_ops()
-        }],
+        extensions: init_engine_ops(),
         ..Default::default()
     });
     let mod_id = js_runtime.load_main_es_module(&main_module).await?;
@@ -163,10 +171,7 @@ pub fn shutdown() {}
 #[cfg(test)]
 mod test {
 
-    use crate::{
-        util::{self},
-        workspace::{plugin_manager::PluginManager, WorkspaceManager},
-    };
+    use crate::{plsys::PluginManager, util, workspace::WorkspaceManager};
 
     use super::init;
 
@@ -181,7 +186,6 @@ mod test {
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
                 init();
-                PluginManager::instance().load_plugins();
             }
             Err(error) => {
                 eprintln!("{}", error);

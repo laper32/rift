@@ -1,3 +1,5 @@
+mod ops;
+
 use std::{
     collections::HashMap,
     fs,
@@ -12,6 +14,10 @@ use crate::{
     util::{errors::RiftResult, fs::as_posix::PathExt as _},
     workspace::WorkspaceManager,
 };
+
+pub fn init_ops() -> deno_core::Extension {
+    ops::manifest::init_ops()
+}
 
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 

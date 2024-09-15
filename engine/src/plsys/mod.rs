@@ -1,3 +1,5 @@
+mod ops;
+
 use std::{collections::HashMap, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
@@ -5,10 +7,13 @@ use walkdir::WalkDir;
 
 use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
+    workspace::{package::RiftPackage, WorkspaceManager},
     Rift,
 };
 
-use super::{package::RiftPackage, WorkspaceManager};
+pub fn init_ops() -> deno_core::Extension {
+    ops::plsys::init_ops()
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PluginInstance {
