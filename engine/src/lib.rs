@@ -48,12 +48,6 @@ pub fn shutdown() {
     runtime::shutdown();
 }
 
-pub struct Rift {
-    /// rift.exe的路径
-    rift_exe: LazyCell<PathBuf>,
-    current_evaluating_package: Option<CurrentEvaluatingPackage>,
-}
-
 /// Returns the canonicalized absolute path of where the given executable is located based
 /// on searching the `PATH` environment variable.
 ///
@@ -80,6 +74,12 @@ pub fn resolve_executable(exec: &Path) -> RiftResult<PathBuf> {
     } else {
         canonicalize_path(exec)
     }
+}
+
+pub struct Rift {
+    /// rift.exe的路径
+    rift_exe: LazyCell<PathBuf>,
+    current_evaluating_package: Option<CurrentEvaluatingPackage>,
 }
 
 impl Rift {

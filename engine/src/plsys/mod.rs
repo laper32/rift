@@ -2,6 +2,7 @@ mod ops;
 
 use std::{collections::HashMap, path::PathBuf};
 
+use deno_core::v8;
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
@@ -9,7 +10,7 @@ use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
     runtime,
     workspace::{package::RiftPackage, WorkspaceManager},
-    Rift,
+    CurrentEvaluatingPackage, Rift,
 };
 
 pub fn init_ops() -> deno_core::Extension {
@@ -37,6 +38,12 @@ struct PluginInstanceInner {
     metadata: HashMap<String, serde_json::Value>,
     dependencies: Vec<DependencyManifestDeclarator>,
     status: PluginStatus,
+    #[serde(skip_deserializing, skip_serializing)]
+    on_load_fn: Option<v8::Function>,
+    #[serde(skip_deserializing, skip_serializing)]
+    on_all_loaded_fn: Option<v8::Function>,
+    #[serde(skip_deserializing, skip_serializing)]
+    on_unload_fn: Option<v8::Function>,
 }
 
 impl PluginInstance {
@@ -51,6 +58,9 @@ impl PluginInstance {
                 metadata: HashMap::new(),
                 dependencies: Vec::new(),
                 status: PluginStatus::Unknown,
+                on_load_fn: None,
+                on_all_loaded_fn: None,
+                on_unload_fn: None,
             },
         }
     }
@@ -234,7 +244,7 @@ impl PluginManager {
             .map(|(_, instance)| instance.add_metadata(metadata));
     }
 
-    pub fn activate_plugins(&self) {
+    pub fn register_plugin_listeners(&self) {
         self.plugins.iter().for_each(|(_, instance)| {
             let entry = instance.entry();
             match entry {
@@ -243,6 +253,11 @@ impl PluginManager {
                         .enable_all()
                         .build()
                         .unwrap();
+
+                    Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                        instance.pkg().manifest().clone().into(),
+                        instance.manifest_path().clone(),
+                    ));
                     if let Err(error) =
                         runtime.block_on(runtime::evaluate(&entry.to_str().unwrap()))
                     {
