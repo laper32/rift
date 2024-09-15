@@ -27,17 +27,17 @@ namespace rift {
         }
         export namespace onLoad {
             export function addListener(callback: Function) {
-                ops.op_plugin_on_load(callback)
+                ops.op_on_plugin_load(callback)
             }
         }
         export namespace onUnload {
             export function addListener(callback: Function) {
-                ops.op_plugin_on_unload(callback)
+                ops.op_on_plugin_unload(callback)
             }
         }
         export namespace onAllLoaded {
             export function addListener(callback: Function) {
-                ops.op_plugon_on_all_loaded(callback)
+                ops.op_on_plugin_all_loaded(callback)
             }
         }
     }

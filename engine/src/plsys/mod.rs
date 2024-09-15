@@ -16,6 +16,15 @@ pub fn init_ops() -> deno_core::Extension {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub enum PluginStatus {
+    Unknown,
+    Init,
+    Loaded,
+    Failed,
+    RuntimeError,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PluginInstance {
     inner: PluginInstanceInner,
 }
@@ -26,6 +35,7 @@ struct PluginInstanceInner {
     manifest_path: PathBuf,
     metadata: HashMap<String, serde_json::Value>,
     dependencies: Vec<DependencyManifestDeclarator>,
+    status: PluginStatus,
 }
 
 impl PluginInstance {
@@ -39,9 +49,19 @@ impl PluginInstance {
                 manifest_path,
                 metadata: HashMap::new(),
                 dependencies: Vec::new(),
+                status: PluginStatus::Unknown,
             },
         }
     }
+
+    pub fn status(&self) -> &PluginStatus {
+        &self.inner.status
+    }
+
+    pub fn set_status(&mut self, status: PluginStatus) {
+        self.inner.status = status;
+    }
+
     pub fn pkg(&self) -> &RiftPackage {
         &self.inner.pkg
     }
