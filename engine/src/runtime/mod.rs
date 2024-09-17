@@ -5,12 +5,11 @@ use std::{env, rc::Rc};
 use tokio::runtime::Runtime;
 
 use crate::{
-    manifest::{self, EitherManifest},
-    plsys::{self, PluginManager},
+    manifest::{self},
+    plsys::{self},
     rift,
     util::errors::RiftResult,
-    workspace::{self, WorkspaceManager},
-    CurrentEvaluatingPackage, Rift,
+    workspace::{self},
 };
 
 mod loader;
@@ -36,10 +35,7 @@ impl ScriptRuntime {
             js_runtime: deno_core::JsRuntime::new(deno_core::RuntimeOptions {
                 module_loader: Some(Rc::new(loader::TsModuleLoader)),
                 startup_snapshot: Some(&RUNTIME_SNAPSHOT),
-                extensions: vec![runtime::init_ops(), rift::init_ops(), {
-                    use workspace::ops::workspace;
-                    workspace::init_ops()
-                }],
+                extensions: init_engine_ops(),
                 ..Default::default()
             }),
         }
@@ -82,7 +78,7 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     ScriptRuntime::instance().eval(&module).await
 }
 
-fn declare_workspace_plugins(runtime: &Runtime) {
+/* fn declare_workspace_plugins(runtime: &Runtime) {
     let packages = WorkspaceManager::instance().get_packages();
     let manifests = packages.get_manifest_paths();
     // Plugins
@@ -192,7 +188,7 @@ fn declare_metadata(runtime: &Runtime) {
             None => {}
         }
     });
-}
+} */
 
 static SHOULD_STOP: bool = false;
 

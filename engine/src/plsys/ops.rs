@@ -51,6 +51,7 @@ extension! {
 mod test {
     use crate::{plsys::PluginManager, runtime::init, util, workspace::WorkspaceManager};
 
+    /*
     #[test]
     fn test_load_plugins() {
         let our_project_root = util::get_cargo_project_root().unwrap();
@@ -68,5 +69,5 @@ mod test {
                 eprintln!("{}", error);
             }
         }
-    }
+    } */
 }

@@ -244,7 +244,7 @@ impl PluginManager {
             .map(|(_, instance)| instance.add_metadata(metadata));
     }
 
-    pub fn register_plugin_listeners(&self) {
+    /* pub fn register_plugin_listeners(&self) {
         self.plugins.iter().for_each(|(_, instance)| {
             let entry = instance.entry();
             match entry {
@@ -269,5 +269,5 @@ impl PluginManager {
                 }
             }
         });
-    }
+    } */
 }
