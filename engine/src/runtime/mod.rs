@@ -5,15 +5,26 @@ use std::{env, rc::Rc};
 use tokio::runtime::Runtime;
 
 use crate::{
-    manifest::EitherManifest,
+    manifest::{self, EitherManifest},
+    plsys::{self, PluginManager},
     rift,
     util::errors::RiftResult,
-    workspace::{self, plugin_manager::PluginManager, WorkspaceManager},
+    workspace::{self, WorkspaceManager},
     CurrentEvaluatingPackage, Rift,
 };
 
 mod loader;
 mod ops;
+
+fn init_engine_ops() -> Vec<deno_core::Extension> {
+    vec![
+        runtime::init_ops(),
+        rift::init_ops(),
+        manifest::init_ops(),
+        plsys::init_ops(),
+        workspace::init_ops(),
+    ]
+}
 
 pub struct ScriptRuntime {
     js_runtime: deno_core::JsRuntime,
@@ -86,7 +97,7 @@ fn declare_workspace_plugins(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&plugins.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&plugins.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -109,7 +120,7 @@ fn declare_dependencies(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&dependencies.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&dependencies.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -129,7 +140,7 @@ fn declare_dependencies(runtime: &Runtime) {
                     evaluating,
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&dependencies.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&dependencies.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -152,7 +163,7 @@ fn declare_metadata(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&metadata.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&metadata.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -174,7 +185,7 @@ fn declare_metadata(runtime: &Runtime) {
                     evaluating,
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(run_js(&metadata.to_str().unwrap())) {
+                if let Err(error) = runtime.block_on(evaluate(&metadata.to_str().unwrap())) {
                     eprintln!("error: {error}");
                 }
             }
@@ -206,10 +217,7 @@ pub fn shutdown() {}
 #[cfg(test)]
 mod test {
 
-    use crate::{
-        util::{self},
-        workspace::{plugin_manager::PluginManager, WorkspaceManager},
-    };
+    use crate::{plsys::PluginManager, util, workspace::WorkspaceManager};
 
     use super::init;
 
@@ -224,7 +232,6 @@ mod test {
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
                 init();
-                PluginManager::instance().load_plugins();
             }
             Err(error) => {
                 eprintln!("{}", error);

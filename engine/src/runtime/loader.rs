@@ -75,7 +75,7 @@ impl deno_core::ModuleLoader for TsModuleLoader {
     ) -> deno_core::ModuleLoadResponse {
         let module_specifier = module_specifier.clone();
         let module_load = Box::pin(async move {
-            let path = if module_specifier.scheme() == "rift" {
+            let path = if module_specifier.scheme() == "pkg" {
                 let path = module_specifier.path();
                 let dummy: Vec<&str> = path.split("/").collect();
                 let rift_package = dummy[0];

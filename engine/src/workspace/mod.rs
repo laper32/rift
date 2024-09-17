@@ -1,6 +1,5 @@
-pub mod ops;
-mod package;
-pub mod plugin_manager;
+mod ops;
+pub mod package;
 
 use package::{Package, VirtualPackage};
 use serde::{Deserialize, Serialize};
@@ -18,6 +17,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+pub fn init_ops() -> deno_core::Extension {
+    ops::workspace::init_ops()
+}
+
 pub struct Packages {
     packages: HashMap<
         PathBuf,         // Manifest路径
@@ -33,6 +36,8 @@ pub struct PackageInstance {
     plugins: Vec<PluginManifestDeclarator>,
 }
 
+// TODO: These will be used in the future.
+#[allow(dead_code)]
 impl PackageInstance {
     fn new(pkg: MaybePackage) -> Self {
         Self {

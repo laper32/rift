@@ -1,25 +1,11 @@
-namespace rift {
+rift.plugins.onLoad.addListener(() => {
+    console.log("Loading plugin");
+});
 
-    export namespace plugin {
-        export function main(fn: Function) {
+rift.plugins.onUnload.addListener(() => {
+    console.log("Unloading plugin");
+});
 
-        }
-    }
-
-}
-
-@rift.plugin.main
-class ExamplePlugin {
-    constructor() {
-    }
-    onLoad() {
-
-    }
-
-    onUnload() {
-
-    }
-    onAllLoad() {
-
-    }
-}
+rift.plugins.onAllLoaded.addListener(() => {
+    console.log("All plugins loaded");
+});

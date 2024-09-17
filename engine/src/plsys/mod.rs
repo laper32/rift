@@ -1,14 +1,30 @@
+mod ops;
+
 use std::{collections::HashMap, path::PathBuf};
 
+use deno_core::v8;
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
-    Rift,
+    runtime,
+    workspace::{package::RiftPackage, WorkspaceManager},
+    CurrentEvaluatingPackage, Rift,
 };
 
-use super::{package::RiftPackage, WorkspaceManager};
+pub fn init_ops() -> deno_core::Extension {
+    ops::plsys::init_ops()
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum PluginStatus {
+    Unknown,
+    Init,
+    Loaded,
+    Failed,
+    RuntimeError,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PluginInstance {
@@ -21,6 +37,13 @@ struct PluginInstanceInner {
     manifest_path: PathBuf,
     metadata: HashMap<String, serde_json::Value>,
     dependencies: Vec<DependencyManifestDeclarator>,
+    status: PluginStatus,
+    #[serde(skip_deserializing, skip_serializing)]
+    on_load_fn: Option<v8::Function>,
+    #[serde(skip_deserializing, skip_serializing)]
+    on_all_loaded_fn: Option<v8::Function>,
+    #[serde(skip_deserializing, skip_serializing)]
+    on_unload_fn: Option<v8::Function>,
 }
 
 impl PluginInstance {
@@ -34,9 +57,22 @@ impl PluginInstance {
                 manifest_path,
                 metadata: HashMap::new(),
                 dependencies: Vec::new(),
+                status: PluginStatus::Unknown,
+                on_load_fn: None,
+                on_all_loaded_fn: None,
+                on_unload_fn: None,
             },
         }
     }
+
+    pub fn status(&self) -> &PluginStatus {
+        &self.inner.status
+    }
+
+    pub fn set_status(&mut self, status: PluginStatus) {
+        self.inner.status = status;
+    }
+
     pub fn pkg(&self) -> &RiftPackage {
         &self.inner.pkg
     }
@@ -152,12 +188,19 @@ impl PluginManager {
                 EitherManifest::Rift(rm) => match rm {
                     crate::manifest::RiftManifest::Plugin(ref pm) => {
                         let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
+
                         self.plugins.insert(instance.name(), instance);
                     }
                 },
                 _ => { /* Do nothing */ }
             },
-            Err(_) => { /* Do nothing */ }
+            Err(e) => {
+                eprintln!(
+                    "Error when parsing manifest \"{}\"\n{}",
+                    manifest_path.display(),
+                    e.to_string()
+                )
+            }
         }
     }
 
@@ -201,16 +244,25 @@ impl PluginManager {
             .map(|(_, instance)| instance.add_metadata(metadata));
     }
 
-    pub fn activate_plugins(&self) {
+    pub fn register_plugin_listeners(&self) {
         self.plugins.iter().for_each(|(_, instance)| {
             let entry = instance.entry();
             match entry {
                 Some(entry) => {
+                    let runtime = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
 
-                    /* let _ = std::process::Command::new("node")
-                    .arg(entry)
-                    .spawn()
-                    .expect("Failed to start plugin"); */
+                    Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
+                        instance.pkg().manifest().clone().into(),
+                        instance.manifest_path().clone(),
+                    ));
+                    if let Err(error) =
+                        runtime.block_on(runtime::evaluate(&entry.to_str().unwrap()))
+                    {
+                        eprintln!("error: {error}");
+                    }
                 }
                 None => {
                     eprintln!("Plugin {} has no entry", instance.name());
