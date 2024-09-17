@@ -1,3 +1,5 @@
+use deno_ast::ModuleSpecifier;
+use deno_core::error::AnyError;
 use ops::runtime;
 use std::{env, rc::Rc};
 use tokio::runtime::Runtime;
@@ -13,26 +15,60 @@ use crate::{
 mod loader;
 mod ops;
 
+pub struct ScriptRuntime {
+    js_runtime: deno_core::JsRuntime,
+}
+
+impl ScriptRuntime {
+    fn new() -> Self {
+        Self {
+            js_runtime: deno_core::JsRuntime::new(deno_core::RuntimeOptions {
+                module_loader: Some(Rc::new(loader::TsModuleLoader)),
+                startup_snapshot: Some(&RUNTIME_SNAPSHOT),
+                extensions: vec![runtime::init_ops(), rift::init_ops(), {
+                    use workspace::ops::workspace;
+                    workspace::init_ops()
+                }],
+                ..Default::default()
+            }),
+        }
+    }
+
+    pub fn instance() -> &'static mut Self {
+        static mut INSTANCE: once_cell::sync::Lazy<ScriptRuntime> =
+            once_cell::sync::Lazy::new(|| ScriptRuntime::new());
+        unsafe { &mut *INSTANCE }
+    }
+
+    pub fn js_runtime(&mut self) -> &mut deno_core::JsRuntime {
+        &mut self.js_runtime
+    }
+
+    pub async fn run_event_loop(&mut self) -> RiftResult<()> {
+        self.js_runtime.run_event_loop(Default::default()).await
+    }
+
+    pub async fn mod_evaluate(&mut self, id: deno_core::ModuleId) -> RiftResult<()> {
+        self.js_runtime.mod_evaluate(id).await
+    }
+
+    pub async fn load_main_es_module(
+        &mut self,
+        module: &ModuleSpecifier,
+    ) -> RiftResult<deno_core::ModuleId> {
+        self.js_runtime.load_main_es_module(module).await
+    }
+    pub async fn eval(&mut self, module: &ModuleSpecifier) -> RiftResult<()> {
+        let id = self.load_main_es_module(module).await?;
+        self.mod_evaluate(id).await
+    }
+}
+
 static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 
 async fn run_js(file_path: &str) -> RiftResult<()> {
-    let main_module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
-    let mut js_runtime = deno_core::JsRuntime::new(deno_core::RuntimeOptions {
-        module_loader: Some(Rc::new(loader::TsModuleLoader)),
-        startup_snapshot: Some(&RUNTIME_SNAPSHOT),
-        extensions: vec![runtime::init_ops(), rift::init_ops(), {
-            use workspace::ops::workspace;
-            workspace::init_ops()
-        }],
-        ..Default::default()
-    });
-    let mod_id = js_runtime.load_main_es_module(&main_module).await?;
-
-    // 既然没有执行脚本的return value，那么我们就改变策略，重点让大家去调用提供的API.
-    let result = js_runtime.mod_evaluate(mod_id);
-    js_runtime.run_event_loop(Default::default()).await?;
-    let result = result.await;
-    result
+    let module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
+    ScriptRuntime::instance().eval(&module).await
 }
 
 fn declare_workspace_plugins(runtime: &Runtime) {
@@ -147,15 +183,22 @@ fn declare_metadata(runtime: &Runtime) {
     });
 }
 
+static SHOULD_STOP: bool = false;
+
 pub fn init() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
-    declare_workspace_plugins(&runtime);
+    std::thread::spawn(move || {
+        runtime.block_on(async move {
+            let _ = ScriptRuntime::instance().run_event_loop().await;
+        });
+    });
+    /*     declare_workspace_plugins(&runtime);
     PluginManager::instance().load_plugins();
     declare_dependencies(&runtime);
-    declare_metadata(&runtime);
+    declare_metadata(&runtime); */
 }
 
 pub fn shutdown() {}

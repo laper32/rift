@@ -28,3 +28,4 @@ windows-sys = { version = "0.52.0", features = [
     "Wdk_Storage_FileSystem",
     "Win32_System_Registry",
 ] }
+tokio = { version = "1.39.2", features = ["full"] }

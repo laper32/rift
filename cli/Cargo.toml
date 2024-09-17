@@ -16,5 +16,6 @@ serde_json.workspace = true
 serde_toml.workspace = true
 anyhow.workspace = true
 clap.workspace = true
+tokio.workspace = true
 
 engine = { path = "../engine" }
