@@ -38,6 +38,39 @@ impl CurrentEvaluatingPackage {
         &self.manifest_path
     }
 }
+fn setup_panic_hook() {
+    // This function does two things inside of the panic hook:
+    // - Tokio does not exit the process when a task panics, so we define a custom
+    //   panic hook to implement this behaviour.
+    // - We print a message to stderr to indicate that this is a bug in Deno, and
+    //   should be reported to us.
+    let orig_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        eprintln!("\n============================================================");
+        eprintln!("Detected panic in Rift.");
+        eprintln!("Report this at https://github.com/laper32/rift/issues/new.");
+        eprintln!("If you can reliably reproduce this panic, include the");
+        eprintln!("reproduction steps and re-run with the RUST_BACKTRACE=1 env");
+        eprintln!("var set and include the backtrace in your report.");
+        eprintln!();
+        eprintln!(
+            "Platform: {} {}",
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        );
+        // todo: print rift version
+        eprintln!("Args: {:?}", std::env::args().collect::<Vec<_>>());
+        orig_hook(panic_info);
+        std::process::exit(1);
+    }));
+}
+
+pub fn main() {
+    setup_panic_hook();
+
+    init();
+    shutdown();
+}
 
 pub fn init() -> bool {
     runtime::init();

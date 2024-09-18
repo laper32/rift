@@ -1,12 +1,6 @@
-use anyhow::Error;
+// 考虑到V8的实际情况，我们需要提前启动runtime才能进行后面的操作。
+// 但这样就代表着整个Engine都得全Async.
 
-// async有传染性，我们需要在后台跑js runtime，这玩意得async
-// 可能有让它sync的方法？或许是用message机制?
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    engine::init();
-
-    engine::shutdown();
-
-    Ok(())
+fn main() {
+    engine::main()
 }
