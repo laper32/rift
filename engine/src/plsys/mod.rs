@@ -2,13 +2,13 @@ mod ops;
 
 use std::{collections::HashMap, path::PathBuf};
 
-use deno_core::v8;
+use deno_core::v8::{self, Value};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
-    runtime,
+    runtime::{self, ScriptRuntime},
     workspace::{package::RiftPackage, WorkspaceManager},
     CurrentEvaluatingPackage, Rift,
 };
@@ -242,6 +242,50 @@ impl PluginManager {
             .iter_mut()
             .find(|(_, instance)| instance.name() == plugin_name)
             .map(|(_, instance)| instance.add_metadata(metadata));
+    }
+
+    pub fn activate_plugins(&mut self) {
+        self.call_load_plugins_fn();
+        self.call_all_plugins_loaded_fn();
+    }
+
+    pub fn call_load_plugins_fn(&mut self) {
+        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+        let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+        for (_, instance) in &self.plugins {
+            instance
+                .inner
+                .on_load_fn
+                .as_ref()
+                .unwrap()
+                .call(&mut scope, undefined, &[]);
+        }
+    }
+
+    pub fn call_all_plugins_loaded_fn(&mut self) {
+        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+        let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+        for (_, instance) in &self.plugins {
+            instance
+                .inner
+                .on_all_loaded_fn
+                .as_ref()
+                .unwrap()
+                .call(&mut scope, undefined, &[]);
+        }
+    }
+
+    pub fn deactivate_plugins(&mut self) {
+        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+        let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+        for (_, instance) in &self.plugins {
+            instance
+                .inner
+                .on_unload_fn
+                .as_ref()
+                .unwrap()
+                .call(&mut scope, undefined, &[]);
+        }
     }
 
     /* pub fn register_plugin_listeners(&self) {

@@ -1,3 +1,5 @@
+
+
 rift.plugins.onLoad.addListener(() => {
     console.log("Loading plugin");
 });

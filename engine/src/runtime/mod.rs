@@ -1,5 +1,5 @@
 use deno_ast::ModuleSpecifier;
-use deno_core::error::AnyError;
+use deno_core::{error::AnyError, v8::Function};
 use ops::runtime;
 use std::{env, rc::Rc};
 use tokio::runtime::Runtime;
@@ -9,7 +9,8 @@ use crate::{
     plsys::{self},
     rift,
     util::errors::RiftResult,
-    workspace::{self},
+    workspace::{self, WorkspaceManager},
+    Rift,
 };
 
 mod loader;
@@ -192,8 +193,8 @@ fn declare_metadata(runtime: &Runtime) {
 
 static SHOULD_STOP: bool = false;
 
-pub fn init() {
-    let runtime = tokio::runtime::Builder::new_current_thread()
+pub async fn init() -> Result<(), AnyError> {
+    /*     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
         .unwrap();
@@ -201,11 +202,34 @@ pub fn init() {
         runtime.block_on(async move {
             let _ = ScriptRuntime::instance().run_event_loop().await;
         });
-    });
+    }); */
+
+    let packages = WorkspaceManager::instance().get_packages();
+    let manifests = packages.get_manifest_paths();
+    for manifest_path in manifests {
+        let pkg = WorkspaceManager::instance()
+            .find_package_from_manifest_path(&manifest_path)
+            .unwrap();
+        match pkg.pkg().plugins() {
+            Some(plugins) => {
+                println!("Plugins: {}", plugins.display());
+                /* Rift::instance().set_current_evaluating_package(crate::CurrentEvaluatingPackage {
+                    manifest: pkg.pkg().clone().into(),
+                    manifest_path: manifest_path.clone(),
+                });
+                run_js(&plugins.to_str().unwrap()).await?; */
+            }
+            None => {}
+        }
+    }
+
+    // let _ = ScriptRuntime::instance().run_event_loop().await;
     /*     declare_workspace_plugins(&runtime);
     PluginManager::instance().load_plugins();
     declare_dependencies(&runtime);
     declare_metadata(&runtime); */
+    ScriptRuntime::instance().run_event_loop().await?;
+    Ok(())
 }
 
 pub fn shutdown() {}
@@ -213,9 +237,31 @@ pub fn shutdown() {}
 #[cfg(test)]
 mod test {
 
+    use std::time::Duration;
+
     use crate::{plsys::PluginManager, util, workspace::WorkspaceManager};
 
     use super::init;
+
+    fn run_async_task<T, F, U>(f: F) -> T
+    where
+        U: std::future::Future<Output = Result<T, anyhow::Error>>,
+        F: FnOnce() -> U,
+    {
+        let timeout = Duration::from_secs(2);
+        let tokio = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .thread_keep_alive(timeout)
+            .build()
+            .unwrap();
+        tokio
+            .block_on(async move {
+                tokio::time::timeout(timeout, f())
+                    .await
+                    .expect("Test failed")
+            })
+            .expect("Timed out")
+    }
 
     #[test]
     fn workspace_dependencies_scripts() {
@@ -227,7 +273,7 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
-                init();
+                run_async_task(|| async move { init().await });
             }
             Err(error) => {
                 eprintln!("{}", error);
@@ -244,7 +290,7 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
-                init();
+                run_async_task(|| async move { init().await });
             }
             Err(error) => {
                 eprintln!("{}", error);
