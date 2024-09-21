@@ -1,17 +1,19 @@
-use deno_ast::ModuleSpecifier;
-use deno_core::{error::AnyError, v8::Function};
+use anyhow::Error;
 use ops::runtime;
+use std::future::Future;
 use std::{env, rc::Rc};
-use tokio::runtime::Runtime;
 
+use crate::manifest::EitherManifest;
+use crate::plsys::PluginManager;
+use crate::workspace::WorkspaceManager;
 use crate::{
     manifest::{self},
     plsys::{self},
     rift,
     util::errors::RiftResult,
-    workspace::{self, WorkspaceManager},
-    Rift,
+    workspace::{self},
 };
+use crate::{CurrentEvaluatingPackage, Rift};
 
 mod loader;
 mod ops;
@@ -28,8 +30,10 @@ fn init_engine_ops() -> Vec<deno_core::Extension> {
 
 pub struct ScriptRuntime {
     js_runtime: deno_core::JsRuntime,
+    tokio: tokio::runtime::Runtime,
 }
 
+static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
 impl ScriptRuntime {
     fn new() -> Self {
         Self {
@@ -39,6 +43,10 @@ impl ScriptRuntime {
                 extensions: init_engine_ops(),
                 ..Default::default()
             }),
+            tokio: tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap(),
         }
     }
 
@@ -47,39 +55,47 @@ impl ScriptRuntime {
             once_cell::sync::Lazy::new(|| ScriptRuntime::new());
         unsafe { &mut *INSTANCE }
     }
-
     pub fn js_runtime(&mut self) -> &mut deno_core::JsRuntime {
         &mut self.js_runtime
     }
 
-    pub async fn run_event_loop(&mut self) -> RiftResult<()> {
-        self.js_runtime.run_event_loop(Default::default()).await
+    fn eval_manifest_script(&mut self, script: &str) -> RiftResult<()> {
+        self.tokio.block_on(async {
+            Rift::instance().set_current_evaluating_script(script.into());
+            let to_eval_manifest_script =
+                deno_core::resolve_path(script, env::current_dir()?.as_path())?;
+            let mod_id = self
+                .js_runtime
+                .load_side_es_module(&to_eval_manifest_script)
+                .await?;
+            let result = self.js_runtime.mod_evaluate(mod_id);
+            self.js_runtime.run_event_loop(Default::default()).await?;
+            result.await
+        })
     }
 
-    pub async fn mod_evaluate(&mut self, id: deno_core::ModuleId) -> RiftResult<()> {
-        self.js_runtime.mod_evaluate(id).await
+    /// ...
+    /// 这里不处理timed out逻辑，如果你需要的话自己包装。
+    pub fn evaluate<T, F, U>(&mut self, f: F) -> RiftResult<T>
+    where
+        U: std::future::Future<Output = RiftResult<T>>,
+        F: FnOnce() -> U,
+    {
+        self.tokio.block_on(async { f().await })
     }
 
-    pub async fn load_main_es_module(
-        &mut self,
-        module: &ModuleSpecifier,
-    ) -> RiftResult<deno_core::ModuleId> {
-        self.js_runtime.load_main_es_module(module).await
-    }
-    pub async fn eval(&mut self, module: &ModuleSpecifier) -> RiftResult<()> {
-        let id = self.load_main_es_module(module).await?;
-        self.mod_evaluate(id).await
+    /// ...
+    /// 这里不处理timed out逻辑，如果你需要的话自己包装。
+    pub async fn evaluate_async<T, F, U>(&mut self, f: F) -> RiftResult<T>
+    where
+        U: std::future::Future<Output = RiftResult<T>>,
+        F: FnOnce() -> U,
+    {
+        f().await
     }
 }
 
-static RUNTIME_SNAPSHOT: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/RUNTIME_SNAPSHOT.bin"));
-
-async fn run_js(file_path: &str) -> RiftResult<()> {
-    let module = deno_core::resolve_path(file_path, env::current_dir()?.as_path())?;
-    ScriptRuntime::instance().eval(&module).await
-}
-
-/* fn declare_workspace_plugins(runtime: &Runtime) {
+fn declare_workspace_plugins() {
     let packages = WorkspaceManager::instance().get_packages();
     let manifests = packages.get_manifest_paths();
     // Plugins
@@ -94,7 +110,9 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(evaluate(&plugins.to_str().unwrap())) {
+                if let Err(error) =
+                    ScriptRuntime::instance().eval_manifest_script(&plugins.to_str().unwrap())
+                {
                     eprintln!("error: {error}");
                 }
             }
@@ -103,7 +121,7 @@ async fn run_js(file_path: &str) -> RiftResult<()> {
     });
 }
 
-fn declare_dependencies(runtime: &Runtime) {
+fn declare_dependencies() {
     // Workspace dependencies
     let packages = WorkspaceManager::instance().get_packages();
     let manifests = packages.get_manifest_paths();
@@ -117,8 +135,10 @@ fn declare_dependencies(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(evaluate(&dependencies.to_str().unwrap())) {
-                    eprintln!("error: {error}");
+                if let Err(err) =
+                    ScriptRuntime::instance().eval_manifest_script(&dependencies.to_str().unwrap())
+                {
+                    eprintln!("error: {err}");
                 }
             }
             None => {}
@@ -137,7 +157,9 @@ fn declare_dependencies(runtime: &Runtime) {
                     evaluating,
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(evaluate(&dependencies.to_str().unwrap())) {
+                if let Err(error) =
+                    ScriptRuntime::instance().eval_manifest_script(&dependencies.to_str().unwrap())
+                {
                     eprintln!("error: {error}");
                 }
             }
@@ -146,7 +168,7 @@ fn declare_dependencies(runtime: &Runtime) {
     });
 }
 
-fn declare_metadata(runtime: &Runtime) {
+fn declare_metadata() {
     // Workspace metadaata.
     let packages = WorkspaceManager::instance().get_packages();
     let manifests = packages.get_manifest_paths();
@@ -160,7 +182,9 @@ fn declare_metadata(runtime: &Runtime) {
                     pkg.pkg().clone().into(),
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(evaluate(&metadata.to_str().unwrap())) {
+                if let Err(error) =
+                    ScriptRuntime::instance().eval_manifest_script(&metadata.to_str().unwrap())
+                {
                     eprintln!("error: {error}");
                 }
             }
@@ -182,54 +206,22 @@ fn declare_metadata(runtime: &Runtime) {
                     evaluating,
                     manifest_path.clone(),
                 ));
-                if let Err(error) = runtime.block_on(evaluate(&metadata.to_str().unwrap())) {
+                if let Err(error) =
+                    ScriptRuntime::instance().eval_manifest_script(&metadata.to_str().unwrap())
+                {
                     eprintln!("error: {error}");
                 }
             }
             None => {}
         }
     });
-} */
+}
 
-static SHOULD_STOP: bool = false;
-
-pub async fn init() -> Result<(), AnyError> {
-    /*     let runtime = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-    std::thread::spawn(move || {
-        runtime.block_on(async move {
-            let _ = ScriptRuntime::instance().run_event_loop().await;
-        });
-    }); */
-
-    let packages = WorkspaceManager::instance().get_packages();
-    let manifests = packages.get_manifest_paths();
-    for manifest_path in manifests {
-        let pkg = WorkspaceManager::instance()
-            .find_package_from_manifest_path(&manifest_path)
-            .unwrap();
-        match pkg.pkg().plugins() {
-            Some(plugins) => {
-                println!("Plugins: {}", plugins.display());
-                /* Rift::instance().set_current_evaluating_package(crate::CurrentEvaluatingPackage {
-                    manifest: pkg.pkg().clone().into(),
-                    manifest_path: manifest_path.clone(),
-                });
-                run_js(&plugins.to_str().unwrap()).await?; */
-            }
-            None => {}
-        }
-    }
-
-    // let _ = ScriptRuntime::instance().run_event_loop().await;
-    /*     declare_workspace_plugins(&runtime);
+pub fn init() {
+    declare_workspace_plugins();
     PluginManager::instance().load_plugins();
-    declare_dependencies(&runtime);
-    declare_metadata(&runtime); */
-    ScriptRuntime::instance().run_event_loop().await?;
-    Ok(())
+    declare_dependencies();
+    declare_metadata();
 }
 
 pub fn shutdown() {}
@@ -237,31 +229,9 @@ pub fn shutdown() {}
 #[cfg(test)]
 mod test {
 
-    use std::time::Duration;
-
     use crate::{plsys::PluginManager, util, workspace::WorkspaceManager};
 
     use super::init;
-
-    fn run_async_task<T, F, U>(f: F) -> T
-    where
-        U: std::future::Future<Output = Result<T, anyhow::Error>>,
-        F: FnOnce() -> U,
-    {
-        let timeout = Duration::from_secs(2);
-        let tokio = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .thread_keep_alive(timeout)
-            .build()
-            .unwrap();
-        tokio
-            .block_on(async move {
-                tokio::time::timeout(timeout, f())
-                    .await
-                    .expect("Test failed")
-            })
-            .expect("Timed out")
-    }
 
     #[test]
     fn workspace_dependencies_scripts() {
@@ -273,12 +243,13 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
-                run_async_task(|| async move { init().await });
+                init();
             }
             Err(error) => {
                 eprintln!("{}", error);
             }
         }
+        WorkspaceManager::instance().print_packages();
     }
     #[test]
     fn workspace_with_project_folder_target() {
@@ -290,14 +261,14 @@ mod test {
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
-                run_async_task(|| async move { init().await });
+                init();
             }
             Err(error) => {
                 eprintln!("{}", error);
             }
         }
 
-        // WorkspaceManager::instance().print_packages();
+        WorkspaceManager::instance().print_packages();
         PluginManager::instance().print_plugins();
     }
 }

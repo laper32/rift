@@ -1,6 +1,6 @@
 mod ops;
 
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, env, path::PathBuf};
 
 use deno_core::v8::{self, Value};
 use serde::{Deserialize, Serialize};
@@ -39,11 +39,11 @@ struct PluginInstanceInner {
     dependencies: Vec<DependencyManifestDeclarator>,
     status: PluginStatus,
     #[serde(skip_deserializing, skip_serializing)]
-    on_load_fn: Option<v8::Function>,
+    on_load_fn: Option<v8::Global<v8::Function>>,
     #[serde(skip_deserializing, skip_serializing)]
-    on_all_loaded_fn: Option<v8::Function>,
+    on_all_loaded_fn: Option<v8::Global<v8::Function>>,
     #[serde(skip_deserializing, skip_serializing)]
-    on_unload_fn: Option<v8::Function>,
+    on_unload_fn: Option<v8::Global<v8::Function>>,
 }
 
 impl PluginInstance {
@@ -100,6 +100,15 @@ impl PluginInstance {
         metadata.iter().for_each(|(k, v)| {
             self.inner.metadata.insert(k.clone(), v.clone());
         });
+    }
+    fn on_load_fn_ref(&self) -> Option<&v8::Global<v8::Function>> {
+        self.inner.on_load_fn.as_ref()
+    }
+    fn on_all_loaded_fn_ref(&self) -> Option<&v8::Global<v8::Function>> {
+        self.inner.on_all_loaded_fn.as_ref()
+    }
+    fn on_unload_fn_ref(&self) -> Option<&v8::Global<v8::Function>> {
+        self.inner.on_unload_fn.as_ref()
     }
 }
 
@@ -244,67 +253,35 @@ impl PluginManager {
             .map(|(_, instance)| instance.add_metadata(metadata));
     }
 
-    pub fn activate_plugins(&mut self) {
-        self.call_load_plugins_fn();
-        self.call_all_plugins_loaded_fn();
+    fn find_plugin_from_script_path(&self, script_path: &PathBuf) -> Option<&PluginInstance> {
+        self.plugins
+            .values()
+            .find(|x| x.entry().unwrap().eq(script_path))
     }
 
-    pub fn call_load_plugins_fn(&mut self) {
-        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-        let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+    fn evaluate_entries(&mut self) {
         for (_, instance) in &self.plugins {
-            instance
-                .inner
-                .on_load_fn
-                .as_ref()
-                .unwrap()
-                .call(&mut scope, undefined, &[]);
-        }
-    }
-
-    pub fn call_all_plugins_loaded_fn(&mut self) {
-        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-        let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
-        for (_, instance) in &self.plugins {
-            instance
-                .inner
-                .on_all_loaded_fn
-                .as_ref()
-                .unwrap()
-                .call(&mut scope, undefined, &[]);
-        }
-    }
-
-    pub fn deactivate_plugins(&mut self) {
-        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-        let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
-        for (_, instance) in &self.plugins {
-            instance
-                .inner
-                .on_unload_fn
-                .as_ref()
-                .unwrap()
-                .call(&mut scope, undefined, &[]);
-        }
-    }
-
-    /* pub fn register_plugin_listeners(&self) {
-        self.plugins.iter().for_each(|(_, instance)| {
             let entry = instance.entry();
             match entry {
                 Some(entry) => {
-                    let runtime = tokio::runtime::Builder::new_current_thread()
-                        .enable_all()
-                        .build()
-                        .unwrap();
-
-                    Rift::instance().set_current_evaluating_package(CurrentEvaluatingPackage::new(
-                        instance.pkg().manifest().clone().into(),
-                        instance.manifest_path().clone(),
-                    ));
-                    if let Err(error) =
-                        runtime.block_on(runtime::evaluate(&entry.to_str().unwrap()))
-                    {
+                    if let Err(error) = ScriptRuntime::instance().evaluate(|| async move {
+                        Rift::instance().set_current_evaluating_script(entry.clone());
+                        // plugin entry should be main, or else? Need to test whether have error..
+                        let to_eval_entry = deno_core::resolve_path(
+                            entry.to_str().unwrap(),
+                            env::current_dir()?.as_path(),
+                        )?;
+                        let mod_id = ScriptRuntime::instance()
+                            .js_runtime()
+                            .load_main_es_module(&to_eval_entry)
+                            .await?;
+                        let result = ScriptRuntime::instance().js_runtime().mod_evaluate(mod_id);
+                        ScriptRuntime::instance()
+                            .js_runtime()
+                            .run_event_loop(Default::default())
+                            .await?;
+                        result.await
+                    }) {
                         eprintln!("error: {error}");
                     }
                 }
@@ -312,6 +289,72 @@ impl PluginManager {
                     eprintln!("Plugin {} has no entry", instance.name());
                 }
             }
+        }
+    }
+    fn register_instance_load_fn(
+        &mut self,
+        plugin_name: String,
+        on_load_fn: v8::Global<v8::Function>,
+    ) {
+        self.plugins
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == plugin_name)
+            .map(|(_, instance)| {
+                instance.inner.on_load_fn = Some(on_load_fn);
+            });
+    }
+
+    fn register_instance_unload_fn(
+        &mut self,
+        plugin_name: String,
+        on_unload_fn: v8::Global<v8::Function>,
+    ) {
+        self.plugins
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == plugin_name)
+            .map(|(_, instance)| {
+                instance.inner.on_unload_fn = Some(on_unload_fn);
+            });
+    }
+
+    fn register_instance_all_loaded_fn(
+        &mut self,
+        plugin_name: String,
+        on_all_loaded_fn: v8::Global<v8::Function>,
+    ) {
+        self.plugins
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == plugin_name)
+            .map(|(_, instance)| {
+                instance.inner.on_all_loaded_fn = Some(on_all_loaded_fn);
+            });
+    }
+
+    fn load_instances(&self) {
+        self.plugins.iter().for_each(|(_, instance)| {
+            let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+            let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+            let on_load_fn = v8::Local::new(&mut scope, instance.on_load_fn_ref().unwrap());
+            let _ = on_load_fn.call(&mut scope, undefined.into(), &[]);
         });
-    } */
+    }
+
+    fn on_instances_all_loaded(&self) {
+        self.plugins.iter().for_each(|(_, instance)| {
+            let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+            let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+            let on_all_loaded_fn =
+                v8::Local::new(&mut scope, instance.on_all_loaded_fn_ref().unwrap());
+            let _ = on_all_loaded_fn.call(&mut scope, undefined.into(), &[]);
+        });
+    }
+
+    fn unload_instances(&self) {
+        self.plugins.iter().for_each(|(_, instance)| {
+            let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+            let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
+            let on_unload_fn = v8::Local::new(&mut scope, instance.on_unload_fn_ref().unwrap());
+            let _ = on_unload_fn.call(&mut scope, undefined.into(), &[]);
+        });
+    }
 }

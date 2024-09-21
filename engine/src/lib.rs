@@ -113,6 +113,7 @@ pub struct Rift {
     /// rift.exe的路径
     rift_exe: LazyCell<PathBuf>,
     current_evaluating_package: Option<CurrentEvaluatingPackage>,
+    current_evaluating_script: Option<PathBuf>,
 }
 
 impl Rift {
@@ -120,7 +121,7 @@ impl Rift {
         Self {
             rift_exe: LazyCell::new(),
             current_evaluating_package: None,
-            // current_evaluating_package: Mutex::new(None),
+            current_evaluating_script: None,
         }
     }
 
@@ -136,6 +137,12 @@ impl Rift {
 
     pub fn get_current_evaluating_package(&self) -> &Option<CurrentEvaluatingPackage> {
         &self.current_evaluating_package
+    }
+    pub fn set_current_evaluating_script(&mut self, script: PathBuf) {
+        self.current_evaluating_script = Some(script);
+    }
+    pub fn get_current_evaluating_script(&self) -> &Option<PathBuf> {
+        &self.current_evaluating_script
     }
 
     // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。

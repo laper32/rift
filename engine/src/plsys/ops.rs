@@ -1,49 +1,74 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, usize};
 
 use deno_core::{error::AnyError, extension, op2, v8, OpState};
 
-#[op2(reentrant)]
-fn op_plugin_load_listener<'scope>(
-    scope: &mut v8::HandleScope<'scope>,
-    _isolate: *mut v8::Isolate,
-    _op_state: Rc<RefCell<OpState>>,
-    invocation: v8::Local<v8::Function>,
-) -> std::result::Result<v8::Local<'scope, v8::Value>, AnyError> {
-    let undefined = deno_core::v8::undefined(scope);
-    invocation.call(scope, undefined.into(), &[]);
-    Ok(undefined.into())
+use crate::{plsys::PluginManager, Rift};
+
+#[op2]
+fn op_register_plugin_load_listener(
+    scope: &mut v8::HandleScope,
+    on_load_fn: v8::Local<v8::Function>,
+) -> std::result::Result<(), AnyError> {
+    let script_path = Rift::instance()
+        .get_current_evaluating_script()
+        .clone()
+        .unwrap();
+    match PluginManager::instance().find_plugin_from_script_path(&script_path) {
+        Some(plugin) => {
+            PluginManager::instance()
+                .register_instance_load_fn(plugin.name(), v8::Global::new(scope, on_load_fn));
+        }
+        None => {}
+    }
+    Ok(())
 }
 
-#[op2(reentrant)]
-fn op_plugin_unload_listener<'scope>(
-    scope: &mut v8::HandleScope<'scope>,
-    _isolate: *mut v8::Isolate,
-    _op_state: Rc<RefCell<OpState>>,
-    invocation: v8::Local<v8::Function>,
-) -> std::result::Result<v8::Local<'scope, v8::Value>, AnyError> {
-    let undefined = deno_core::v8::undefined(scope);
-    invocation.call(scope, undefined.into(), &[]);
-    Ok(undefined.into())
+#[op2]
+fn op_register_plugin_unload_listener(
+    scope: &mut v8::HandleScope,
+    on_unload_fn: v8::Local<v8::Function>,
+) -> std::result::Result<(), AnyError> {
+    let script_path = Rift::instance()
+        .get_current_evaluating_script()
+        .clone()
+        .unwrap();
+    match PluginManager::instance().find_plugin_from_script_path(&script_path) {
+        Some(plugin) => {
+            PluginManager::instance()
+                .register_instance_unload_fn(plugin.name(), v8::Global::new(scope, on_unload_fn));
+        }
+        None => {}
+    }
+    Ok(())
 }
 
-#[op2(reentrant)]
-fn op_plugin_all_loaded_listener<'scope>(
-    scope: &mut v8::HandleScope<'scope>,
-    _isolate: *mut v8::Isolate,
-    _op_state: Rc<RefCell<OpState>>,
-    invocation: v8::Local<v8::Function>,
-) -> std::result::Result<v8::Local<'scope, v8::Value>, AnyError> {
-    let undefined = deno_core::v8::undefined(scope);
-    invocation.call(scope, undefined.into(), &[]);
-    Ok(undefined.into())
+#[op2]
+fn op_register_plugin_all_loaded_listener(
+    scope: &mut v8::HandleScope,
+    on_all_loaded_fn: v8::Local<v8::Function>,
+) -> std::result::Result<(), AnyError> {
+    let script_path = Rift::instance()
+        .get_current_evaluating_script()
+        .clone()
+        .unwrap();
+    match PluginManager::instance().find_plugin_from_script_path(&script_path) {
+        Some(plugin) => {
+            PluginManager::instance().register_instance_all_loaded_fn(
+                plugin.name(),
+                v8::Global::new(scope, on_all_loaded_fn),
+            );
+        }
+        None => {}
+    }
+    Ok(())
 }
 
 extension! {
     plsys,
     ops = [
-        op_plugin_load_listener,
-        op_plugin_all_loaded_listener,
-        op_plugin_unload_listener,
+        op_register_plugin_load_listener,
+        op_register_plugin_all_loaded_listener,
+        op_register_plugin_unload_listener,
     ],
 }
 
@@ -51,7 +76,6 @@ extension! {
 mod test {
     use crate::{plsys::PluginManager, runtime::init, util, workspace::WorkspaceManager};
 
-    /*
     #[test]
     fn test_load_plugins() {
         let our_project_root = util::get_cargo_project_root().unwrap();
@@ -63,11 +87,15 @@ mod test {
         match WorkspaceManager::instance().load_packages() {
             Ok(_) => {
                 init();
-                PluginManager::instance().register_plugin_listeners();
+                PluginManager::instance().evaluate_entries();
+                PluginManager::instance().load_instances();
+                PluginManager::instance().on_instances_all_loaded();
+                PluginManager::instance().unload_instances();
+                // PluginManager::instance().register_plugin_listeners();
             }
             Err(error) => {
                 eprintln!("{}", error);
             }
         }
-    } */
+    }
 }
