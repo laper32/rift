@@ -1,6 +1,4 @@
-use anyhow::Error;
 use ops::runtime;
-use std::future::Future;
 use std::{env, rc::Rc};
 
 use crate::manifest::EitherManifest;
@@ -13,7 +11,7 @@ use crate::{
     util::errors::RiftResult,
     workspace::{self},
 };
-use crate::{CurrentEvaluatingPackage, Rift};
+use crate::{task, CurrentEvaluatingPackage, Rift};
 
 mod loader;
 mod ops;
@@ -25,6 +23,7 @@ fn init_engine_ops() -> Vec<deno_core::Extension> {
         manifest::init_ops(),
         plsys::init_ops(),
         workspace::init_ops(),
+        task::init_ops(),
     ]
 }
 
@@ -229,6 +228,8 @@ pub fn shutdown() {}
 #[cfg(test)]
 mod test {
 
+    use std::path::PathBuf;
+
     use crate::{plsys::PluginManager, util, workspace::WorkspaceManager};
 
     use super::init;
@@ -267,8 +268,13 @@ mod test {
                 eprintln!("{}", error);
             }
         }
+        let example_script_path =
+            r#"D:\workshop\projects\rift\sample\05_project_folder_target\rift\metadata.ts"#;
+        let instance = WorkspaceManager::instance()
+            .find_package_from_script_path(&PathBuf::from(example_script_path));
+        assert!(instance.is_some());
 
-        WorkspaceManager::instance().print_packages();
-        PluginManager::instance().print_plugins();
+        // WorkspaceManager::instance().print_packages();
+        // PluginManager::instance().print_plugins();
     }
 }

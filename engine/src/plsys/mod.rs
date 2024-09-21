@@ -8,9 +8,9 @@ use walkdir::WalkDir;
 
 use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
-    runtime::{self, ScriptRuntime},
+    runtime::ScriptRuntime,
     workspace::{package::RiftPackage, WorkspaceManager},
-    CurrentEvaluatingPackage, Rift,
+    Rift,
 };
 
 pub fn init_ops() -> deno_core::Extension {
@@ -19,9 +19,9 @@ pub fn init_ops() -> deno_core::Extension {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PluginStatus {
-    Unknown,
+    None,
     Init,
-    Loaded,
+    Running,
     Failed,
     RuntimeError,
 }
@@ -57,7 +57,7 @@ impl PluginInstance {
                 manifest_path,
                 metadata: HashMap::new(),
                 dependencies: Vec::new(),
-                status: PluginStatus::Unknown,
+                status: PluginStatus::None,
                 on_load_fn: None,
                 on_all_loaded_fn: None,
                 on_unload_fn: None,
@@ -67,6 +67,38 @@ impl PluginInstance {
 
     pub fn status(&self) -> &PluginStatus {
         &self.inner.status
+    }
+
+    pub fn is_error(&self) -> bool {
+        self.is_failed() || self.is_runtime_error()
+    }
+
+    pub fn is_failed(&self) -> bool {
+        match self.inner.status {
+            PluginStatus::Failed => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_runtime_error(&self) -> bool {
+        match self.inner.status {
+            PluginStatus::RuntimeError => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_init(&self) -> bool {
+        match self.inner.status {
+            PluginStatus::Init | PluginStatus::Running => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_running(&self) -> bool {
+        match self.inner.status {
+            PluginStatus::Running => true,
+            _ => false,
+        }
     }
 
     pub fn set_status(&mut self, status: PluginStatus) {
@@ -253,13 +285,13 @@ impl PluginManager {
             .map(|(_, instance)| instance.add_metadata(metadata));
     }
 
-    fn find_plugin_from_script_path(&self, script_path: &PathBuf) -> Option<&PluginInstance> {
+    pub fn find_plugin_from_script_path(&self, script_path: &PathBuf) -> Option<&PluginInstance> {
         self.plugins
             .values()
             .find(|x| x.entry().unwrap().eq(script_path))
     }
 
-    fn evaluate_entries(&mut self) {
+    pub fn evaluate_entries(&mut self) {
         for (_, instance) in &self.plugins {
             let entry = instance.entry();
             match entry {
@@ -330,31 +362,57 @@ impl PluginManager {
             });
     }
 
-    fn load_instances(&self) {
-        self.plugins.iter().for_each(|(_, instance)| {
+    pub fn activate_instances(&mut self) {
+        self.load_instances();
+        self.on_instances_all_loaded();
+    }
+
+    pub fn deactivate_instances(&mut self) {
+        self.unload_instances();
+    }
+
+    fn load_instances(&mut self) {
+        self.plugins.iter_mut().for_each(|(_, instance)| {
+            instance.set_status(PluginStatus::Init);
             let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
-            let on_load_fn = v8::Local::new(&mut scope, instance.on_load_fn_ref().unwrap());
-            let _ = on_load_fn.call(&mut scope, undefined.into(), &[]);
+            match instance.on_load_fn_ref() {
+                Some(on_load_fn_ref) => {
+                    let on_load_fn = v8::Local::new(&mut scope, on_load_fn_ref);
+                    let _ = on_load_fn.call(&mut scope, undefined.into(), &[]);
+                }
+                None => { /* ... */ }
+            }
         });
     }
 
-    fn on_instances_all_loaded(&self) {
-        self.plugins.iter().for_each(|(_, instance)| {
+    fn on_instances_all_loaded(&mut self) {
+        self.plugins.iter_mut().for_each(|(_, instance)| {
             let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
-            let on_all_loaded_fn =
-                v8::Local::new(&mut scope, instance.on_all_loaded_fn_ref().unwrap());
-            let _ = on_all_loaded_fn.call(&mut scope, undefined.into(), &[]);
+            match instance.on_all_loaded_fn_ref() {
+                Some(on_all_loaded_fn_ref) => {
+                    let on_all_loaded_fn = v8::Local::new(&mut scope, on_all_loaded_fn_ref);
+                    let _ = on_all_loaded_fn.call(&mut scope, undefined.into(), &[]);
+                    instance.set_status(PluginStatus::Running);
+                }
+                None => { /* ... */ }
+            }
         });
     }
 
-    fn unload_instances(&self) {
-        self.plugins.iter().for_each(|(_, instance)| {
+    fn unload_instances(&mut self) {
+        self.plugins.iter_mut().for_each(|(_, instance)| {
             let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
-            let on_unload_fn = v8::Local::new(&mut scope, instance.on_unload_fn_ref().unwrap());
-            let _ = on_unload_fn.call(&mut scope, undefined.into(), &[]);
+            match instance.on_unload_fn_ref() {
+                Some(on_unload_fn_ref) => {
+                    let on_unload_fn = v8::Local::new(&mut scope, on_unload_fn_ref);
+                    let _ = on_unload_fn.call(&mut scope, undefined.into(), &[]);
+                    instance.set_status(PluginStatus::None);
+                }
+                None => { /* ... */ }
+            }
         });
     }
 }

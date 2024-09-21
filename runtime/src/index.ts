@@ -10,6 +10,7 @@ namespace rift {
     export function getRiftPath() {
         return ops.get_rift_exe();
     }
+
     export class Plugin {
         constructor(name: String) {
             this.name = name;
@@ -21,6 +22,7 @@ namespace rift {
         private version?: String;
         private name: String;
     }
+
     export namespace plugins {
         export function add(plugin: Plugin) {
             ops.op_add_manifest_plugin(plugin)
@@ -41,6 +43,7 @@ namespace rift {
             }
         }
     }
+
     export namespace metadata {
         export function add(key: String, value: String) {
             var kv: { [id: string]: String; } = {};
@@ -48,12 +51,37 @@ namespace rift {
             ops.op_add_manifest_metadata(kv);
         }
     }
+
     export interface IDependency {
 
     }
+
     export namespace dependencies {
         export function add(dependency: IDependency) {
             ops.op_add_manifest_dependencies(dependency)
+        }
+    }
+
+    export class TaskDescriptor {
+        constructor(name: String) {
+            this.name = name;
+        }
+        public setDescription(description: String) {
+            this.description = description;
+            return this;
+        }
+        public markAsCommand() {
+            this.exportToClap = true;
+            return this;
+        }
+        private name: String;
+        private description?: String;
+        private exportToClap: Boolean = false;
+    }
+
+    export namespace tasks {
+        export function add(task: TaskDescriptor, predicate: Function) {
+            ops.op_register_task(task, predicate)
         }
     }
 }

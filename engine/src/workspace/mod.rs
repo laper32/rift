@@ -5,6 +5,7 @@ use package::{Package, VirtualPackage};
 use serde::{Deserialize, Serialize};
 
 use crate::manifest::{DependencyManifestDeclarator, PluginManifestDeclarator};
+use crate::util::fs::canonicalize_path;
 use crate::{
     manifest::{
         find_root_manifest, read_manifest, EitherManifest, Manifest, VirtualManifest,
@@ -263,6 +264,32 @@ impl WorkspaceManager {
         })
     }
 
+    pub fn find_package_from_script_path(&self, script_path: &PathBuf) -> Option<&PackageInstance> {
+        self.packages
+            .packages
+            .iter()
+            .find(|(_, instance)| {
+                let script_path = canonicalize_path(script_path).unwrap();
+                let is_plugin_script = match instance.pkg().plugins() {
+                    Some(plugin_script_path) => plugin_script_path == script_path,
+                    None => false,
+                };
+
+                let is_dependency_script = match instance.pkg().dependencies() {
+                    Some(dependency_script_path) => dependency_script_path == script_path,
+                    None => false,
+                };
+
+                let is_metadata_script = match instance.pkg().metadata() {
+                    Some(metadata_script_path) => metadata_script_path == script_path,
+                    None => false,
+                };
+
+                is_plugin_script || is_dependency_script || is_metadata_script
+            })
+            .map(|(_, instance)| instance)
+    }
+
     pub fn is_init(&self) -> bool {
         self.status >= WorkspaceStatus::Init
     }
@@ -449,7 +476,11 @@ impl Packages {
                     self.load(manifest_path);
                 }
             },
-            Err(e) => eprintln!("Error: {:?}", e),
+            Err(e) => eprintln!(
+                "Failed to parse manifest {}\n{:?}",
+                manifest_path.display(),
+                e
+            ),
         }
     }
 }

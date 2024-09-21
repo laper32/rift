@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc, usize};
+use std::usize;
 
-use deno_core::{error::AnyError, extension, op2, v8, OpState};
+use deno_core::{error::AnyError, extension, op2, v8};
 
 use crate::{plsys::PluginManager, Rift};
 
@@ -88,9 +88,8 @@ mod test {
             Ok(_) => {
                 init();
                 PluginManager::instance().evaluate_entries();
-                PluginManager::instance().load_instances();
-                PluginManager::instance().on_instances_all_loaded();
-                PluginManager::instance().unload_instances();
+                PluginManager::instance().activate_instances();
+                PluginManager::instance().deactivate_instances();
                 // PluginManager::instance().register_plugin_listeners();
             }
             Err(error) => {
