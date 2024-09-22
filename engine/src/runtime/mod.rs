@@ -223,14 +223,12 @@ pub fn init() {
     declare_metadata();
 }
 
-pub fn shutdown() {}
-
 #[cfg(test)]
 mod test {
 
     use std::path::PathBuf;
 
-    use crate::{plsys::PluginManager, util, workspace::WorkspaceManager};
+    use crate::{plsys::PluginManager, task::TaskManager, util, workspace::WorkspaceManager};
 
     use super::init;
 

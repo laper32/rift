@@ -2,6 +2,7 @@ mod ops;
 
 use std::{collections::HashMap, env, path::PathBuf};
 
+use anyhow::Context;
 use deno_core::v8::{self, Value};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
@@ -9,6 +10,8 @@ use walkdir::WalkDir;
 use crate::{
     manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
     runtime::ScriptRuntime,
+    task::TaskManager,
+    util::errors::RiftResult,
     workspace::{package::RiftPackage, WorkspaceManager},
     Rift,
 };
@@ -213,16 +216,21 @@ impl PluginManager {
     pub fn load_plugins(&mut self) {
         let possible_plugins = self.enumerate_all_possible_plugins().unwrap_or(Vec::new());
 
-        possible_plugins.iter().for_each(|path| {
-            self.read_plugin_manifest(path);
-        });
+        possible_plugins
+            .iter()
+            .for_each(|path| match self.read_plugin_manifest(path) {
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("{}", e);
+                }
+            });
     }
 
     pub fn plugins_count(&self) -> usize {
         self.plugins.len()
     }
 
-    fn read_plugin_manifest(&mut self, manifest_path: &PathBuf) {
+    fn read_plugin_manifest(&mut self, manifest_path: &PathBuf) -> RiftResult<()> {
         let manifest = read_manifest(&manifest_path.as_path());
         match manifest {
             Ok(manifest) => match manifest {
@@ -231,17 +239,15 @@ impl PluginManager {
                         let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
 
                         self.plugins.insert(instance.name(), instance);
+                        Ok(())
                     }
                 },
-                _ => { /* Do nothing */ }
+                _ => Ok(()),
             },
-            Err(e) => {
-                eprintln!(
-                    "Error when parsing manifest \"{}\"\n{}",
-                    manifest_path.display(),
-                    e.to_string()
-                )
-            }
+            Err(e) => Err(e).context(format!(
+                "Error when parsing manifest: \"{}\"",
+                manifest_path.display()
+            )),
         }
     }
 
@@ -402,13 +408,14 @@ impl PluginManager {
     }
 
     fn unload_instances(&mut self) {
-        self.plugins.iter_mut().for_each(|(_, instance)| {
+        self.plugins.iter_mut().for_each(|(name, instance)| {
             let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
             match instance.on_unload_fn_ref() {
                 Some(on_unload_fn_ref) => {
                     let on_unload_fn = v8::Local::new(&mut scope, on_unload_fn_ref);
                     let _ = on_unload_fn.call(&mut scope, undefined.into(), &[]);
+                    TaskManager::instance().remove_task_from_pkg_name(&name);
                     instance.set_status(PluginStatus::None);
                 }
                 None => { /* ... */ }

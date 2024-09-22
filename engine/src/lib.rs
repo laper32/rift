@@ -44,10 +44,6 @@ pub fn init() -> bool {
     true
 }
 
-pub fn shutdown() {
-    runtime::shutdown();
-}
-
 /// Returns the canonicalized absolute path of where the given executable is located based
 /// on searching the `PATH` environment variable.
 ///

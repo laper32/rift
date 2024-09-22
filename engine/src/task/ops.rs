@@ -4,18 +4,7 @@ use deno_core::{
     v8::{self},
 };
 
-use crate::{
-    plsys::{PluginManager, PluginStatus},
-    task::TaskManager,
-    workspace::WorkspaceManager,
-    Rift,
-};
-
-/*
-rift.task.add(new rift.TaskDescriptor("task_name").setDescription(""), () => {
-    console.log("Hello from task_name");
-});
-*/
+use crate::{plsys::PluginManager, task::TaskManager, workspace::WorkspaceManager, Rift};
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -114,15 +103,12 @@ mod test {
                 init();
                 PluginManager::instance().evaluate_entries();
                 PluginManager::instance().activate_instances();
+
                 TaskManager::instance()
                     .tasks
                     .iter()
                     .for_each(|(_, instance)| {
-                        let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-                        let undefined = v8::undefined(&mut scope);
-                        let f =
-                            v8::Local::new(&mut scope, instance.get_runtime_function().unwrap());
-                        f.call(&mut scope, undefined.into(), &[]);
+                        instance.get_fn().unwrap().invoke();
                     });
                 println!("{:?}", TaskManager::instance().tasks);
                 // PluginManager::instance().deactivate_instances();

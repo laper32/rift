@@ -9,12 +9,14 @@ use std::collections::HashMap;
 use clap::Command;
 use deno_core::v8;
 
+use crate::runtime::ScriptRuntime;
+
 pub fn init_ops() -> deno_core::Extension {
     ops::task::init_ops()
 }
 
 #[derive(Debug)]
-struct TaskFunction {
+pub struct TaskFunction {
     native_function: Option<fn()>,
     runtime_function: Option<v8::Global<v8::Function>>,
 }
@@ -35,16 +37,22 @@ impl TaskFunction {
         self.native_function = Some(f);
     }
 
-    fn get_native_function(&self) -> Option<&fn()> {
-        self.native_function.as_ref()
-    }
-
     fn register_runtime_fnction(&mut self, f: v8::Global<v8::Function>) {
         self.runtime_function = Some(f);
     }
 
-    fn get_runtime_function(&self) -> Option<&v8::Global<v8::Function>> {
-        self.runtime_function.as_ref()
+    pub fn invoke(&self) {
+        if let Some(f) = &self.native_function {
+            f();
+            return;
+        }
+        if let Some(f) = &self.runtime_function {
+            let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+            let undefined = v8::undefined(&mut scope);
+            let f = v8::Local::new(&mut scope, f);
+            f.call(&mut scope, undefined.into(), &[]);
+            return;
+        }
     }
 }
 
@@ -55,7 +63,7 @@ pub struct TaskInstance {
     // 对应的包名，如果没有就是builtin，否则就是对应的包
     related_package_name: Option<String>,
     description: Option<String>,
-    task_fn: TaskFunction,
+    task_fn: Option<TaskFunction>,
     export_to_clap: bool, // 该Task是否会进指令集
                           // 默认是关的，你可以选择手动开。
 }
@@ -66,7 +74,7 @@ impl TaskInstance {
             name,
             related_package_name: None,
             description: None,
-            task_fn: TaskFunction::new(),
+            task_fn: Some(TaskFunction::new()),
             export_to_clap: false,
         }
     }
@@ -82,19 +90,16 @@ impl TaskInstance {
     }
 
     pub fn register_function(&mut self, f: fn()) {
-        self.task_fn.register_function(f);
+        self.task_fn.as_mut().unwrap().register_function(f);
+        // self.task_fn.as_ref().unwrap().register_function(f);
     }
 
     pub fn register_runtime_fnction(&mut self, f: v8::Global<v8::Function>) {
-        self.task_fn.register_runtime_fnction(f);
+        self.task_fn.as_mut().unwrap().register_runtime_fnction(f);
     }
 
-    pub fn get_native_function(&self) -> Option<&fn()> {
-        self.task_fn.get_native_function()
-    }
-
-    pub fn get_runtime_function(&self) -> Option<&v8::Global<v8::Function>> {
-        self.task_fn.get_runtime_function()
+    pub fn get_fn(&self) -> Option<&TaskFunction> {
+        self.task_fn.as_ref()
     }
 
     pub fn get_description(&self) -> Option<&String> {
@@ -161,6 +166,22 @@ impl TaskManager {
         }
         commands
     }
+    pub fn remove_task(&mut self, task_name: &str) {
+        self.tasks.remove(task_name);
+    }
+    pub fn remove_task_from_pkg_name(&mut self, pkg_name: &str) {
+        let mut to_remove = Vec::new();
+        for (task_name, task) in self.tasks.iter() {
+            if let Some(related_pkg_name) = task.get_related_package_name() {
+                if related_pkg_name == pkg_name {
+                    to_remove.push(task_name.clone());
+                }
+            }
+        }
+        for task_name in to_remove {
+            self.remove_task(&task_name);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -218,22 +239,6 @@ mod test {
             runtime_function: Some(global_fn),
         };
         assert!(task_fn.is_unique()); // should be true
-        let f = v8::Local::new(scope, task_fn.get_runtime_function().unwrap());
-
-        let undefined = v8::undefined(scope);
-        let ret = f.call(scope, undefined.into(), &[]);
-        let result = undefined
-            .to_string(scope)
-            .unwrap()
-            .to_rust_string_lossy(scope);
-        println!(
-            "{}",
-            ret.unwrap()
-                .to_string(scope)
-                .unwrap()
-                .to_rust_string_lossy(scope)
-        );
-        println!("{}", result);
     }
 
     #[test]
@@ -245,8 +250,6 @@ mod test {
             runtime_function: None,
         };
         assert!(task_fn.is_unique()); // should be true
-        let f = task_fn.get_native_function().unwrap();
-        f();
     }
 
     #[test]
@@ -256,6 +259,6 @@ mod test {
         generate.register_function(|| {
             println!("Hello, world!");
         });
-        generate.get_native_function().unwrap()();
+        generate.get_fn().unwrap().invoke();
     }
 }
