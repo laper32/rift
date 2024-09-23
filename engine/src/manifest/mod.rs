@@ -110,6 +110,34 @@ pub struct PluginManifest {
     pub entry: String,
 }
 
+pub type AliasManifest = HashMap<String, String>;
+
+pub type TaskManifest = HashMap<String, TaskInstanceManifest>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskInstanceManifest {
+    pub description: Option<String>,
+    pub args: Option<Vec<TaskFlagManifest>>,
+}
+
+impl TaskInstanceManifest {
+    pub fn has_flag(&self, flag_name: &str) -> bool {
+        self.args
+            .as_ref()
+            .map_or(false, |args| args.iter().any(|arg| arg.name.eq(flag_name)))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskFlagManifest {
+    pub name: String,
+    pub short: Option<String>,
+    pub description: Option<String>,
+    pub default: Option<toml::Value>,
+    pub conflict_with: Option<Vec<String>>,
+    pub heading: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginManifestDeclarator {
     pub name: String,

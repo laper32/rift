@@ -14,6 +14,8 @@ pub struct TomlManifest {
     pub plugin: Option<TomlPlugin>,
     pub project: Option<TomlProject>,
     pub target: Option<TomlTarget>,
+    pub alias: Option<TomlAlias>,
+    pub task: Option<TomlTask>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize, Clone)]
@@ -116,6 +118,27 @@ pub struct TomlDependencyManifestDeclarator {
     #[serde(flatten)]
     pub data: HashMap<String, serde_json::Value>,
     // pub version: Option<String>, // 总得考虑这玩意是个本地包吧？
+}
+
+pub type TomlAlias = HashMap<String, String>;
+pub type TomlTask = HashMap<String, TomlTaskInstance>;
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct TomlTaskInstance {
+    description: Option<String>,
+    args: Option<Vec<TomlTaskFlag>>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct TomlTaskFlag {
+    name: String,
+    short: Option<String>,
+    #[serde(rename = "help")]
+    description: Option<String>,
+    default: Option<toml::Value>,
+    conflict_with: Option<Vec<String>>,
+    #[serde(rename = "help_heading")]
+    heading: Option<String>,
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {

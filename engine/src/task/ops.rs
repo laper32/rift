@@ -15,6 +15,15 @@ struct TaskDescriptor {
 }
 
 #[op2]
+fn op_impl_task(
+    scope: &mut v8::HandleScope,
+    #[string] task_name: String,
+    predicate: v8::Local<v8::Function>,
+) -> std::result::Result<(), AnyError> {
+    Ok(())
+}
+
+#[op2]
 fn op_register_task(
     scope: &mut v8::HandleScope,
     #[serde] descriptor: TaskDescriptor,
@@ -75,19 +84,14 @@ fn op_register_task(
 
 deno_core::extension! {
     task,
-    ops = [op_register_task]
+    ops = [op_register_task, op_impl_task]
 }
 
 #[cfg(test)]
 mod test {
-    use deno_core::v8;
 
     use crate::{
-        plsys::PluginManager,
-        runtime::{init, ScriptRuntime},
-        task::TaskManager,
-        util,
-        workspace::WorkspaceManager,
+        plsys::PluginManager, runtime::init, task::TaskManager, util, workspace::WorkspaceManager,
     };
 
     #[test]

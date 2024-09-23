@@ -1,7 +1,3 @@
-//! 鉴于我们现在可以让v8常驻后台，因此，现在Task的所有设计都可以直接推倒重来了。
-//!
-
-mod alias;
 mod ops;
 
 use std::collections::HashMap;
@@ -64,8 +60,17 @@ pub struct TaskInstance {
     related_package_name: Option<String>,
     description: Option<String>,
     task_fn: Option<TaskFunction>,
-    export_to_clap: bool, // 该Task是否会进指令集
-                          // 默认是关的，你可以选择手动开。
+
+    // 该Task是否会进指令集
+    // 默认是关的，你可以选择手动开。
+    // 在manifest中其为`is_command`
+    export_to_clap: bool,
+
+    // 子任务，这里只记录其名字
+    sub_tasks: Vec<String>,
+
+    // 指令集，这里只记录其名字，这里的意思是顺序执行Vec内的命令（没错，Make的核心feature，我们收了）
+    instruction_set: Vec<String>,
 }
 
 impl TaskInstance {
@@ -76,6 +81,8 @@ impl TaskInstance {
             description: None,
             task_fn: Some(TaskFunction::new()),
             export_to_clap: false,
+            sub_tasks: Vec::new(),
+            instruction_set: Vec::new(),
         }
     }
     pub fn get_name(&self) -> &String {
@@ -124,14 +131,17 @@ pub struct TaskManager {
         String, // Task名字，会提供一个是否进入命令行的选项
         TaskInstance,
     >,
+    aliases: HashMap<String, String>,
 }
 
 impl TaskManager {
     fn new() -> Self {
         Self {
             tasks: HashMap::new(),
+            aliases: HashMap::new(),
         }
     }
+
     pub fn instance() -> &'static mut Self {
         static mut INSTANCE: once_cell::sync::Lazy<TaskManager> =
             once_cell::sync::Lazy::new(|| TaskManager::new());
@@ -147,12 +157,15 @@ impl TaskManager {
             TaskInstance::new(task_name.to_string()),
         );
     }
+
     pub fn get_task(&self, task_name: &str) -> Option<&TaskInstance> {
         self.tasks.get(task_name)
     }
+
     pub fn get_task_mut(&mut self, task_name: &str) -> Option<&mut TaskInstance> {
         self.tasks.get_mut(task_name)
     }
+
     pub fn to_commands(&self) -> Vec<Command> {
         let mut commands = Vec::new();
         for (_, task) in self.tasks.iter() {
@@ -166,9 +179,11 @@ impl TaskManager {
         }
         commands
     }
+
     pub fn remove_task(&mut self, task_name: &str) {
         self.tasks.remove(task_name);
     }
+
     pub fn remove_task_from_pkg_name(&mut self, pkg_name: &str) {
         let mut to_remove = Vec::new();
         for (task_name, task) in self.tasks.iter() {
@@ -260,5 +275,76 @@ mod test {
             println!("Hello, world!");
         });
         generate.get_fn().unwrap().invoke();
+    }
+
+    #[test]
+    fn test_load_task_config_file() {
+        let task_config = r#"
+[alias]
+cs2 = "--DHL2SDK_ENGINE=HL2SDK_CS2"
+bcs2 = "build cs2"
+
+[task.generate]
+description = "Generate Rift project from one to another."
+args = [
+    { name = "vs", short = "v", conflict_with = [
+        "xcode",
+    ], help = "Build artifacts in release mode, with optimizations", help_heading = "Complication Options" },
+]
+
+        "#;
+
+        /*         let result = toml::from_str::<TomlTaskManifest>(&task_config).unwrap();
+        let mut commands: Vec<clap::Command> = Vec::new();
+        for (name, manifest) in result.task.unwrap() {
+            let mut args: Vec<Arg> = Vec::new();
+            if manifest.args.is_some() {
+                let manifest_args = manifest.args.clone().unwrap();
+                for arg in manifest_args {
+                    let arg_name = arg.name.clone();
+                    let mut to_insert_arg = Arg::new(&arg_name);
+                    to_insert_arg = to_insert_arg.long(arg_name);
+                    if arg.short.is_some() {
+                        let short = arg.short.unwrap();
+                        let short = short.chars().next().unwrap();
+                        to_insert_arg = to_insert_arg.short(short);
+                    }
+
+                    if arg.description.is_some() {
+                        let arg_description = arg.description.unwrap();
+                        to_insert_arg = to_insert_arg.help(arg_description);
+                    }
+
+                    if arg.heading.is_some() {
+                        let heading = arg.heading.unwrap();
+                        to_insert_arg = to_insert_arg.help_heading(heading);
+                    }
+                    if arg.conflict_with.is_some() {
+                        let conflict_with = arg.conflict_with.unwrap();
+                        for conflict in conflict_with {
+                            to_insert_arg = to_insert_arg.conflicts_with_all([conflict]);
+                        }
+                    }
+
+                    args.push(to_insert_arg);
+                }
+            }
+            commands.push(
+                Command::new(name)
+                    .about(manifest.description.clone().unwrap_or("".to_string()))
+                    .args(args),
+            );
+            // println!("{:?}", name);
+        }
+        let app = clap::Command::new("test").subcommands(commands);
+        let matches = app.try_get_matches_from(vec!["test", "generate", "--help"]);
+        match matches {
+            Ok(matches) => {
+                println!("{:?}", matches);
+            }
+            Err(e) => {
+                eprintln!("{}", e);
+            }
+        } */
     }
 }

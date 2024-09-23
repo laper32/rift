@@ -2,9 +2,8 @@
 // 且经过测试得知，native传的函数指针是可以保存+在整个program的其他地方去call的。
 // 基于这个发现，换句话说我们其实可以不用担心async传染的问题。
 
-use std::{collections::HashMap, env};
+use std::env;
 
-use clap::Command;
 use engine::{
     manifest::MANIFEST_IDENTIFIER, plsys::PluginManager, runtime, task::TaskManager,
     workspace::WorkspaceManager,
@@ -31,6 +30,7 @@ fn setup_panic_hook() {
             std::env::consts::ARCH
         );
         // todo: print rift version
+        eprintln!("Rift version: {}", env!("CARGO_PKG_VERSION"));
         eprintln!("Args: {:?}", std::env::args().collect::<Vec<_>>());
         orig_hook(panic_info);
         std::process::exit(1);
@@ -66,19 +66,6 @@ fn main() {
                             }
                             let task = task.unwrap();
                             task.get_fn().unwrap().invoke();
-
-                            /* let mut scope = runtime::ScriptRuntime::instance()
-                               .js_runtime()
-                               .handle_scope();
-                            */
-                            /* let task = TaskManager::instance().get_task(name).unwrap();
-                            let mut scope = runtime::ScriptRuntime::instance()
-                                .js_runtime()
-                                .handle_scope();
-                            let undefined = v8::undefined(&mut scope);
-                            let f =
-                                v8::Local::new(&mut scope, task.get_runtime_function().unwrap());
-                            f.call(&mut scope, undefined.into(), &[]); */
                         }
                         None => {}
                     },

@@ -1,8 +1,10 @@
 const ops = (globalThis as any).Deno.core.ops;
+
 namespace rift {
     export function getHomePath() {
         return ops.get_home_path();
     }
+
     export function getInstallationPath() {
         return ops.get_installation_path();
     }
@@ -27,16 +29,19 @@ namespace rift {
         export function add(plugin: Plugin) {
             ops.op_add_manifest_plugin(plugin)
         }
+
         export namespace onLoad {
             export function addListener(callback: Function) {
                 ops.op_register_plugin_load_listener(callback)
             }
         }
+
         export namespace onUnload {
             export function addListener(callback: Function) {
                 ops.op_register_plugin_unload_listener(callback)
             }
         }
+
         export namespace onAllLoaded {
             export function addListener(callback: Function) {
                 ops.op_register_plugin_all_loaded_listener(callback)
@@ -66,22 +71,43 @@ namespace rift {
         constructor(name: String) {
             this.name = name;
         }
+
         public setDescription(description: String) {
             this.description = description;
             return this;
         }
+
         public markAsCommand() {
             this.exportToClap = true;
             return this;
         }
+
         private name: String;
         private description?: String;
         private exportToClap: Boolean = false;
     }
 
     export namespace tasks {
+
+        /**
+         * Create a new task.
+         * 
+         * @param task Task descriptor.
+         * @param predicate The function that will be executed when the task is invoked.
+         */
         export function add(task: TaskDescriptor, predicate: Function) {
             ops.op_register_task(task, predicate)
+        }
+
+        /**
+         * Implements a declared task.
+         * 
+         * @param name Task name, must be an existing one, cannot override a task which has been implemented 
+         * (unless explicitly declares 'override' flag, will be provided in the future.).
+         * @param predicate The function that will be executed when the task is invoked.
+         */
+        export function impl(name: String, predicate: Function) {
+            ops.op_impl_task(name, predicate)
         }
     }
 }
