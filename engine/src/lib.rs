@@ -5,6 +5,7 @@ use deno_core::extension;
 use lazycell::LazyCell;
 use manifest::EitherManifest;
 
+use parking_lot::{Mutex, RwLock};
 use util::{
     errors::RiftResult,
     fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
@@ -104,8 +105,8 @@ impl Rift {
     pub fn set_current_evaluating_script(&mut self, script: PathBuf) {
         self.current_evaluating_script = Some(script);
     }
-    pub fn get_current_evaluating_script(&self) -> &Option<PathBuf> {
-        &self.current_evaluating_script
+    pub fn get_current_evaluating_script(&self) -> Option<&PathBuf> {
+        self.current_evaluating_script.as_ref()
     }
 
     // Windows上是按照一个完整的包来处理的，换句话说rift.exe一定会在/bin里面。。。

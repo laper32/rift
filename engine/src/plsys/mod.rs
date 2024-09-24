@@ -122,26 +122,33 @@ impl PluginInstance {
     pub fn name(&self) -> String {
         self.inner.pkg.name()
     }
+
     pub fn dependencies(&self) -> &Vec<DependencyManifestDeclarator> {
         &self.inner.dependencies
     }
+
     pub fn add_dependency(&mut self, dependency: DependencyManifestDeclarator) {
         self.inner.dependencies.push(dependency);
     }
+
     pub fn metadata(&self) -> &HashMap<String, serde_json::Value> {
         &self.inner.metadata
     }
+
     pub fn add_metadata(&mut self, metadata: HashMap<String, serde_json::Value>) {
         metadata.iter().for_each(|(k, v)| {
             self.inner.metadata.insert(k.clone(), v.clone());
         });
     }
+
     fn on_load_fn_ref(&self) -> Option<&v8::Global<v8::Function>> {
         self.inner.on_load_fn.as_ref()
     }
+
     fn on_all_loaded_fn_ref(&self) -> Option<&v8::Global<v8::Function>> {
         self.inner.on_all_loaded_fn.as_ref()
     }
+
     fn on_unload_fn_ref(&self) -> Option<&v8::Global<v8::Function>> {
         self.inner.on_unload_fn.as_ref()
     }
@@ -152,6 +159,8 @@ pub struct PluginManager {
         String,         // 插件名
         PluginInstance, // 插件实例信息
     >,
+
+    curr_plugin_cursor: Option<String>, // 当前正在运行的插件实例（只用于OnLoad, OnAllLoaded, OnUnload）
 }
 
 impl Into<EitherManifest> for PluginManifest {
@@ -164,6 +173,7 @@ impl PluginManager {
     fn new() -> Self {
         Self {
             plugins: HashMap::new(),
+            curr_plugin_cursor: None,
         }
     }
     pub fn instance() -> &'static mut Self {
@@ -257,6 +267,11 @@ impl PluginManager {
             .map(|p| p.manifest_path().clone())
             .collect()
     }
+
+    pub fn find_plugin_from_name(&self, name: &str) -> Option<&PluginInstance> {
+        self.plugins.get(name)
+    }
+
     pub fn find_plugin_from_manifest_path(
         &self,
         manifest_path: &PathBuf,
@@ -269,6 +284,7 @@ impl PluginManager {
     pub fn print_plugins(&self) {
         println!("{}", serde_json::to_string_pretty(&self.plugins).unwrap());
     }
+
     pub fn add_dependency_for_plugin(
         &mut self,
         plugin_name: String,
@@ -311,7 +327,7 @@ impl PluginManager {
                         )?;
                         let mod_id = ScriptRuntime::instance()
                             .js_runtime()
-                            .load_main_es_module(&to_eval_entry)
+                            .load_side_es_module(&to_eval_entry)
                             .await?;
                         let result = ScriptRuntime::instance().js_runtime().mod_evaluate(mod_id);
                         ScriptRuntime::instance()
@@ -329,6 +345,7 @@ impl PluginManager {
             }
         }
     }
+
     fn register_instance_load_fn(
         &mut self,
         plugin_name: String,
@@ -378,12 +395,13 @@ impl PluginManager {
     }
 
     fn load_instances(&mut self) {
-        self.plugins.iter_mut().for_each(|(_, instance)| {
+        self.plugins.iter_mut().for_each(|(name, instance)| {
             instance.set_status(PluginStatus::Init);
             let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
             match instance.on_load_fn_ref() {
                 Some(on_load_fn_ref) => {
+                    self.curr_plugin_cursor = Some(name.clone());
                     let on_load_fn = v8::Local::new(&mut scope, on_load_fn_ref);
                     let _ = on_load_fn.call(&mut scope, undefined.into(), &[]);
                 }
@@ -393,11 +411,12 @@ impl PluginManager {
     }
 
     fn on_instances_all_loaded(&mut self) {
-        self.plugins.iter_mut().for_each(|(_, instance)| {
+        self.plugins.iter_mut().for_each(|(name, instance)| {
             let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
             match instance.on_all_loaded_fn_ref() {
                 Some(on_all_loaded_fn_ref) => {
+                    self.curr_plugin_cursor = Some(name.clone());
                     let on_all_loaded_fn = v8::Local::new(&mut scope, on_all_loaded_fn_ref);
                     let _ = on_all_loaded_fn.call(&mut scope, undefined.into(), &[]);
                     instance.set_status(PluginStatus::Running);
@@ -413,6 +432,7 @@ impl PluginManager {
             let undefined: v8::Local<Value> = v8::undefined(&mut scope).into();
             match instance.on_unload_fn_ref() {
                 Some(on_unload_fn_ref) => {
+                    self.curr_plugin_cursor = Some(name.clone());
                     let on_unload_fn = v8::Local::new(&mut scope, on_unload_fn_ref);
                     let _ = on_unload_fn.call(&mut scope, undefined.into(), &[]);
                     TaskManager::instance().remove_task_from_pkg_name(&name);
@@ -421,5 +441,9 @@ impl PluginManager {
                 None => { /* ... */ }
             }
         });
+    }
+
+    pub(crate) fn get_current_plugin_cursor(&self) -> Option<&String> {
+        self.curr_plugin_cursor.as_ref()
     }
 }

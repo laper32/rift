@@ -65,7 +65,15 @@ fn main() {
                                 return;
                             }
                             let task = task.unwrap();
-                            task.get_fn().unwrap().invoke();
+                            match task.get_fn() {
+                                Some(r#fn) => {
+                                    r#fn.invoke();
+                                }
+                                None => {
+                                    eprintln!("Task '{}' is not implemented.", name);
+                                    std::process::exit(1);
+                                }
+                            }
                         }
                         None => {}
                     },
@@ -88,27 +96,3 @@ fn main() {
 
     PluginManager::instance().deactivate_instances();
 }
-
-/*
-    #[test]
-    fn test_load_plugins() {
-        let our_project_root = util::get_cargo_project_root().unwrap();
-        let simple_workspace = our_project_root
-            .join("sample")
-            .join("02_single_target_with_project")
-            .join("Rift.toml");
-        WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        match WorkspaceManager::instance().load_packages() {
-            Ok(_) => {
-                init();
-                PluginManager::instance().evaluate_entries();
-                PluginManager::instance().activate_instances();
-                PluginManager::instance().deactivate_instances();
-                // PluginManager::instance().register_plugin_listeners();
-            }
-            Err(error) => {
-                eprintln!("{}", error);
-            }
-        }
-    }
-*/

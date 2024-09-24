@@ -125,20 +125,21 @@ pub type TomlTask = HashMap<String, TomlTaskInstance>;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TomlTaskInstance {
-    description: Option<String>,
-    args: Option<Vec<TomlTaskFlag>>,
+    pub description: Option<String>,
+    pub is_command: Option<bool>,
+    pub args: Option<Vec<TomlTaskFlag>>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TomlTaskFlag {
-    name: String,
-    short: Option<String>,
+    pub name: String,
+    pub short: Option<String>,
     #[serde(rename = "help")]
-    description: Option<String>,
-    default: Option<toml::Value>,
-    conflict_with: Option<Vec<String>>,
+    pub description: Option<String>,
+    pub default: Option<toml::Value>,
+    pub conflict_with: Option<Vec<String>>,
     #[serde(rename = "help_heading")]
-    heading: Option<String>,
+    pub heading: Option<String>,
 }
 
 pub fn load_manifest(path: &Path) -> RiftResult<TomlManifest> {

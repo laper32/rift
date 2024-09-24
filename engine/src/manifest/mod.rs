@@ -10,7 +10,8 @@ use relative_path::PathExt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    schema,
+    schema::{self, TomlTaskFlag, TomlTaskInstance},
+    task::TaskManager,
     util::{errors::RiftResult, fs::as_posix::PathExt as _},
     workspace::WorkspaceManager,
 };
@@ -110,7 +111,13 @@ pub struct PluginManifest {
     pub entry: String,
 }
 
-pub type AliasManifest = HashMap<String, String>;
+pub type AliasManifest = HashMap<String, AliasInstanceManifest>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AliasInstanceManifest {
+    pub alias: String,
+    pub referred_pkg_name: String,
+}
 
 pub type TaskManifest = HashMap<String, TaskInstanceManifest>;
 
@@ -118,6 +125,8 @@ pub type TaskManifest = HashMap<String, TaskInstanceManifest>;
 pub struct TaskInstanceManifest {
     pub description: Option<String>,
     pub args: Option<Vec<TaskFlagManifest>>,
+    pub is_command: bool,
+    pub referred_pkg_name: String,
 }
 
 impl TaskInstanceManifest {
@@ -125,6 +134,17 @@ impl TaskInstanceManifest {
         self.args
             .as_ref()
             .map_or(false, |args| args.iter().any(|arg| arg.name.eq(flag_name)))
+    }
+    fn from_schema(pkg_name: String, schema: &TomlTaskInstance) -> Self {
+        TaskInstanceManifest {
+            description: schema.description.clone(),
+            args: schema
+                .args
+                .as_ref()
+                .map(|args| args.iter().map(TaskFlagManifest::from_schema).collect()),
+            referred_pkg_name: pkg_name,
+            is_command: schema.is_command.unwrap_or(false),
+        }
     }
 }
 
@@ -136,6 +156,19 @@ pub struct TaskFlagManifest {
     pub default: Option<toml::Value>,
     pub conflict_with: Option<Vec<String>>,
     pub heading: Option<String>,
+}
+
+impl TaskFlagManifest {
+    fn from_schema(schema: &TomlTaskFlag) -> Self {
+        TaskFlagManifest {
+            name: schema.name.clone(),
+            short: schema.short.clone(),
+            description: schema.description.clone(),
+            default: schema.default.clone(),
+            conflict_with: schema.conflict_with.clone(),
+            heading: schema.heading.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -311,6 +344,36 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                     } else {
                         workspace_name = workspace_manifest.name.as_ref().unwrap();
                     }
+
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    workspace_name.to_string(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: workspace_name.to_string(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
+                    }
+
                     return Ok(EitherManifest::Virtual(VirtualManifest::Workspace(
                         WorkspaceManifest {
                             name: workspace_name.to_string(),
@@ -403,6 +466,34 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                             });
                         }
                     }
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    result_manifest.name.clone(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: result_manifest.name.clone(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
+                    }
 
                     return Ok(EitherManifest::Real(Manifest::Project(result_manifest)));
                 } else if manifest.target.is_some() {
@@ -412,6 +503,35 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         || manifest.plugin.is_some()
                     {
                         anyhow::bail!("Workspace and Folder/Target/Plugin can't be used together.")
+                    }
+
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    target_manifest.name.clone(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: target_manifest.name.clone(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
                     }
 
                     return Ok(EitherManifest::Real(Manifest::Target(TargetManifest {
@@ -433,6 +553,35 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         anyhow::bail!(
                             "Workspace and Folder/Project/Target/Plugin can't be used together."
                         )
+                    }
+
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    plugin_manifest.name.clone(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: plugin_manifest.name.clone(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
                     }
 
                     return Ok(EitherManifest::Rift(RiftManifest::Plugin(PluginManifest {

@@ -2,10 +2,13 @@ mod ops;
 
 use std::collections::HashMap;
 
-use clap::Command;
+use clap::{Arg, Command};
 use deno_core::v8;
 
-use crate::runtime::ScriptRuntime;
+use crate::{
+    manifest::{AliasManifest, TaskManifest},
+    runtime::ScriptRuntime,
+};
 
 pub fn init_ops() -> deno_core::Extension {
     ops::task::init_ops()
@@ -126,12 +129,32 @@ impl TaskInstance {
     }
 }
 
+struct AliasInstance {
+    name: String,
+    referred_pkg_name: Option<String>, // 没名字就是内置的alias.
+}
+
+impl AliasInstance {
+    fn new(name: String) -> Self {
+        Self {
+            name,
+            referred_pkg_name: None,
+        }
+    }
+    fn set_referred_pkg_name(&mut self, pkg_name: String) {
+        self.referred_pkg_name = Some(pkg_name);
+    }
+    fn name(&self) -> &String {
+        &self.name
+    }
+}
+
 pub struct TaskManager {
     tasks: HashMap<
         String, // Task名字，会提供一个是否进入命令行的选项
         TaskInstance,
     >,
-    aliases: HashMap<String, String>,
+    aliases: HashMap<String, AliasInstance>,
 }
 
 impl TaskManager {
@@ -148,8 +171,16 @@ impl TaskManager {
         unsafe { &mut *INSTANCE }
     }
 
+    pub fn has_task(&self, task_name: &str) -> bool {
+        self.tasks.contains_key(task_name)
+    }
+
+    pub fn has_alias(&self, alias_name: &str) -> bool {
+        self.aliases.contains_key(alias_name)
+    }
+
     pub fn register_task(&mut self, task_name: &str) {
-        if self.tasks.contains_key(task_name) {
+        if self.has_task(task_name) {
             return;
         }
         self.tasks.insert(
@@ -195,6 +226,68 @@ impl TaskManager {
         }
         for task_name in to_remove {
             self.remove_task(&task_name);
+        }
+    }
+
+    pub fn load_task_from_manifest(&mut self, manifest: &TaskManifest) {
+        for (task_name, task) in manifest {
+            if self.has_task(&task_name) {
+                continue;
+            }
+            self.register_task(&task_name);
+            let instance = self.get_task_mut(task_name).unwrap();
+            if let Some(description) = &task.description {
+                instance.set_description(description.clone());
+            }
+            if task.is_command {
+                instance.mark_as_command();
+            }
+            instance.related_package_name = Some(task.referred_pkg_name.clone());
+            let mut args: Vec<Arg> = Vec::new();
+            if task.args.is_some() {
+                let task_args = task.args.clone().unwrap();
+                for arg in task_args {
+                    let mut to_insert_arg = Arg::new(&arg.name);
+                    to_insert_arg = to_insert_arg.long(arg.name.clone());
+                    if arg.short.is_some() {
+                        let short = arg.short.clone().unwrap();
+                        let short = short.chars().next().unwrap();
+                        to_insert_arg = to_insert_arg.short(short);
+                    }
+                    if arg.description.is_some() {
+                        let arg_description = arg.description.clone().unwrap();
+                        to_insert_arg = to_insert_arg.help(arg_description);
+                    }
+                    if arg.heading.is_some() {
+                        let heading = arg.heading.clone().unwrap();
+                        to_insert_arg = to_insert_arg.help_heading(heading);
+                    }
+                    if arg.conflict_with.is_some() {
+                        let conflict_with = arg.conflict_with.clone().unwrap();
+                        for conflict in conflict_with {
+                            if task.has_flag(&conflict) {
+                                to_insert_arg = to_insert_arg.conflicts_with_all([conflict]);
+                            }
+                        }
+                    }
+                    args.push(to_insert_arg);
+                }
+            }
+        }
+    }
+
+    pub fn load_alias_from_manifest(&mut self, manifest: &AliasManifest) {
+        for (alias_name, alias) in manifest {
+            if self.has_alias(&alias_name) {
+                continue;
+            }
+            self.aliases.insert(
+                alias_name.clone(),
+                AliasInstance {
+                    name: alias_name.clone(),
+                    referred_pkg_name: Some(alias.referred_pkg_name.clone()),
+                },
+            );
         }
     }
 }
@@ -278,73 +371,5 @@ mod test {
     }
 
     #[test]
-    fn test_load_task_config_file() {
-        let task_config = r#"
-[alias]
-cs2 = "--DHL2SDK_ENGINE=HL2SDK_CS2"
-bcs2 = "build cs2"
-
-[task.generate]
-description = "Generate Rift project from one to another."
-args = [
-    { name = "vs", short = "v", conflict_with = [
-        "xcode",
-    ], help = "Build artifacts in release mode, with optimizations", help_heading = "Complication Options" },
-]
-
-        "#;
-
-        /*         let result = toml::from_str::<TomlTaskManifest>(&task_config).unwrap();
-        let mut commands: Vec<clap::Command> = Vec::new();
-        for (name, manifest) in result.task.unwrap() {
-            let mut args: Vec<Arg> = Vec::new();
-            if manifest.args.is_some() {
-                let manifest_args = manifest.args.clone().unwrap();
-                for arg in manifest_args {
-                    let arg_name = arg.name.clone();
-                    let mut to_insert_arg = Arg::new(&arg_name);
-                    to_insert_arg = to_insert_arg.long(arg_name);
-                    if arg.short.is_some() {
-                        let short = arg.short.unwrap();
-                        let short = short.chars().next().unwrap();
-                        to_insert_arg = to_insert_arg.short(short);
-                    }
-
-                    if arg.description.is_some() {
-                        let arg_description = arg.description.unwrap();
-                        to_insert_arg = to_insert_arg.help(arg_description);
-                    }
-
-                    if arg.heading.is_some() {
-                        let heading = arg.heading.unwrap();
-                        to_insert_arg = to_insert_arg.help_heading(heading);
-                    }
-                    if arg.conflict_with.is_some() {
-                        let conflict_with = arg.conflict_with.unwrap();
-                        for conflict in conflict_with {
-                            to_insert_arg = to_insert_arg.conflicts_with_all([conflict]);
-                        }
-                    }
-
-                    args.push(to_insert_arg);
-                }
-            }
-            commands.push(
-                Command::new(name)
-                    .about(manifest.description.clone().unwrap_or("".to_string()))
-                    .args(args),
-            );
-            // println!("{:?}", name);
-        }
-        let app = clap::Command::new("test").subcommands(commands);
-        let matches = app.try_get_matches_from(vec!["test", "generate", "--help"]);
-        match matches {
-            Ok(matches) => {
-                println!("{:?}", matches);
-            }
-            Err(e) => {
-                eprintln!("{}", e);
-            }
-        } */
-    }
+    fn test_load_task_config_file() {}
 }

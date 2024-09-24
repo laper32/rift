@@ -228,7 +228,7 @@ mod test {
 
     use std::path::PathBuf;
 
-    use crate::{plsys::PluginManager, task::TaskManager, util, workspace::WorkspaceManager};
+    use crate::{util, workspace::WorkspaceManager};
 
     use super::init;
 
