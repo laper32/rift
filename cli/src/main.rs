@@ -37,6 +37,33 @@ fn setup_panic_hook() {
     }));
 }
 
+fn parse_commands(matches: Result<clap::ArgMatches, clap::error::Error>) {
+    match matches {
+        Ok(matches) => match matches.subcommand() {
+            Some((name, args)) => {
+                let task = TaskManager::instance().get_task(name);
+                if task.is_none() {
+                    eprintln!("Task '{}' not found.", name);
+                    return;
+                }
+
+                let task = task.unwrap();
+                match task.get_fn().invoke() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        std::process::exit(-1);
+                    }
+                }
+            }
+            None => {}
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+        }
+    }
+}
+
 fn main() {
     setup_panic_hook();
     let args = std::env::args().collect::<Vec<_>>();
@@ -56,37 +83,7 @@ fn main() {
                 PluginManager::instance().evaluate_entries();
                 PluginManager::instance().activate_instances();
                 let cmd = cmd.subcommands(TaskManager::instance().to_commands());
-                match cmd.try_get_matches() {
-                    Ok(cmd) => match cmd.subcommand() {
-                        Some((name, _)) => {
-                            let task = TaskManager::instance().get_task(name);
-                            if task.is_none() {
-                                eprintln!("Task '{}' not found.", name);
-                                return;
-                            }
-                            let task = task.unwrap();
-                            match task.get_fn() {
-                                Some(r#fn) => {
-                                    r#fn.invoke();
-                                }
-                                None => {
-                                    eprintln!("Task '{}' is not implemented.", name);
-                                    std::process::exit(1);
-                                }
-                            }
-                        }
-                        None => {}
-                    },
-                    Err(e) => {
-                        eprintln!("{}", e);
-                    }
-                }
-                // match result = cmd.get_matches().subcommand() {
-                //     Some(_) => todo!(),
-                //     None => todo!(),
-                // }
-
-                // println!("{:?}", classified_commands.len());
+                parse_commands(cmd.try_get_matches());
             }
             Err(error) => {
                 eprintln!("{}", error);

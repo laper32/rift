@@ -125,7 +125,7 @@ pub type TomlTask = HashMap<String, TomlTaskInstance>;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct TomlTaskInstance {
-    pub description: Option<String>,
+    pub about: Option<String>,
     pub is_command: Option<bool>,
     pub args: Option<Vec<TomlTaskFlag>>,
 }

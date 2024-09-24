@@ -13,7 +13,6 @@ name = "02_single_target"
 type = "bin"
 
 [task.build] # Command name
-
 about = "Compile local packages and all of their dependencies."
 after_help = "Run `<cyan,bold>cargo help build</>` for more detailed information.\n"
 flags = [

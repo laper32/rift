@@ -163,15 +163,6 @@ mod test {
                 });
 
                 assert_eq!(TaskManager::instance().tasks.len(), 4);
-
-                // TaskManager::instance()
-                //     .tasks
-                //     .iter()
-                //     .for_each(|(_, instance)| {
-                //         instance.get_fn().unwrap().invoke();
-                //     });
-                // println!("{:?}", TaskManager::instance().tasks);
-                // PluginManager::instance().deactivate_instances();
             }
             Err(error) => {
                 eprintln!("{}", error);

@@ -8,6 +8,7 @@ use deno_core::v8;
 use crate::{
     manifest::{AliasManifest, TaskManifest},
     runtime::ScriptRuntime,
+    util::errors::RiftResult,
 };
 
 pub fn init_ops() -> deno_core::Extension {
@@ -33,24 +34,45 @@ impl TaskFunction {
     }
 
     fn register_function(&mut self, f: fn()) {
+        // 防呆就行了
+        if self.runtime_function.is_some() {
+            return;
+        }
         self.native_function = Some(f);
     }
 
     fn register_runtime_fnction(&mut self, f: v8::Global<v8::Function>) {
-        self.runtime_function = Some(f);
-    }
-
-    pub fn invoke(&self) {
-        if let Some(f) = &self.native_function {
-            f();
+        // 防呆就行了
+        if self.native_function.is_some() {
             return;
         }
-        if let Some(f) = &self.runtime_function {
-            let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-            let undefined = v8::undefined(&mut scope);
-            let f = v8::Local::new(&mut scope, f);
-            f.call(&mut scope, undefined.into(), &[]);
-            return;
+        self.runtime_function = Some(f);
+    }
+    fn has_impl(&self) -> bool {
+        self.native_function.is_some() || self.runtime_function.is_some()
+    }
+
+    pub fn invoke(&self) -> RiftResult<()> {
+        if !self.has_impl() {
+            anyhow::bail!("Task function is not implemented.");
+        } else {
+            match &self.native_function {
+                Some(f) => {
+                    f();
+                    return Ok(());
+                }
+                None => { /* This is possible. */ }
+            }
+            match &self.runtime_function {
+                Some(f) => {
+                    let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+                    let undefined = v8::undefined(&mut scope);
+                    let f = v8::Local::new(&mut scope, f);
+                    f.call(&mut scope, undefined.into(), &[]);
+                }
+                None => { /* In fact this is impossible. */ }
+            }
+            Ok(())
         }
     }
 }
@@ -62,7 +84,7 @@ pub struct TaskInstance {
     // 对应的包名，如果没有就是builtin，否则就是对应的包
     related_package_name: Option<String>,
     description: Option<String>,
-    task_fn: Option<TaskFunction>,
+    task_fn: TaskFunction,
 
     // 该Task是否会进指令集
     // 默认是关的，你可以选择手动开。
@@ -82,7 +104,7 @@ impl TaskInstance {
             name,
             related_package_name: None,
             description: None,
-            task_fn: Some(TaskFunction::new()),
+            task_fn: TaskFunction::new(),
             export_to_clap: false,
             sub_tasks: Vec::new(),
             instruction_set: Vec::new(),
@@ -100,16 +122,15 @@ impl TaskInstance {
     }
 
     pub fn register_function(&mut self, f: fn()) {
-        self.task_fn.as_mut().unwrap().register_function(f);
-        // self.task_fn.as_ref().unwrap().register_function(f);
+        self.task_fn.register_function(f);
     }
 
     pub fn register_runtime_fnction(&mut self, f: v8::Global<v8::Function>) {
-        self.task_fn.as_mut().unwrap().register_runtime_fnction(f);
+        self.task_fn.register_runtime_fnction(f);
     }
 
-    pub fn get_fn(&self) -> Option<&TaskFunction> {
-        self.task_fn.as_ref()
+    pub fn get_fn(&self) -> &TaskFunction {
+        &self.task_fn
     }
 
     pub fn get_description(&self) -> Option<&String> {
@@ -126,6 +147,10 @@ impl TaskInstance {
 
     pub fn mark_as_command(&mut self) {
         self.export_to_clap = true;
+    }
+
+    pub fn get_sub_tasks(&self) -> &Vec<String> {
+        &self.sub_tasks
     }
 }
 
@@ -367,7 +392,7 @@ mod test {
         generate.register_function(|| {
             println!("Hello, world!");
         });
-        generate.get_fn().unwrap().invoke();
+        generate.get_fn().invoke();
     }
 
     #[test]

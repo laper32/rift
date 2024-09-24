@@ -137,7 +137,7 @@ impl TaskInstanceManifest {
     }
     fn from_schema(pkg_name: String, schema: &TomlTaskInstance) -> Self {
         TaskInstanceManifest {
-            description: schema.description.clone(),
+            description: schema.about.clone(),
             args: schema
                 .args
                 .as_ref()
