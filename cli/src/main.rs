@@ -1,140 +1,91 @@
-use std::{ffi::OsString, process::exit, vec};
+use std::env;
 
-use anyhow::anyhow;
-use clap::{ArgMatches, Command};
 use engine::{
-    task::{alias::AliasManager, TaskManager},
-    util::{
-        errors::{
-            cli::{CliError, CliResult},
-            RiftResult,
-        },
-        get_cargo_project_root,
-    },
+    manifest::MANIFEST_IDENTIFIER, plsys::PluginManager, runtime, task::TaskManager,
+    workspace::WorkspaceManager,
 };
 
-fn main() {
-    let result = cli_main();
-    match result {
-        Ok(_) => {}
-        Err(_e) => {}
-    }
+fn setup_panic_hook() {
+    // This function does two things inside of the panic hook:
+    // - Tokio does not exit the process when a task panics, so we define a custom
+    //   panic hook to implement this behaviour.
+    // - We print a message to stderr to indicate that this is a bug in Deno, and
+    //   should be reported to us.
+    let orig_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        eprintln!("\n============================================================");
+        eprintln!("Detected panic in Rift.");
+        eprintln!("Report this at https://github.com/laper32/rift/issues/new.");
+        eprintln!("If you can reliably reproduce this panic, include the");
+        eprintln!("reproduction steps and re-run with the RUST_BACKTRACE=1 env");
+        eprintln!("var set and include the backtrace in your report.");
+        eprintln!();
+        eprintln!(
+            "Platform: {} {}",
+            std::env::consts::OS,
+            std::env::consts::ARCH
+        );
+        // todo: print rift version
+        eprintln!("Rift version: {}", env!("CARGO_PKG_VERSION"));
+        eprintln!("Args: {:?}", std::env::args().collect::<Vec<_>>());
+        orig_hook(panic_info);
+        std::process::exit(1);
+    }));
 }
 
-fn cli_main() -> CliResult {
-    let matches = cli().try_get_matches();
+fn parse_commands(matches: Result<clap::ArgMatches, clap::error::Error>) {
     match matches {
-        Ok(matches) => Ok(()),
+        Ok(matches) => match matches.subcommand() {
+            Some((name, args)) => {
+                let task = TaskManager::instance().get_task(name);
+                if task.is_none() {
+                    eprintln!("Task '{}' not found.", name);
+                    return;
+                }
+
+                let task = task.unwrap();
+                match task.get_fn().invoke() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        eprintln!("{}", e);
+                        std::process::exit(-1);
+                    }
+                }
+            }
+            None => {}
+        },
         Err(e) => {
-            println!("Error: {:?}", e.print());
-            exit(e.exit_code())
-        }
-    }
-    // let matches = cli().try_get_matches()?;
-
-    // let expanded_args = expand_aliases(matches, vec![])?;
-}
-
-pub fn cli() -> Command {
-    TaskManager::instance().add_possible_tasks(
-        &get_cargo_project_root()
-            .unwrap()
-            .join("sample")
-            .join("07_task")
-            .join("Task.toml"),
-    );
-    TaskManager::instance().add_task("build".to_owned(), || {
-        println!("TaskManager::Instance::AddTask::Invocation (Build)");
-    });
-    AliasManager::instance().load_alias(
-        get_cargo_project_root()
-            .unwrap()
-            .join("sample")
-            .join("09_alias")
-            .join("Alias.toml"),
-    );
-
-    Command::new("Rift")
-        .version("1.0") // TODO: Replace with actual project version
-        .about("Rift build system")
-        .subcommands(TaskManager::instance().to_commands())
-}
-
-// 我们得考虑到 rift run 后面接别的二进制文件的情况。
-fn expand_aliases(
-    args: ArgMatches,
-    mut already_expanded: Vec<String>,
-) -> Result<ArgMatches, CliError> {
-    println!("ExpandAliases in");
-    // 我不知道cargo是怎么展开的
-    // 直接.subcommand直接就None了..
-    println!("{:?}", args);
-    match args.subcommand() {
-        Some((cmd, sub_args)) => {
-            println!("Some => in => args: {args:?}");
-            Ok(args)
-        }
-        None => {
-            println!("args.subcommand() out");
-            println!("{:?}", args);
-            // let has_alias =
-            //     AliasManager::instance().has_alias(&String::from(args.into()));
-            // println!("HasAlias: {has_alias}");
-            Ok(args)
+            eprintln!("{}", e);
         }
     }
 }
 
-// fn expand_aliases(args: ArgMatches, mut already_expanded: Vec<String>) -> RiftResult<ArgMatches> {
-//     println!("ExpandAliases in");
-//     if let Some((cmd, sub_args)) = args.subcommand() {
-//         println!("args.subcommand() in");
-//         let aliased_cmd = AliasManager::instance().to_command_vec(cmd);
-//         println!("{:?}", aliased_cmd);
-//         match aliased_cmd {
-//             Ok(Some(alias)) => {
-//                 let mut alias = alias
-//                     .into_iter()
-//                     .map(|s| OsString::from(s))
-//                     .collect::<Vec<_>>();
-//                 alias.extend(
-//                     sub_args
-//                         .get_many::<OsString>("")
-//                         .unwrap_or_default()
-//                         .cloned(),
-//                 );
-//                 println!("{:?}", alias);
+fn main() {
+    setup_panic_hook();
+    let args = std::env::args().collect::<Vec<_>>();
+    let mut cmd = clap::Command::new("rift")
+        .about("Rift, a muitlple-language build system.")
+        .version(env!("CARGO_PKG_VERSION"))
+        .after_help("All subcommands will be traded as 'Task', they will be provided when you are in a specific project.");
 
-//                 let new_args = cli().try_get_matches_from(alias)?;
-//                 let Some(new_cmd) = new_args.subcommand_name() else {
-//                     return Err(anyhow!(
-//                         "subcommand is required, add a subcommand to the command alias `alias.{cmd}`"
-//                     )
-//                         .into());
-//                 };
-//                 already_expanded.push(cmd.to_string());
-//                 if already_expanded.contains(&new_cmd.to_string()) {
-//                     return Err(anyhow!(
-//                         "alias {} has unresolvable recursive definition: {} -> {}",
-//                         already_expanded[0],
-//                         already_expanded.join(" -> "),
-//                         new_cmd,
-//                     )
-//                     .into());
-//                 }
-//                 let expanded_args = expand_aliases(new_args, already_expanded)?;
-//                 return Ok(expanded_args);
-//             }
-//             Ok(None) => {
-//                 println!("Ok(None)");
-//             }
-//             Err(e) => {
-//                 println!("Err(e)");
-//                 return Err(e.into());
-//             }
-//         };
-//     } else {
-//         println!("args.subcommand() out");
-//     };
-//     Ok(args)
-// }
+    if args.len() == 1 {
+        cmd.print_help().unwrap();
+    } else {
+        let cwd = std::env::current_dir().unwrap();
+        WorkspaceManager::instance().set_current_manifest(&cwd.join(MANIFEST_IDENTIFIER));
+        match WorkspaceManager::instance().load_packages() {
+            Ok(_) => {
+                runtime::init();
+                PluginManager::instance().evaluate_entries();
+                PluginManager::instance().activate_instances();
+                let cmd = cmd.subcommands(TaskManager::instance().to_commands());
+                parse_commands(cmd.try_get_matches());
+            }
+            Err(error) => {
+                eprintln!("{}", error);
+            }
+        }
+    }
+
+    PluginManager::instance().deactivate_instances();
+}

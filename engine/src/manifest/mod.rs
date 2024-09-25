@@ -1,4 +1,7 @@
+mod ops;
+
 use std::{
+    collections::HashMap,
     fs,
     path::{Path, PathBuf},
 };
@@ -7,10 +10,15 @@ use relative_path::PathExt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    schema,
+    schema::{self, TomlTaskFlag, TomlTaskInstance},
+    task::TaskManager,
     util::{errors::RiftResult, fs::as_posix::PathExt as _},
     workspace::WorkspaceManager,
 };
+
+pub fn init_ops() -> deno_core::Extension {
+    ops::manifest::init_ops()
+}
 
 pub const MANIFEST_IDENTIFIER: &str = "Rift.toml";
 
@@ -28,6 +36,15 @@ pub enum EitherManifest {
     Real(Manifest),
     Virtual(VirtualManifest),
     Rift(RiftManifest),
+}
+impl EitherManifest {
+    pub fn name(&self) -> String {
+        match self {
+            EitherManifest::Real(m) => m.name(),
+            EitherManifest::Virtual(m) => m.name(),
+            EitherManifest::Rift(m) => m.name(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -91,13 +108,115 @@ pub struct PluginManifest {
     pub description: Option<String>,
     pub metadata: Option<String>,
     pub dependencies: Option<String>,
+    pub entry: String,
+}
+
+pub type AliasManifest = HashMap<String, AliasInstanceManifest>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AliasInstanceManifest {
+    pub alias: String,
+    pub referred_pkg_name: String,
+}
+
+pub type TaskManifest = HashMap<String, TaskInstanceManifest>;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskInstanceManifest {
+    pub description: Option<String>,
+    pub args: Option<Vec<TaskFlagManifest>>,
+    pub is_command: bool,
+    pub referred_pkg_name: String,
+}
+
+impl TaskInstanceManifest {
+    pub fn has_flag(&self, flag_name: &str) -> bool {
+        self.args
+            .as_ref()
+            .map_or(false, |args| args.iter().any(|arg| arg.name.eq(flag_name)))
+    }
+    fn from_schema(pkg_name: String, schema: &TomlTaskInstance) -> Self {
+        TaskInstanceManifest {
+            description: schema.about.clone(),
+            args: schema
+                .args
+                .as_ref()
+                .map(|args| args.iter().map(TaskFlagManifest::from_schema).collect()),
+            referred_pkg_name: pkg_name,
+            is_command: schema.is_command.unwrap_or(false),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskFlagManifest {
+    pub name: String,
+    pub short: Option<String>,
+    pub description: Option<String>,
+    pub default: Option<toml::Value>,
+    pub conflict_with: Option<Vec<String>>,
+    pub heading: Option<String>,
+}
+
+impl TaskFlagManifest {
+    fn from_schema(schema: &TomlTaskFlag) -> Self {
+        TaskFlagManifest {
+            name: schema.name.clone(),
+            short: schema.short.clone(),
+            description: schema.description.clone(),
+            default: schema.default.clone(),
+            conflict_with: schema.conflict_with.clone(),
+            heading: schema.heading.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PluginManifestDeclarator {
+    pub name: String,
+    pub data: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DependencyManifestDeclarator {
+    pub name: String,
+
+    pub data: HashMap<String, serde_json::Value>,
 }
 
 /// 针对项目本身的。
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Manifest {
     Project(ProjectManifest),
     Target(TargetManifest),
+}
+
+impl Manifest {
+    pub fn name(&self) -> String {
+        match self {
+            Manifest::Project(p) => p.name.clone(),
+            Manifest::Target(t) => t.name.clone(),
+        }
+    }
+
+    pub fn dependencies(&self) -> Option<String> {
+        match self {
+            Manifest::Project(p) => p.dependencies.clone(),
+            Manifest::Target(t) => t.dependencies.clone(),
+        }
+    }
+    pub fn plugins(&self) -> Option<String> {
+        match self {
+            Manifest::Project(p) => p.plugins.clone(),
+            Manifest::Target(t) => t.plugins.clone(),
+        }
+    }
+    pub fn metadata(&self) -> Option<String> {
+        match self {
+            Manifest::Project(p) => p.metadata.clone(),
+            Manifest::Target(t) => t.metadata.clone(),
+        }
+    }
 }
 
 ///组织项目结构
@@ -107,11 +226,79 @@ pub enum VirtualManifest {
     Folder(FolderManifest),
 }
 
+impl VirtualManifest {
+    pub fn name(&self) -> String {
+        match self {
+            VirtualManifest::Workspace(w) => w.name.clone(),
+            VirtualManifest::Folder(f) => f.name.clone(),
+        }
+    }
+
+    pub fn members(&self) -> Option<Vec<String>> {
+        match self {
+            VirtualManifest::Workspace(w) => Some(w.members.clone()),
+            VirtualManifest::Folder(f) => f.members.clone(),
+        }
+    }
+
+    pub fn excludes(&self) -> Option<Vec<String>> {
+        match self {
+            VirtualManifest::Workspace(w) => w.exclude.clone(),
+            VirtualManifest::Folder(f) => f.exclude.clone(),
+        }
+    }
+
+    pub fn dependencies(&self) -> Option<String> {
+        match self {
+            VirtualManifest::Workspace(w) => w.dependencies.clone(),
+            VirtualManifest::Folder(_) => None,
+        }
+    }
+
+    pub fn plugins(&self) -> Option<String> {
+        match self {
+            VirtualManifest::Workspace(w) => w.plugins.clone(),
+            VirtualManifest::Folder(_) => None,
+        }
+    }
+
+    pub fn metadata(&self) -> Option<String> {
+        match self {
+            VirtualManifest::Workspace(w) => w.metadata.clone(),
+            VirtualManifest::Folder(_) => None,
+        }
+    }
+}
+
 // 给rift用的
 // 如：插件，内核扩展（如果以后有需要的话）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RiftManifest {
     Plugin(PluginManifest),
+}
+
+impl RiftManifest {
+    pub fn name(&self) -> String {
+        match self {
+            RiftManifest::Plugin(p) => p.name.clone(),
+        }
+    }
+    pub fn dependencies(&self) -> Option<String> {
+        match self {
+            RiftManifest::Plugin(p) => p.dependencies.clone(),
+        }
+    }
+    pub fn metadata(&self) -> Option<String> {
+        match self {
+            RiftManifest::Plugin(p) => p.metadata.clone(),
+        }
+    }
+}
+
+impl Into<EitherManifest> for RiftManifest {
+    fn into(self) -> EitherManifest {
+        EitherManifest::Rift(self)
+    }
 }
 
 pub fn find_root_manifest(current_path: &PathBuf) -> Option<PathBuf> {
@@ -157,6 +344,36 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                     } else {
                         workspace_name = workspace_manifest.name.as_ref().unwrap();
                     }
+
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    workspace_name.to_string(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: workspace_name.to_string(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
+                    }
+
                     return Ok(EitherManifest::Virtual(VirtualManifest::Workspace(
                         WorkspaceManifest {
                             name: workspace_name.to_string(),
@@ -242,11 +459,40 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                             result_manifest.target = Some(TargetManifest {
                                 name: target_manifest.name,
                                 build_type: target_manifest.build_type,
-                                plugins: target_manifest.plugins,
-                                dependencies: target_manifest.dependencies,
-                                metadata: target_manifest.metadata,
+                                // 单Project，单Target架构的情况下，只认Project。
+                                plugins: None,
+                                dependencies: None,
+                                metadata: None,
                             });
                         }
+                    }
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    result_manifest.name.clone(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: result_manifest.name.clone(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
                     }
 
                     return Ok(EitherManifest::Real(Manifest::Project(result_manifest)));
@@ -257,6 +503,35 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         || manifest.plugin.is_some()
                     {
                         anyhow::bail!("Workspace and Folder/Target/Plugin can't be used together.")
+                    }
+
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    target_manifest.name.clone(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: target_manifest.name.clone(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
                     }
 
                     return Ok(EitherManifest::Real(Manifest::Target(TargetManifest {
@@ -280,6 +555,35 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         )
                     }
 
+                    if manifest.task.is_some() {
+                        let task = manifest.task.unwrap();
+                        let mut tasks: TaskManifest = HashMap::new();
+                        for (task_name, task_instance) in task {
+                            tasks.insert(
+                                task_name,
+                                TaskInstanceManifest::from_schema(
+                                    plugin_manifest.name.clone(),
+                                    &task_instance,
+                                ),
+                            );
+                        }
+                        TaskManager::instance().load_task_from_manifest(&tasks);
+                    }
+                    if manifest.alias.is_some() {
+                        let alias = manifest.alias.unwrap();
+                        let mut aliases: AliasManifest = HashMap::new();
+                        for (alias_name, alias_instance) in alias {
+                            aliases.insert(
+                                alias_name,
+                                AliasInstanceManifest {
+                                    alias: alias_instance,
+                                    referred_pkg_name: plugin_manifest.name.clone(),
+                                },
+                            );
+                        }
+                        TaskManager::instance().load_alias_from_manifest(&aliases);
+                    }
+
                     return Ok(EitherManifest::Rift(RiftManifest::Plugin(PluginManifest {
                         name: plugin_manifest.name,
                         version: plugin_manifest.version,
@@ -287,6 +591,7 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
                         description: plugin_manifest.description,
                         metadata: plugin_manifest.metadata,
                         dependencies: plugin_manifest.dependencies,
+                        entry: plugin_manifest.entry,
                     })));
                 } else {
                     anyhow::bail!("No any schema field found.")
@@ -299,6 +604,8 @@ pub fn read_manifest(path: &Path) -> RiftResult<EitherManifest> {
     Ok(manifest?)
 }
 
+/// 暂时用不着，之后再说
+#[allow(dead_code)]
 pub fn print_manifest_structure(path: &Path, prefix: String, is_last: bool) {
     // Current folder
     let indent = if is_last { "└─" } else { "├─" };

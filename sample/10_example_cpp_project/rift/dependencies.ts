@@ -1,6 +1,5 @@
 import * as rift from 'rift';
-
-return [
-    new rift.Dependency("fmt", "1.10.0"),
-    new rift.Dependency("asio", "1.21.0")
-]
+rift.dependencies.add(
+    new rift.CppDependency("fmt").version("1.10.0"),
+    new rift.CppDependency("asio").version("1.21.0"),
+);

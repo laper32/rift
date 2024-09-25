@@ -1,3 +1,3 @@
 [target]
-name = "target2"
+name = "folder2.target2"
 type = "bin"

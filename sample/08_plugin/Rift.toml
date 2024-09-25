@@ -4,5 +4,5 @@ version = "0.1.0"
 description = "A sample plugin"
 authors = []
 url = ""
-dependencies = ""
-metadata = ""
+dependencies = "rift/dependencies.ts"
+metadata = "rift/metadata.ts"

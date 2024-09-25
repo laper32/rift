@@ -1,34 +1,141 @@
+mod ops;
+pub mod package;
+
+use package::{Package, VirtualPackage};
 use serde::{Deserialize, Serialize};
 
+use crate::manifest::{DependencyManifestDeclarator, PluginManifestDeclarator};
+use crate::util::fs::as_posix::PathBufExt as _;
+use crate::util::fs::canonicalize_path;
 use crate::{
     manifest::{
-        find_root_manifest, read_manifest, EitherManifest, Manifest, RiftManifest, VirtualManifest,
+        find_root_manifest, read_manifest, EitherManifest, Manifest, VirtualManifest,
         MANIFEST_IDENTIFIER,
     },
-    package::Package,
-    util::{errors::RiftResult, fs::{as_posix::PathBufExt, canonicalize_path}},
+    util::errors::RiftResult,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
     path::{Path, PathBuf},
 };
 
+pub fn init_ops() -> deno_core::Extension {
+    ops::workspace::init_ops()
+}
+
 pub struct Packages {
-    packages: HashMap<PathBuf, MaybePackage>,
+    packages: HashMap<
+        PathBuf,         // Manifest路径
+        PackageInstance, // 不用说？
+    >,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PackageInstance {
+    pkg: MaybePackage,
+    metadata: HashMap<String, serde_json::Value>,
+    dependencies: Vec<DependencyManifestDeclarator>,
+    plugins: Vec<PluginManifestDeclarator>,
+}
+
+// TODO: These will be used in the future.
+#[allow(dead_code)]
+impl PackageInstance {
+    fn new(pkg: MaybePackage) -> Self {
+        Self {
+            pkg,
+            metadata: HashMap::new(),
+            dependencies: Vec::new(),
+            plugins: Vec::new(),
+        }
+    }
+    pub fn pkg(&self) -> &MaybePackage {
+        &self.pkg
+    }
+    pub fn name(&self) -> String {
+        self.pkg.name()
+    }
+
+    pub fn dependencies(&self) -> &Vec<DependencyManifestDeclarator> {
+        &self.dependencies
+    }
+    pub fn add_dependency(&mut self, dependency: DependencyManifestDeclarator) {
+        self.dependencies.push(dependency);
+    }
+    pub fn metadata(&self) -> &HashMap<String, serde_json::Value> {
+        &self.metadata
+    }
+    pub fn add_metadata(&mut self, metadata: HashMap<String, serde_json::Value>) {
+        metadata.iter().for_each(|(k, v)| {
+            self.metadata.insert(k.clone(), v.clone());
+        });
+    }
+    pub fn plugins(&self) -> &Vec<PluginManifestDeclarator> {
+        &self.plugins
+    }
+    pub fn add_plugin(&mut self, plugin: PluginManifestDeclarator) {
+        self.plugins.push(plugin);
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MaybePackage {
     Package(Package),
-    Virtual(VirtualManifest),
-    Rift(RiftManifest),
+    Virtual(VirtualPackage),
 }
 
-#[derive(Debug, PartialEq)]
+impl Into<EitherManifest> for MaybePackage {
+    fn into(self) -> EitherManifest {
+        match self {
+            MaybePackage::Package(p) => match p.manifest() {
+                Manifest::Project(p) => EitherManifest::Real(Manifest::Project(p.clone())),
+                Manifest::Target(t) => EitherManifest::Real(Manifest::Target(t.clone())),
+            },
+            MaybePackage::Virtual(v) => match v.manifest() {
+                VirtualManifest::Workspace(w) => {
+                    EitherManifest::Virtual(VirtualManifest::Workspace(w.clone()))
+                }
+                VirtualManifest::Folder(f) => {
+                    EitherManifest::Virtual(VirtualManifest::Folder(f.clone()))
+                }
+            },
+        }
+    }
+}
+
+impl MaybePackage {
+    pub fn name(&self) -> String {
+        match self {
+            MaybePackage::Package(p) => p.name(),
+            MaybePackage::Virtual(v) => v.name(),
+        }
+    }
+    pub fn dependencies(&self) -> Option<PathBuf> {
+        match self {
+            MaybePackage::Package(p) => p.dependencies(),
+            MaybePackage::Virtual(v) => v.dependencies(),
+        }
+    }
+    pub fn plugins(&self) -> Option<PathBuf> {
+        match self {
+            MaybePackage::Package(p) => p.plugins(),
+            MaybePackage::Virtual(v) => v.plugins(),
+        }
+    }
+    pub fn metadata(&self) -> Option<PathBuf> {
+        match self {
+            MaybePackage::Package(p) => p.metadata(),
+            MaybePackage::Virtual(v) => v.metadata(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum WorkspaceStatus {
     Unknown,
     Init,
-    OK,
+    PackageLoaded,
+    Failed,
 }
 
 // 后面改名成WorkspaceManager算了。。。用到workspace的地方那么多，而且按理说也应当只关心项目本身才对
@@ -78,23 +185,118 @@ impl WorkspaceManager {
             .as_ref()
             .unwrap_or(&self.current_manifest)
     }
-    pub fn load_packages(&mut self) {
+
+    pub fn load_packages(&mut self) -> RiftResult<()> {
         self.status = WorkspaceStatus::Init;
         self.packages
             .scan_all_possible_packages(&self.current_manifest);
-        self.status = WorkspaceStatus::OK;
+        match self.is_package_name_unique() {
+            Some(conflict_package) => {
+                self.status = WorkspaceStatus::Failed;
+                let error_message = conflict_package
+                    .iter()
+                    .map(|(package_name, paths)| {
+                        format!(
+                            "Package name conflict: {}\n{}",
+                            package_name,
+                            paths.iter().fold(String::new(), |acc, path| {
+                                format!("{}  - {}\n", acc, path.display())
+                            })
+                        )
+                    })
+                    .collect::<Vec<String>>()
+                    .join("\n");
+                anyhow::bail!("Package name conflict: {}", error_message);
+            }
+            None => {
+                self.status = WorkspaceStatus::PackageLoaded;
+                Ok(())
+            }
+        }
     }
 
-    pub fn get_packages(&self) -> &HashMap<PathBuf, MaybePackage> {
-        &self.packages.packages
+    pub fn get_packages(&self) -> &Packages {
+        &self.packages
+    }
+    pub fn print_packages(&self) {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&self.packages.packages).unwrap()
+        );
+    }
+
+    fn is_package_name_unique(&self) -> Option<HashMap<String, Vec<PathBuf>>> {
+        let mut name_counts: HashMap<String, i32> = HashMap::new();
+        for (_, instance) in &self.packages.packages {
+            let name = instance.name();
+            let count = name_counts.entry(name).or_insert(0);
+            *count += 1;
+        }
+        let mut name_manifest: HashMap<String, Vec<PathBuf>> = HashMap::new();
+        for (package_name, count) in &name_counts {
+            if *count <= 1 {
+                continue;
+            }
+            self.packages
+                .packages
+                .iter()
+                .for_each(|(manifest_path, instance)| {
+                    if instance.name().eq(package_name) {
+                        let paths = name_manifest
+                            .entry(package_name.clone())
+                            .or_insert(Vec::new());
+                        paths.push(manifest_path.clone());
+                    }
+                });
+        }
+        if name_manifest.is_empty() {
+            None
+        } else {
+            Some(name_manifest)
+        }
+    }
+
+    pub fn find_package_from_manifest_path(
+        &self,
+        manifest_path: &PathBuf,
+    ) -> RiftResult<&PackageInstance> {
+        self.packages.packages.get(manifest_path).ok_or_else(|| {
+            anyhow::anyhow!("Package not found: {:?}", manifest_path.to_str().unwrap())
+        })
+    }
+
+    pub fn find_package_from_script_path(&self, script_path: &PathBuf) -> Option<&PackageInstance> {
+        self.packages
+            .packages
+            .iter()
+            .find(|(_, instance)| {
+                let script_path = canonicalize_path(script_path).unwrap();
+                let is_plugin_script = match instance.pkg().plugins() {
+                    Some(plugin_script_path) => plugin_script_path == script_path,
+                    None => false,
+                };
+
+                let is_dependency_script = match instance.pkg().dependencies() {
+                    Some(dependency_script_path) => dependency_script_path == script_path,
+                    None => false,
+                };
+
+                let is_metadata_script = match instance.pkg().metadata() {
+                    Some(metadata_script_path) => metadata_script_path == script_path,
+                    None => false,
+                };
+
+                is_plugin_script || is_dependency_script || is_metadata_script
+            })
+            .map(|(_, instance)| instance)
     }
 
     pub fn is_init(&self) -> bool {
-        self.status == WorkspaceStatus::Init
+        self.status >= WorkspaceStatus::Init
     }
 
-    pub fn is_loaded(&self) -> bool {
-        self.status == WorkspaceStatus::OK
+    pub fn is_package_loaded(&self) -> bool {
+        self.status == WorkspaceStatus::PackageLoaded
     }
 
     /// 拿到包的路径
@@ -109,86 +311,83 @@ impl WorkspaceManager {
     /// 拿到包的Manifest路径
     /// 注意，这时候是有Rift.toml的
     pub fn get_manifest_path_from_name(&self, package_name: &str) -> RiftResult<&Path> {
-        for pkg in &self.packages.packages {
-            match pkg.1 /*: MaybePackage */ {
-                MaybePackage::Package(p) => match p.manifest() {
-                    Manifest::Project(p) => {
-                        if p.name == package_name {
-                            return Ok(pkg.0.as_path());
-                        }
-                    }
-                    Manifest::Target(t) => {
-                        if t.name == package_name {
-                            
-                            return Ok(pkg.0.as_path());
-                        }
-                    }
-                },
-                MaybePackage::Virtual(v) => match v {
-                    VirtualManifest::Workspace(w) => {
-                        if w.name == package_name {
-                            return Ok(pkg.0.as_path());
-                        }
-                    }
-                    VirtualManifest::Folder(f) => {
-                        if f.name == package_name {
-                            return Ok(pkg.0.as_path());
-                        }
-                    }
-                },
-                MaybePackage::Rift(r) => match r {
-                    RiftManifest::Plugin(p) => {
-                        if p.name == package_name {
-                            return Ok(pkg.0.as_path());
-                        }
-                    }
-                },
+        for (manifest_path, instance) in &self.packages.packages {
+            if instance.name() == package_name {
+                return Ok(manifest_path.as_path());
             }
         }
-        anyhow::bail!("Package not found: {}", package_name);
+        anyhow::bail!("Package not found: {}", package_name)
     }
 
     pub fn is_package_exist(&self, package_name: &str) -> bool {
-        for pkg in &self.packages.packages {
-            match pkg.1 /*: MaybePackage */ {
-                MaybePackage::Package(p) => match p.manifest() {
-                    Manifest::Project(p) => {
-                        if p.name == package_name {
-                            return true;
-                        }
-                    }
-                    Manifest::Target(t) => {
-                        if t.name == package_name {
-                            return true;
-                        }
-                    }
-                },
-                MaybePackage::Virtual(v) => match v {
-                    VirtualManifest::Workspace(w) => {
-                        if w.name == package_name {
-                            return true;
-                        }
-                    }
-                    VirtualManifest::Folder(f) => {
-                        if f.name == package_name {
-                            return true;
-                        }
-                    }
-                },
-                MaybePackage::Rift(r) => match r {
-                    RiftManifest::Plugin(p) => {
-                        if p.name == package_name {
-                            return true;
-                        }
-                    }
-                },
+        for (_, instance) in &self.packages.packages {
+            if instance.name() == package_name {
+                return true;
             }
         }
         false
     }
+
+    pub fn add_dependency_for_package(
+        &mut self,
+        package_name: String,
+        dependency: DependencyManifestDeclarator,
+    ) {
+        self.packages
+            .packages
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == package_name)
+            .map(|(_, instance)| instance.add_dependency(dependency));
+    }
+
+    pub fn add_plugin_for_package(
+        &mut self,
+        package_name: String,
+        plugin: PluginManifestDeclarator,
+    ) {
+        self.packages
+            .packages
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == package_name)
+            .map(|(_, instance)| instance.add_plugin(plugin));
+    }
+    pub fn add_metadata_for_package(
+        &mut self,
+        package_name: String,
+        metadata: HashMap<String, serde_json::Value>,
+    ) {
+        self.packages
+            .packages
+            .iter_mut()
+            .find(|(_, instance)| instance.name() == package_name)
+            .map(|(_, instance)| instance.add_metadata(metadata));
+    }
+    pub fn collect_declared_plugins(&self) -> Vec<PluginManifestDeclarator> {
+        self.packages.collect_declared_plugins()
+    }
 }
 
 impl Packages {
+    pub fn collect_declared_plugins(&self) -> Vec<PluginManifestDeclarator> {
+        self.packages
+            .iter()
+            .flat_map(|(_, instance)| instance.plugins().clone())
+            .collect()
+    }
+    pub fn get_manifest_paths(&self) -> Vec<PathBuf> {
+        self.packages.keys().cloned().collect()
+    }
+
+    pub fn package_name(&self, manifest_path: &PathBuf) -> RiftResult<String> {
+        match self.packages.get(manifest_path) {
+            Some(pkg) => Ok(pkg.name()),
+            None => anyhow::bail!(
+                "Impossible case: Package not found. Manifest path: {:?}",
+                manifest_path
+            ),
+        }
+    }
+
     pub fn load(&mut self, manifest_path: &Path) {
         let key = manifest_path.parent().unwrap();
         match self.packages.entry(key.to_path_buf()) {
@@ -196,35 +395,30 @@ impl Packages {
             Entry::Vacant(_) => {
                 let manifest = read_manifest(manifest_path).unwrap();
                 match manifest {
-                    EitherManifest::Real(m) => match m {
-                        Manifest::Project(p) => {
-                            let pkg_inner = Package::new(Manifest::Project(p), manifest_path);
-                            self.insert_package(
-                                manifest_path.to_path_buf(),
-                                MaybePackage::Package(pkg_inner),
-                            );
-                        }
-                        Manifest::Target(t) => {
-                            let pkg_inner = Package::new(Manifest::Target(t), manifest_path);
-                            self.insert_package(
-                                manifest_path.to_path_buf(),
-                                MaybePackage::Package(pkg_inner),
-                            );
-                        }
-                    },
+                    EitherManifest::Real(m) => {
+                        let pkg_inner = Package::new(m.clone(), manifest_path);
+                        self.insert_package(
+                            manifest_path.to_path_buf(),
+                            MaybePackage::Package(pkg_inner),
+                        );
+                    }
+
                     EitherManifest::Virtual(vm) => {
-                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Virtual(vm))
+                        let pkg_inner = VirtualPackage::new(vm.clone(), manifest_path);
+                        self.insert_package(
+                            manifest_path.to_path_buf(),
+                            MaybePackage::Virtual(pkg_inner),
+                        );
                     }
-                    EitherManifest::Rift(rm) => {
-                        self.insert_package(manifest_path.to_path_buf(), MaybePackage::Rift(rm))
-                    }
+                    _ => {}
                 }
             }
         }
     }
 
     fn insert_package(&mut self, manifest_path: PathBuf, package: MaybePackage) {
-        self.packages.insert(manifest_path, package);
+        self.packages
+            .insert(manifest_path, PackageInstance::new(package));
     }
 
     pub fn scan_all_possible_packages(&mut self, manifest_path: &Path) {
@@ -292,9 +486,25 @@ impl Packages {
                     self.load(manifest_path);
                 }
             },
-            Err(e) => eprintln!("Error: {:?}", e),
+            Err(e) => eprintln!(
+                "Failed to parse manifest {}\n{:?}",
+                manifest_path.display(),
+                e
+            ),
         }
     }
+}
+
+fn get_actual_script_path(manifest_path: PathBuf, script_path: &String) -> PathBuf {
+    PathBuf::from(
+        PathBuf::from(manifest_path)
+            .parent()
+            .unwrap()
+            .join(script_path)
+            .as_posix()
+            .unwrap()
+            .to_string(),
+    )
 }
 
 #[cfg(test)]
@@ -335,7 +545,7 @@ mod test {
             .join("01_simple_target")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         println!(
             "{}",
             serde_json::to_string_pretty(&WorkspaceManager::instance().packages.packages).unwrap()
@@ -349,7 +559,7 @@ mod test {
             .join("02_single_target_with_project")
             .join("Rift.toml");
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 1);
         println!(
             "{}",
@@ -364,7 +574,7 @@ mod test {
             .join("03_single_project_with_multiple_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
 
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
         println!(
@@ -380,7 +590,7 @@ mod test {
             .join("04_workspace_and_multiple_projects")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 5);
         println!(
             "{}",
@@ -396,7 +606,7 @@ mod test {
             .join("05_project_folder_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 11);
         println!(
             "{}",
@@ -412,7 +622,7 @@ mod test {
             .join("06_workspace_folder_project_target")
             .join("Rift.toml"); //
         WorkspaceManager::instance().set_current_manifest(&simple_workspace);
-        WorkspaceManager::instance().load_packages();
+        let _ = WorkspaceManager::instance().load_packages();
         assert_eq!(WorkspaceManager::instance().packages.packages.len(), 33); // ...是巧合吗？
         println!(
             "{}",

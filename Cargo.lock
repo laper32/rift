@@ -746,6 +746,7 @@ dependencies = [
  "junction",
  "lazycell",
  "once_cell",
+ "parking_lot 0.12.3",
  "rand",
  "relative-path",
  "reqwest",
@@ -761,6 +762,7 @@ dependencies = [
  "tracing",
  "url",
  "uuid",
+ "walkdir",
  "winapi",
 ]
 
@@ -1996,9 +1998,11 @@ dependencies = [
  "anyhow",
  "clap",
  "engine",
+ "once_cell",
  "serde",
  "serde_json",
  "serde_toml",
+ "tokio",
  "toml",
 ]
 
