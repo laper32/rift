@@ -3,12 +3,15 @@ mod ops;
 use std::{collections::HashMap, env, path::PathBuf};
 
 use anyhow::Context;
+use deno_ast::swc::common::plugin;
 use deno_core::v8::{self, Value};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
 use crate::{
-    manifest::{read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest},
+    manifest::{
+        read_manifest, DependencyManifestDeclarator, EitherManifest, PluginManifest, RiftManifest,
+    },
     runtime::ScriptRuntime,
     task::TaskManager,
     util::errors::RiftResult,
@@ -224,42 +227,81 @@ impl PluginManager {
     }
 
     pub fn load_plugins(&mut self) {
-        let possible_plugins = self.enumerate_all_possible_plugins().unwrap_or(Vec::new());
-
-        possible_plugins
-            .iter()
-            .for_each(|path| match self.read_plugin_manifest(path) {
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("{}", e);
+        let possible_plugins = self.load_possible_plugins_manifest();
+        let declared_plugins = WorkspaceManager::instance().collect_declared_plugins();
+        declared_plugins.iter().for_each(|declarator| {
+            let plugin = possible_plugins.iter().find(|(_, possible_plugin)| {
+                if possible_plugin.name().eq(&declarator.name) {
+                    return true;
                 }
+                return false;
             });
+            if plugin.is_some() {
+                let (manifest_path, manifest) = plugin.unwrap();
+                match manifest {
+                    EitherManifest::Rift(rift_manifest) => match rift_manifest {
+                        RiftManifest::Plugin(plugin_manifest) => {
+                            let instance =
+                                PluginInstance::new(plugin_manifest.clone(), manifest_path.clone());
+                            self.plugins.insert(instance.name(), instance);
+                        }
+                    },
+                    _ => {}
+                }
+            }
+        });
     }
 
     pub fn plugins_count(&self) -> usize {
         self.plugins.len()
     }
 
-    fn read_plugin_manifest(&mut self, manifest_path: &PathBuf) -> RiftResult<()> {
-        let manifest = read_manifest(&manifest_path.as_path());
-        match manifest {
-            Ok(manifest) => match manifest {
-                EitherManifest::Rift(rm) => match rm {
-                    crate::manifest::RiftManifest::Plugin(ref pm) => {
-                        let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
-
-                        self.plugins.insert(instance.name(), instance);
-                        Ok(())
-                    }
+    fn load_possible_plugins_manifest(&mut self) -> HashMap<PathBuf, EitherManifest> {
+        let mut ret = HashMap::new();
+        let possible_plugins = self.enumerate_all_possible_plugins().unwrap_or(Vec::new());
+        possible_plugins.iter().for_each(|path| {
+            let manifest = read_manifest(&path.as_path());
+            match manifest {
+                Ok(manifest) => match manifest {
+                    EitherManifest::Rift(rm) => match rm {
+                        crate::manifest::RiftManifest::Plugin(ref pm) => {
+                            ret.insert(path.clone(), pm.clone().into());
+                        }
+                    },
+                    _ => {}
                 },
-                _ => Ok(()),
-            },
-            Err(e) => Err(e).context(format!(
-                "Error when parsing manifest: \"{}\"",
-                manifest_path.display()
-            )),
-        }
+                Err(e) => {
+                    eprintln!(
+                        "Error when parsing manifest: \"{}\". Error: {}",
+                        path.display(),
+                        e
+                    );
+                }
+            }
+        });
+        ret
     }
+
+    // fn read_plugin_manifest(&mut self, manifest_path: &PathBuf) -> RiftResult<()> {
+    //     let manifest = read_manifest(&manifest_path.as_path());
+    //     match manifest {
+    //         Ok(manifest) => match manifest {
+    //             EitherManifest::Rift(rm) => match rm {
+    //                 crate::manifest::RiftManifest::Plugin(ref pm) => {
+    //                     let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
+
+    //                     self.plugins.insert(instance.name(), instance);
+    //                     Ok(())
+    //                 }
+    //             },
+    //             _ => Ok(()),
+    //         },
+    //         Err(e) => Err(e).context(format!(
+    //             "Error when parsing manifest: \"{}\"",
+    //             manifest_path.display()
+    //         )),
+    //     }
+    // }
 
     pub fn get_manifests(&self) -> Vec<PathBuf> {
         self.plugins

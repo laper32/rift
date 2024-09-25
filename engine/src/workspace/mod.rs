@@ -5,13 +5,14 @@ use package::{Package, VirtualPackage};
 use serde::{Deserialize, Serialize};
 
 use crate::manifest::{DependencyManifestDeclarator, PluginManifestDeclarator};
+use crate::util::fs::as_posix::PathBufExt as _;
 use crate::util::fs::canonicalize_path;
 use crate::{
     manifest::{
         find_root_manifest, read_manifest, EitherManifest, Manifest, VirtualManifest,
         MANIFEST_IDENTIFIER,
     },
-    util::{errors::RiftResult, fs::as_posix::PathBufExt},
+    util::errors::RiftResult,
 };
 use std::{
     collections::{hash_map::Entry, HashMap},
@@ -361,9 +362,18 @@ impl WorkspaceManager {
             .find(|(_, instance)| instance.name() == package_name)
             .map(|(_, instance)| instance.add_metadata(metadata));
     }
+    pub fn collect_declared_plugins(&self) -> Vec<PluginManifestDeclarator> {
+        self.packages.collect_declared_plugins()
+    }
 }
 
 impl Packages {
+    pub fn collect_declared_plugins(&self) -> Vec<PluginManifestDeclarator> {
+        self.packages
+            .iter()
+            .flat_map(|(_, instance)| instance.plugins().clone())
+            .collect()
+    }
     pub fn get_manifest_paths(&self) -> Vec<PathBuf> {
         self.packages.keys().cloned().collect()
     }

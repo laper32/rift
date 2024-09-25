@@ -5,7 +5,6 @@ use deno_core::extension;
 use lazycell::LazyCell;
 use manifest::EitherManifest;
 
-use parking_lot::{Mutex, RwLock};
 use util::{
     errors::RiftResult,
     fs::{canonicalize_path, NON_INSTALLATION_PATH_NAME},
