@@ -1,3 +1,4 @@
+use deno_ast::swc::common::plugin;
 use serde::{Deserialize, Serialize};
 
 use crate::manifest::{Manifest, RiftManifest, VirtualManifest};

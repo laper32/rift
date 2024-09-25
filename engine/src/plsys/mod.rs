@@ -2,8 +2,6 @@ mod ops;
 
 use std::{collections::HashMap, env, path::PathBuf};
 
-use anyhow::Context;
-use deno_ast::swc::common::plugin;
 use deno_core::v8::{self, Value};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
@@ -14,7 +12,6 @@ use crate::{
     },
     runtime::ScriptRuntime,
     task::TaskManager,
-    util::errors::RiftResult,
     workspace::{package::RiftPackage, WorkspaceManager},
     Rift,
 };
@@ -114,6 +111,7 @@ impl PluginInstance {
     pub fn pkg(&self) -> &RiftPackage {
         &self.inner.pkg
     }
+
     pub fn entry(&self) -> Option<PathBuf> {
         self.inner.pkg.entry()
     }
@@ -184,6 +182,7 @@ impl PluginManager {
             once_cell::sync::Lazy::new(|| PluginManager::new());
         unsafe { &mut *INSTANCE }
     }
+
     /// 列举所有可能的插件包目录
     /// 只处理如下目录:
     /// - ${env:HOME}/.rift/plugins
@@ -282,32 +281,15 @@ impl PluginManager {
         ret
     }
 
-    // fn read_plugin_manifest(&mut self, manifest_path: &PathBuf) -> RiftResult<()> {
-    //     let manifest = read_manifest(&manifest_path.as_path());
-    //     match manifest {
-    //         Ok(manifest) => match manifest {
-    //             EitherManifest::Rift(rm) => match rm {
-    //                 crate::manifest::RiftManifest::Plugin(ref pm) => {
-    //                     let instance = PluginInstance::new(pm.clone(), manifest_path.clone());
-
-    //                     self.plugins.insert(instance.name(), instance);
-    //                     Ok(())
-    //                 }
-    //             },
-    //             _ => Ok(()),
-    //         },
-    //         Err(e) => Err(e).context(format!(
-    //             "Error when parsing manifest: \"{}\"",
-    //             manifest_path.display()
-    //         )),
-    //     }
-    // }
-
     pub fn get_manifests(&self) -> Vec<PathBuf> {
         self.plugins
             .values()
             .map(|p| p.manifest_path().clone())
             .collect()
+    }
+
+    pub fn is_plugin_exist(&self, name: &str) -> bool {
+        self.plugins.contains_key(name)
     }
 
     pub fn find_plugin_from_name(&self, name: &str) -> Option<&PluginInstance> {

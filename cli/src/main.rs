@@ -44,7 +44,7 @@ fn parse_commands(matches: Result<clap::ArgMatches, clap::error::Error>) {
                 }
 
                 let task = task.unwrap();
-                match task.get_fn().invoke() {
+                match task.invoke() {
                     Ok(_) => {}
                     Err(e) => {
                         eprintln!("{}", e);
