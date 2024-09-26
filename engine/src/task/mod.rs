@@ -62,30 +62,6 @@ impl TaskFunction {
             f.call(&mut scope, undefined.into(), &[]);
         }
     }
-
-    // pub fn invoke(&self) -> RiftResult<()> {
-    //     if !self.has_impl() {
-    //         anyhow::bail!("Task function  is not implemented.");
-    //     } else {
-    //         match &self.native_function {
-    //             Some(f) => {
-    //                 f();
-    //                 return Ok(());
-    //             }
-    //             None => { /* This is possible. */ }
-    //         }
-    //         match &self.runtime_function {
-    //             Some(f) => {
-    //                 let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-    //                 let undefined = v8::undefined(&mut scope);
-    //                 let f = v8::Local::new(&mut scope, f);
-    //                 f.call(&mut scope, undefined.into(), &[]);
-    //             }
-    //             None => { /* In fact this is impossible. */ }
-    //         }
-    //         Ok(())
-    //     }
-    // }
 }
 
 // Instance很多会和clap对应，因此，我们需要一个is_command来标记这个Task是否会进入命令行
