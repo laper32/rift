@@ -1,10 +1,12 @@
+use std::path::PathBuf;
+
 use deno_ast::{MediaType, ParseParams, SourceTextInfo};
 use deno_core::{
     FastString, ModuleLoadResponse, ModuleResolutionError, ModuleSourceCode, ModuleSpecifier,
 };
 use url::{ParseError, Url};
 
-use crate::{util::fs::canonicalize_path, workspace::WorkspaceManager};
+use crate::{plsys::PluginManager, util::fs::canonicalize_path, workspace::WorkspaceManager};
 
 /// From deno_core's self module resolving rule, but made some modifications.
 pub fn resolve_import(
@@ -88,6 +90,16 @@ impl deno_core::ModuleLoader for TsModuleLoader {
                     let package_path =
                         canonicalize_path(package_path.join(remaining_path)).unwrap();
                     Ok(package_path)
+                } else if PluginManager::instance().is_plugin_exist(rift_package) {
+                    let plugin = PluginManager::instance()
+                        .find_plugin_from_name(rift_package)
+                        .unwrap();
+                    let plugin_path = plugin.manifest_path().parent().unwrap();
+                    let plugin_path = PathBuf::from(plugin_path).join("src");
+                    let plugin_path = canonicalize_path(plugin_path.join(remaining_path)).unwrap();
+                    println!("Plugin path: {:?}", plugin_path);
+
+                    Ok(plugin_path)
                 } else {
                     anyhow::bail!("Package not found: {:?}", rift_package);
                 }

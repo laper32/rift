@@ -52,27 +52,14 @@ impl TaskFunction {
         self.native_function.is_some() || self.runtime_function.is_some()
     }
 
-    pub fn invoke(&self) -> RiftResult<()> {
-        if !self.has_impl() {
-            anyhow::bail!("Task function is not implemented.");
-        } else {
-            match &self.native_function {
-                Some(f) => {
-                    f();
-                    return Ok(());
-                }
-                None => { /* This is possible. */ }
-            }
-            match &self.runtime_function {
-                Some(f) => {
-                    let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
-                    let undefined = v8::undefined(&mut scope);
-                    let f = v8::Local::new(&mut scope, f);
-                    f.call(&mut scope, undefined.into(), &[]);
-                }
-                None => { /* In fact this is impossible. */ }
-            }
-            Ok(())
+    fn invoke(&self) {
+        if let Some(f) = &self.native_function {
+            f();
+        } else if let Some(f) = &self.runtime_function {
+            let mut scope = ScriptRuntime::instance().js_runtime().handle_scope();
+            let undefined = v8::undefined(&mut scope);
+            let f = v8::Local::new(&mut scope, f);
+            f.call(&mut scope, undefined.into(), &[]);
         }
     }
 }
@@ -129,10 +116,6 @@ impl TaskInstance {
         self.task_fn.register_runtime_fnction(f);
     }
 
-    pub fn get_fn(&self) -> &TaskFunction {
-        &self.task_fn
-    }
-
     pub fn get_description(&self) -> Option<&String> {
         self.description.as_ref()
     }
@@ -151,6 +134,19 @@ impl TaskInstance {
 
     pub fn get_sub_tasks(&self) -> &Vec<String> {
         &self.sub_tasks
+    }
+
+    fn has_function_impl(&self) -> bool {
+        self.task_fn.has_impl()
+    }
+
+    pub fn invoke(&self) -> RiftResult<()> {
+        if !self.has_function_impl() {
+            anyhow::bail!("Task \"{}\" is not implemented.", self.get_name());
+        } else {
+            self.task_fn.invoke();
+        }
+        Ok(())
     }
 }
 
@@ -392,7 +388,7 @@ mod test {
         generate.register_function(|| {
             println!("Hello, world!");
         });
-        generate.get_fn().invoke();
+        let _ = generate.invoke();
     }
 
     #[test]
