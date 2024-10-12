@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["cli", "engine"]
+members = ["cli", "engine", "runtime"]
 
 [workspace.dependencies]
 clap = { version = "4.5.13", features = ["string"] }

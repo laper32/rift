@@ -1,22 +1,6 @@
 [package]
-name = "rift"
+name = "cli"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[build-dependencies]
-# We cannot use it since it ccompulsory requires clang
-# bindgen = "0.69.4" 
-
 [dependencies]
-toml.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-serde_toml.workspace = true
-anyhow.workspace = true
-clap.workspace = true
-tokio.workspace = true
-once_cell.workspace = true
-
-engine = { path = "../engine" }
