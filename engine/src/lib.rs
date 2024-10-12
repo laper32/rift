@@ -1,14 +1,15 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+use deno_core::{extension, Extension};
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub mod shared;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+pub fn init_ops() -> Vec<Extension> {
+    let mut ret = Vec::new();
+    let shared_ops = shared::init_ops();
+    for op in shared_ops {
+        ret.push(op);
     }
+    ret
 }
+
+pub static ENGINE_SNAPSHOT: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/ENGINE_SNAPSHOT.bin"));
