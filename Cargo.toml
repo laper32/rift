@@ -30,6 +30,7 @@ windows-sys = { version = "0.52.0", features = [
 ] }
 tokio = { version = "1.39.2", features = ["full"] }
 once_cell = "1.19.0"
+url = { version = "2.5.2", features = ["serde"] }
 
 [workspace.package]
 version = "0.1.0"

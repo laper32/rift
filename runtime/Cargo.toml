@@ -9,6 +9,7 @@ rust-embed = { version = "8.5.0", features = [
     "debug-embed",
     "interpolate-folder-path",
 ] }
+relative-path = { version = "1.9.3", features = ["serde"] }
 
 engine = { path = "../engine" }
 
@@ -26,3 +27,4 @@ winapi.workspace = true
 windows-sys.workspace = true
 tokio.workspace = true
 once_cell.workspace = true
+url.workspace = true

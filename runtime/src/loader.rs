@@ -1,92 +1,82 @@
-use deno_ast::{MediaType, ParseParams, SourceTextInfo};
-use deno_core::{
-    url::ParseError, FastString, ModuleLoadResponse, ModuleResolutionError, ModuleSourceCode,
+use anyhow::Context;
+use deno_core::ModuleLoadResponse;
+use engine::shared::errors::RiftResult;
+
+use crate::{
+    forward::ForwardManager,
+    specifier::{RiftImportSpecifier, RiftModuleSpecifier},
 };
 
-pub(crate) struct TsModuleLoader;
+pub(crate) struct RuntimeModuleLoader;
 
-impl deno_core::ModuleLoader for TsModuleLoader {
+impl RuntimeModuleLoader {
+    fn load_module_source(
+        &self,
+        specifier: &deno_core::ModuleSpecifier,
+    ) -> RiftResult<deno_core::ModuleSource> {
+        tracing::info!(%specifier, "loading module source");
+        let specifier_into: RiftModuleSpecifier = specifier.try_into()?;
+        let contents =
+            ForwardManager::instance().read_specifier_contents(specifier_into.clone())?;
+        let code = std::str::from_utf8(&contents)
+            .context("failed to parse module contents as UTF-8 string")?;
+        let parsed = deno_ast::parse_module(deno_ast::ParseParams {
+            specifier: specifier_into.clone().into(),
+            text: code.into(),
+            media_type: deno_ast::MediaType::TypeScript,
+            capture_tokens: false,
+            scope_analysis: false,
+            maybe_syntax: None,
+        })?;
+        let transpiled = parsed.transpile(
+            &deno_ast::TranspileOptions {
+                imports_not_used_as_values: deno_ast::ImportsNotUsedAsValues::Preserve,
+                ..Default::default()
+            },
+            &deno_ast::EmitOptions {
+                source_map: deno_ast::SourceMapOption::Separate,
+                ..Default::default()
+            },
+        )?;
+        Ok(deno_core::ModuleSource::new(
+            deno_core::ModuleType::JavaScript,
+            deno_core::ModuleSourceCode::Bytes(
+                transpiled.into_source().source.into_boxed_slice().into(),
+            ),
+            specifier,
+            None,
+        ))
+    }
+}
+
+impl deno_core::ModuleLoader for RuntimeModuleLoader {
     fn resolve(
         &self,
         specifier: &str,
         referrer: &str,
-        _kind: deno_core::ResolutionKind,
+        kind: deno_core::ResolutionKind,
     ) -> Result<deno_core::ModuleSpecifier, anyhow::Error> {
-        deno_core::resolve_import(specifier, referrer).map_err(|e| e.into())
+        if let deno_core::ResolutionKind::MainModule = kind {
+            let resolved = specifier.parse()?;
+            tracing::info!(%specifier, %referrer, %resolved, "resolved main module");
+            return Ok(resolved);
+        }
+        let referrer: RiftModuleSpecifier = referrer.parse()?;
+        let specifier: RiftImportSpecifier = specifier.parse()?;
+        let resolved =
+            ForwardManager::instance().resolve_specifier(specifier.clone(), referrer.clone())?;
+        tracing::info!(%specifier, %referrer, %resolved, "resolved module");
+        let resolved: deno_core::ModuleSpecifier = resolved.into();
+        Ok(resolved)
     }
 
     fn load(
         &self,
         module_specifier: &deno_core::ModuleSpecifier,
-        maybe_referrer: Option<&deno_core::ModuleSpecifier>,
-        is_dyn_import: bool,
-        requested_module_type: deno_core::RequestedModuleType,
+        _maybe_referrer: Option<&deno_core::ModuleSpecifier>,
+        _is_dyn_import: bool,
+        _requested_module_type: deno_core::RequestedModuleType,
     ) -> deno_core::ModuleLoadResponse {
-        let module_specifier = module_specifier.clone();
-        let module_load = Box::pin(async move {
-            let path = module_specifier.to_file_path();
-            if path.is_err() {
-                return Err(
-                    ModuleResolutionError::InvalidUrl(ParseError::RelativeUrlWithoutBase).into(),
-                );
-            }
-            let path = path.unwrap();
-
-            let media_type = MediaType::from_path(&path);
-
-            let transpile_result = match MediaType::from_path(&path) {
-                MediaType::JavaScript | MediaType::Mjs | MediaType::Cjs => {
-                    Ok((deno_core::ModuleType::JavaScript, false))
-                }
-                MediaType::Jsx => Ok((deno_core::ModuleType::JavaScript, true)),
-                MediaType::TypeScript
-                | MediaType::Mts
-                | MediaType::Cts
-                | MediaType::Dts
-                | MediaType::Dmts
-                | MediaType::Dcts
-                | MediaType::Tsx => Ok((deno_core::ModuleType::JavaScript, true)),
-                MediaType::Json => Ok((deno_core::ModuleType::Json, false)),
-                _ => Err(format!(
-                    "Unknown extension {:?}, path: {:?}",
-                    path.extension(),
-                    path
-                )),
-            };
-            match transpile_result {
-                Ok((module_type, should_transpile)) => {
-                    let code = std::fs::read_to_string(&path)?;
-                    let code = if should_transpile {
-                        let parsed = deno_ast::parse_module(ParseParams {
-                            specifier: module_specifier.clone(),
-                            text: SourceTextInfo::from_string(code).text(),
-                            media_type,
-                            capture_tokens: false,
-                            scope_analysis: false,
-                            maybe_syntax: None,
-                        })?;
-                        parsed
-                            .transpile(&Default::default(), &Default::default())?
-                            .into_source()
-                            .into_string()
-                            .unwrap()
-                            .text
-                    } else {
-                        code
-                    };
-                    let module = deno_core::ModuleSource::new(
-                        module_type,
-                        ModuleSourceCode::String(FastString::from(code)),
-                        &module_specifier,
-                        None,
-                    );
-                    Ok(module)
-                }
-                Err(e) => {
-                    anyhow::bail!(e)
-                }
-            }
-        });
-        ModuleLoadResponse::Async(module_load)
+        ModuleLoadResponse::Sync(self.load_module_source(module_specifier))
     }
 }

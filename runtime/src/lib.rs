@@ -1,17 +1,29 @@
-use shared::RuntimeFiles;
 use vm::ScriptRuntime;
 
+mod forward;
 mod loader;
 mod shared;
+mod specifier;
+pub(crate) mod transpile;
 mod vm;
 
 pub fn init() {
-    let rt_index = RuntimeFiles::get("dist/index.js").unwrap();
-    let rt_idx_file: deno_core::ModuleSpecifier = "dist/index.js".parse().unwrap();
+    let entry_path: deno_core::ModuleSpecifier = "rift:dist/index.js"
+        .parse()
+        .expect("failed to parse specifier");
+    let _ = ScriptRuntime::instance().evaluate(|| async {
+        ScriptRuntime::instance().load_bootstarp().await?;
+        Ok(())
+    });
     ScriptRuntime::instance()
-        .js_runtime()
-        .load_main_es_module(&rt_idx_file);
-    println!("{}", std::str::from_utf8(rt_index.data.as_ref()).unwrap());
+        .bootstrap_init()
+        .expect("failed to bootstrap init");
+
+    println!("entry_path: {:?}", entry_path);
 }
 
-pub fn shutdown() {}
+pub fn shutdown() {
+    ScriptRuntime::instance()
+        .bootstrap_shutdown()
+        .expect("failed to bootstrap shutdown");
+}
