@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::Context;
+use deno_core::url;
 use engine::shared::errors::RiftResult;
 use relative_path::RelativePathBuf;
 

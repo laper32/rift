@@ -1,4 +1,4 @@
-use deno_core::{extension, Extension};
+use deno_core::Extension;
 
 pub mod shared;
 

@@ -1,6 +1,6 @@
 use std::{env, path::PathBuf};
 
-use deno_core::extension;
+use deno_runtime::deno_core::{self, extension};
 
 fn git_commit_hash() -> String {
     if let Ok(output) = std::process::Command::new("git")
@@ -39,11 +39,11 @@ fn main() {
         .join("runtime");
     let out_dir: PathBuf = PathBuf::from(env::var_os("OUT_DIR").unwrap());
     let snapshot_path = out_dir.join("ENGINE_SNAPSHOT.bin");
-    let runtime_file_path = runtime_dir.join("dist").join("index.js");
+    let runtime_file_path = runtime_dir.join("src").join("index.js");
 
     println!("cargo:rerun-if-changed={}", runtime_file_path.display());
 
-    extension!(runtime, js = ["./js/dist/index.js"],);
+    extension!(runtime, js = ["./js/src/index.js"],);
 
     let snapshot = deno_core::snapshot::create_snapshot(
         deno_core::snapshot::CreateSnapshotOptions {

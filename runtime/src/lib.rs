@@ -4,17 +4,17 @@ mod forward;
 mod loader;
 mod shared;
 mod specifier;
-pub(crate) mod transpile;
 mod vm;
 
 pub fn init() {
     let entry_path: deno_core::ModuleSpecifier = "rift:dist/index.js"
         .parse()
         .expect("failed to parse specifier");
-    let _ = ScriptRuntime::instance().evaluate(|| async {
+    let result = ScriptRuntime::instance().evaluate(|| async {
         ScriptRuntime::instance().load_bootstarp().await?;
         Ok(())
     });
+    println!("{:?}", result);
     ScriptRuntime::instance()
         .bootstrap_init()
         .expect("failed to bootstrap init");
@@ -23,7 +23,7 @@ pub fn init() {
 }
 
 pub fn shutdown() {
-    ScriptRuntime::instance()
-        .bootstrap_shutdown()
-        .expect("failed to bootstrap shutdown");
+    // ScriptRuntime::instance()
+    //     .bootstrap_shutdown()
+    //     .expect("failed to bootstrap shutdown");
 }

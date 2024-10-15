@@ -1,6 +1,4 @@
 import * as esbuild from "esbuild";
-// import { aliasPath } from "esbuild-plugin-alias-path";
-// import * as path from "node:path";
 
 await esbuild.build({
   logLevel: "info",
@@ -8,9 +6,9 @@ await esbuild.build({
   entryPoints: ["./src/index.ts"],
   format: "esm",
   outfile: "dist/index.js",
-  minifyWhitespace: true,
+  // minifyWhitespace: true,
   define: {
     global: "globalThis",
     "__filename": "\"\"",
-  },
+  }
 });

@@ -1,52 +1,77 @@
 export const manifestIdentifier = "Rift.toml";
 
-class VirtualManifest {
-    private _data: FolderManifest | WorkspaceManifest;
-    constructor(data: FolderManifest | WorkspaceManifest) {
-        this._data = data;
+
+
+function readManifest(path: String): EitherManifest {
+    var ret: EitherManifest = new EitherManifest({} as Manifest);
+    return ret;
+}
+
+class EitherManifest {
+    private data: Manifest | VirtualManifest;
+    constructor(data: Manifest | VirtualManifest) {
+        this.data = data;
     }
     get name() {
-        return this._data.name;
+        return this.data.name;
     }
-    get members() {
-        return this._data.members;
+    get dependencies() {
+        return this.data.dependencies;
     }
-    get exclude() {
-        return this._data.exclude;
+    get plugins() {
+        return this.data.plugins;
     }
     get metadata() {
-        var workspaceManifest = this._data as WorkspaceManifest;
+        return this.data.metadata;
+    }
+}
+
+class VirtualManifest {
+    private data: FolderManifest | WorkspaceManifest;
+    constructor(data: FolderManifest | WorkspaceManifest) {
+        this.data = data;
+    }
+    get name() {
+        return this.data.name;
+    }
+    get members() {
+        return this.data.members;
+    }
+    get exclude() {
+        return this.data.exclude;
+    }
+    get metadata() {
+        var workspaceManifest = this.data as WorkspaceManifest;
         return workspaceManifest.metadata;
     }
     get plugins() {
-        var workspaceManifest = this._data as WorkspaceManifest;
+        var workspaceManifest = this.data as WorkspaceManifest;
         return workspaceManifest.plugins;
     }
     get dependencies() {
-        var workspaceManifest = this._data as WorkspaceManifest;
+        var workspaceManifest = this.data as WorkspaceManifest;
         return workspaceManifest.dependencies;
     }
-
 }
 
 class Manifest {
-    private _data: ProjectManifest | TargetManifest;
+    private data: ProjectManifest | TargetManifest;
     constructor(data: ProjectManifest | TargetManifest) {
-        this._data = data;
+        this.data = data;
     }
 
     get name() {
-        return this._data.name;
+        return this.data.name;
     }
 
     get dependencies() {
-        return this._data.dependencies;
+        return this.data.dependencies;
     }
     get plugins() {
-        return this._data.plugins;
+        return this.data.plugins;
     }
     get metadata() {
-        return this._data.metadata;
+        return this.data.metadata;
     }
 }
 
