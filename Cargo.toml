@@ -13,7 +13,7 @@ tracing = "0.1.40"
 
 # deno全家桶，跟runtime的版本走
 deno_runtime = "0.180.0"
-deno_core = { version = "0.312.0" }
+deno_core = "0.311.0"
 deno_ast = { version = "0.42.1", features = ["transpiling"] }
 tokio = { version = "1.36.0", features = ["full"] }
 

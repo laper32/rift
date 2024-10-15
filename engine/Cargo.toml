@@ -4,20 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-clap.workspace = true
-anyhow.workspace = true
-serde.workspace = true
-serde_toml.workspace = true
-serde_json.workspace = true
-toml.workspace = true
-tracing.workspace = true
 deno_runtime.workspace = true
-deno_core.workspace = true
-junction.workspace = true
-winapi.workspace = true
-windows-sys.workspace = true
-once_cell.workspace = true
-
 
 [build-dependencies]
 deno_runtime.workspace = true

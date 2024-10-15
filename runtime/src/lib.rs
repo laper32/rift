@@ -1,29 +1,16 @@
-use vm::ScriptRuntime;
+mod runtime;
 
-mod forward;
-mod loader;
-mod shared;
-mod specifier;
-mod vm;
-
-pub fn init() {
-    let entry_path: deno_core::ModuleSpecifier = "rift:dist/index.js"
-        .parse()
-        .expect("failed to parse specifier");
-    let result = ScriptRuntime::instance().evaluate(|| async {
-        ScriptRuntime::instance().load_bootstarp().await?;
-        Ok(())
-    });
-    println!("{:?}", result);
-    ScriptRuntime::instance()
-        .bootstrap_init()
-        .expect("failed to bootstrap init");
-
-    println!("entry_path: {:?}", entry_path);
+pub fn add(left: u64, right: u64) -> u64 {
+    left + right
 }
 
-pub fn shutdown() {
-    // ScriptRuntime::instance()
-    //     .bootstrap_shutdown()
-    //     .expect("failed to bootstrap shutdown");
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
 }

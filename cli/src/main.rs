@@ -1,5 +1,3 @@
 fn main() {
-    runtime::init();
-
-    runtime::shutdown();
+    println!("Hello, world!");
 }
