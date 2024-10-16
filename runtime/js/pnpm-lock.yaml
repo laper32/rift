@@ -8,15 +8,25 @@ importers:
 
   .:
     dependencies:
-      esbuild:
-        specifier: ^0.24.0
-        version: 0.24.0
+      '@std/fs':
+        specifier: npm:@jsr/std__fs@^1.0.4
+        version: '@jsr/std__fs@1.0.4'
+      '@std/path':
+        specifier: npm:@jsr/std__path@^1.0.6
+        version: '@jsr/std__path@1.0.6'
+      '@std/toml':
+        specifier: npm:@jsr/std__toml@^1.0.1
+        version: '@jsr/std__toml@1.0.1'
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.7.5)(typescript@5.6.3)
       typescript:
         specifier: ^5.6.3
         version: 5.6.3
+    devDependencies:
+      esbuild:
+        specifier: ^0.24.0
+        version: 0.24.0
 
 packages:
 
@@ -178,6 +188,18 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
+  '@jsr/std__collections@1.0.8':
+    resolution: {integrity: sha512-mBB0ZiN+fonMq22kUv8zQ/yTiC1MB8D6fxaMQow4gsc31Ob1PWd45/Q4ipc4RU7cAjA2/Y3dLVZvkuxazY3xXg==, tarball: https://npm.jsr.io/~/11/@jsr/std__collections/1.0.8.tgz}
+
+  '@jsr/std__fs@1.0.4':
+    resolution: {integrity: sha512-0O5aY0IR+NIqfw5BZbYiQ0t0QO/mCaJCQwsrs0kkfkN41t/p9gLGqem10/3zvydYcspUuwwaFlvh9WWQVyR9DA==, tarball: https://npm.jsr.io/~/11/@jsr/std__fs/1.0.4.tgz}
+
+  '@jsr/std__path@1.0.6':
+    resolution: {integrity: sha512-A8WmQshHm5W5jN1OO24qH0VHWVv6vvmUzJiODKvvIUW1jNGVf04b86b9XWMoZPwlMEHq1mGgxWN9AuXY0CY2yg==, tarball: https://npm.jsr.io/~/11/@jsr/std__path/1.0.6.tgz}
+
+  '@jsr/std__toml@1.0.1':
+    resolution: {integrity: sha512-ap5hqvSJ3jnjhh3ttP68SR2r50FlDKoT0LCuD4iZg1sl+a37Jb3ILjw9Tpvq1qa2bo0LXRm1jmM5J+LUIuH+1Q==, tarball: https://npm.jsr.io/~/11/@jsr/std__toml/1.0.1.tgz}
+
   '@tsconfig/node10@1.0.11':
     resolution: {integrity: sha512-DcRjDCujK/kCk/cUe8Xz8ZSpm8mS3mNNpta+jGCA6USEDfktlNvm1+IuZ9eTcDbNk41BHwpHHeW+N1lKCz4zOw==}
 
@@ -335,6 +357,18 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@jsr/std__collections@1.0.8': {}
+
+  '@jsr/std__fs@1.0.4':
+    dependencies:
+      '@jsr/std__path': 1.0.6
+
+  '@jsr/std__path@1.0.6': {}
+
+  '@jsr/std__toml@1.0.1':
+    dependencies:
+      '@jsr/std__collections': 1.0.8
 
   '@tsconfig/node10@1.0.11': {}
 

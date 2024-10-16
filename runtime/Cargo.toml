@@ -7,6 +7,15 @@ edition.workspace = true
 deno_runtime.workspace = true
 tokio.workspace = true
 once_cell.workspace = true
-
+anyhow.workspace = true
+tracing.workspace = true
+rust-embed = { version = "8.5.0", features = [
+    "include-exclude",
+    "interpolate-folder-path",
+] }
+engine = { path = "../engine" }
+relative-path = { version = "1.9.3", features = ["serde"] }
+deno_ast.workspace = true
+deno_core.workspace = true
 [build-dependencies]
 deno_runtime.workspace = true

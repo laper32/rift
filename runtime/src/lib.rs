@@ -1,16 +1,21 @@
-mod runtime;
+use engine::errors::RiftResult;
+use runtime::ScriptRuntime;
 
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
+mod forward;
+mod loader;
+mod runtime;
+mod shared;
+mod specifier;
+
+pub async fn init() -> RiftResult<()> {
+    let result = ScriptRuntime::instance().bootstrap().await;
+    // if result.is_err() {
+    //     return result;
+    // }
+    // let result = ScriptRuntime::instance().runtime_init();
+    result
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub fn shutdown() -> RiftResult<()> {
+    ScriptRuntime::instance().runtime_shutdown()
 }

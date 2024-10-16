@@ -1,24 +1,6 @@
-import * as workspaceManager from "./managers/WorkspaceManager.ts"
-export namespace bootstrap {
-    export function init(): Boolean {
-        workspaceManager.get().call()
-        console.log('Runtime bootstrap')
-        return true;
-    }
-
-    export function shutdown() {
-        console.log('Runtime shutdown')
-    }
-}
 import * as path from "@std/path";
 import * as toml from  "@std/toml";
 import * as fs from "@std/fs";
-let p = 'D:/workshop/projects/rift/runtime/js/src/managers/WorkspaceManager.ts';
-let result = path.isAbsolute(p)
-console.log(p,"is absolute path:", result)
-const Deno = globalThis.Deno;
-let text = await Deno.readTextFile(p);
-/* 
 const Deno = globalThis.Deno;
 class WorkspaceManager {
     public call() {
@@ -39,4 +21,3 @@ export function get(): WorkspaceManager {
     }
     return instance;
 }
-*/

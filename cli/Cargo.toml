@@ -1,8 +1,9 @@
 [package]
-name = "cli"
+name = "rift"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 engine = { path = "../engine" }
 runtime = { path = "../runtime" }
+tokio.workspace = true
