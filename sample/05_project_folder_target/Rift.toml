@@ -1,9 +1,0 @@
-[project]
-name = "05_project_folder_target"
-version = "0.1.0"
-authors = [""]
-description = ""
-url = ""
-members = ["folder1", "folder2", "target1", "target2"]
-metadata = "rift/metadata.ts"
-plugins = "rift/plugins.ts"

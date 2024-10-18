@@ -1,4 +1,0 @@
-[workspace]
-# members = ["proj1"]
-members = ["proj1", "proj2", "proj3", "proj4"]
-exclude = []

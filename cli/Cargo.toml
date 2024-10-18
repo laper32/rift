@@ -1,10 +1,6 @@
 [package]
-name = "rift"
-version = "0.1.0"
-edition = "2021"
+name = "cli"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-engine = { path = "../engine" }
-runtime = { path = "../runtime" }
-
-clap.workspace = true

@@ -1,8 +1,0 @@
-[plugin]
-name = "example-plugin"
-version = "0.1.0"
-description = "A sample plugin"
-authors = []
-url = ""
-dependencies = "rift/dependencies.ts"
-metadata = "rift/metadata.ts"
