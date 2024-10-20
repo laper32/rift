@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Rift.Runtime.Fundamental.Tier1;
+namespace Rift.Runtime.API.Fundamental.Tier1;
 
 // ReSharper disable ConvertToAutoPropertyWhenPossible
 // ReSharper disable ConvertToAutoPropertyWithPrivateSetter
