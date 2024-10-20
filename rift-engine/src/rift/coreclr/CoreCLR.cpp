@@ -39,28 +39,28 @@ struct HostfxrUtils
     hostfxr_close_fn Close;
 } g_HostFxrUtils;
 
-void *LoadLibrary(const char *path)
+void* LoadLibrary(const char* path)
 {
 #ifdef _WIN32
     HMODULE h = LoadLibraryA(path);
     assert(h != nullptr);
-    return (void *)h;
+    return (void*)h;
 #else
-    void *h = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
+    void* h = dlopen(path, RTLD_LAZY | RTLD_LOCAL);
     assert(h != nullptr);
     return h;
 #endif
 }
 
-void *GetExport(void *h, const char *name)
+void* GetExport(void* h, const char* name)
 {
 #ifdef _WIN32
-    void *f = ::GetProcAddress((HMODULE)h, name);
+    void* f = ::GetProcAddress((HMODULE)h, name);
     assert(f != nullptr);
     return f;
 #else
 
-    void *f = dlsym(h, name);
+    void* f = dlsym(h, name);
     assert(f != nullptr);
     return f;
 #endif
@@ -81,7 +81,7 @@ struct Version
             return out;
         };
 
-        for (auto &&str : input | std::views::split('.'))
+        for (auto&& str : input | std::views::split('.'))
         {
             // 应该不会遇到这个情况
             if (_count >= 4)
@@ -98,20 +98,20 @@ struct Version
         }
     }
 
-    bool operator==(const Version &other) const { return _numbers == other._numbers; }
+    bool operator==(const Version& other) const { return _numbers == other._numbers; }
 
-    bool operator!=(const Version &other) const { return !(*this == other); }
+    bool operator!=(const Version& other) const { return !(*this == other); }
 
-    bool operator<(const Version &other) const
+    bool operator<(const Version& other) const
     {
         return std::ranges::lexicographical_compare(_numbers, other._numbers);
     }
 
-    bool operator<=(const Version &other) const { return !(*this > other); }
+    bool operator<=(const Version& other) const { return !(*this > other); }
 
-    bool operator>(const Version &other) const { return other < *this; }
+    bool operator>(const Version& other) const { return other < *this; }
 
-    bool operator>=(const Version &other) const { return !(*this < other); }
+    bool operator>=(const Version& other) const { return !(*this < other); }
 
 private:
     std::array<int, 4> _numbers{};
@@ -134,13 +134,13 @@ std::string FindDotnetRuntime()
     std::filesystem::path latest_file;
     Version latest_file_version;
 
-    for (auto &&searchPath : searchPaths)
+    for (auto&& searchPath : searchPaths)
     {
         // ReSharper disable once CppRedundantQualifier
         if (!std::filesystem::exists(searchPath))
             continue;
 
-        for (const auto &entry : std::filesystem::recursive_directory_iterator(searchPath))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(searchPath))
         {
             if (entry.path().filename() != dll)
                 continue;
@@ -167,7 +167,7 @@ bool LoadHostFxr()
     }
 #endif
 
-    void *lib = LoadLibrary(buffer.c_str());
+    void* lib = LoadLibrary(buffer.c_str());
     g_HostFxrUtils.Init =
         static_cast<hostfxr_initialize_for_runtime_config_fn>(GetExport(lib, "hostfxr_initialize_for_runtime_config"));
     g_HostFxrUtils.GetDelegate =
@@ -177,10 +177,10 @@ bool LoadHostFxr()
     return (g_HostFxrUtils.Init && g_HostFxrUtils.GetDelegate && g_HostFxrUtils.Close);
 }
 
-load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t *config_path)
+load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* config_path)
 {
     // Load .NET Core
-    void *result = nullptr;
+    void* result = nullptr;
     hostfxr_handle cxt = nullptr;
     int rc = g_HostFxrUtils.Init(config_path, nullptr, &cxt);
     if (rc != 0 || cxt == nullptr)
@@ -203,7 +203,7 @@ load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t 
 static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
 
 #ifdef _WIN32
-std::wstring widen(const std::string &in)
+std::wstring widen(const std::string& in)
 {
     std::wstring out{};
 
@@ -228,9 +228,9 @@ std::wstring widen(const std::string &in)
 }
 #endif
 
-void *GetDotnetFunctionPointer(const char *typeName, const char *method)
+void* GetDotnetFunctionPointer(const char* typeName, const char* method)
 {
-    void *pFunc = nullptr;
+    void* pFunc = nullptr;
 
     auto entry_dll_path =
 #ifdef _WIN32
@@ -243,7 +243,7 @@ void *GetDotnetFunctionPointer(const char *typeName, const char *method)
 #ifdef _WIN32
                                                     widen(typeName).c_str(), widen(method).c_str(),
 #else
-                                                     typeName, method,
+                                                    typeName, method,
 #endif
                                                     UNMANAGEDCALLERSONLY_METHOD, nullptr, &pFunc);
     assert(rc == 0 && pFunc != nullptr && "Failure: load_assembly_and_get_function_pointer()");
@@ -251,7 +251,7 @@ void *GetDotnetFunctionPointer(const char *typeName, const char *method)
 }
 
 template <typename T>
-T GetDotnetFunctionPointer(const char *typeName, const char *method)
+T GetDotnetFunctionPointer(const char* typeName, const char* method)
 {
     return reinterpret_cast<T>(GetDotnetFunctionPointer(typeName, method));
 }
@@ -259,8 +259,8 @@ T GetDotnetFunctionPointer(const char *typeName, const char *method)
 void* GetManagedFunction(const char* name)
 {
     std::string _name(name);
-    auto        methodPos    = _name.find_last_of(".");
-    auto        assemblyName = _name.substr(0, methodPos);
+    auto methodPos = _name.find_last_of(".");
+    auto assemblyName = _name.substr(0, methodPos);
 
     char target[512];
     snprintf(target, sizeof(target), "Rift.Runtime.%s, Rift.Runtime", assemblyName.c_str());
@@ -276,15 +276,24 @@ bool Init()
     {
         assert(false && "Failure: LoadHostFxr()");
     }
-    auto runtime_config_path = 
+    auto runtime_config_path =
 #if _WIN32
-        widen(GetExecutablePath().parent_path().parent_path().append("runtime").append("Rift.Runtime.runtimeconfig.json").string());
+        widen(GetExecutablePath()
+                  .parent_path()
+                  .parent_path()
+                  .append("runtime")
+                  .append("Rift.Runtime.runtimeconfig.json")
+                  .string());
 #else
-        GetExecutablePath().parent_path().parent_path().append("runtime").append("Rift.Runtime.runtimeconfig.json").string();
+        GetExecutablePath()
+            .parent_path()
+            .parent_path()
+            .append("runtime")
+            .append("Rift.Runtime.runtimeconfig.json")
+            .string();
 #endif
-    
-    load_assembly_and_get_function_pointer =
-        get_dotnet_load_assembly(runtime_config_path.c_str());
+
+    load_assembly_and_get_function_pointer = get_dotnet_load_assembly(runtime_config_path.c_str());
     assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
 
     return true;
@@ -294,8 +303,8 @@ void Shutdown()
 {
     using RiftRuntimeShutdownFn_t = void(CORECLR_DELEGATE_CALLTYPE*)();
 
-    const auto sharp_shutdown = GetDotnetFunctionPointer<RiftRuntimeShutdownFn_t>(
-        "Rift.Runtime.Bootstrap, Rift.Runtime", "Shutdown");
+    const auto sharp_shutdown =
+        GetDotnetFunctionPointer<RiftRuntimeShutdownFn_t>("Rift.Runtime.Bootstrap, Rift.Runtime", "Shutdown");
 
     sharp_shutdown();
 }
@@ -304,7 +313,8 @@ int Bootstrap(void* natives)
 {
     using RiftRuntimeInitFn_t = int(CORECLR_DELEGATE_CALLTYPE*)(void*);
 
-    const auto rift_init = GetDotnetFunctionPointer<RiftRuntimeInitFn_t>("Rift.Runtime.Bootstrap, Rift.Runtime", "Init");
+    const auto rift_init =
+        GetDotnetFunctionPointer<RiftRuntimeInitFn_t>("Rift.Runtime.Bootstrap, Rift.Runtime", "Init");
     return rift_init(natives);
 }
 
