@@ -5,8 +5,8 @@ namespace rift::coreclr {
 int  Bootstrap(void* natives);
 void Shutdown();
 bool Init();
-// bool  CreateNative(const char* name, void* func);
-void* GetManagedFunction(const char* name);
+// bool  CreateNativeInternal(const char* fn_name, void* func);
+void* GetManagedFunction(const char* fn_name);
 template <typename T>
 T GetManagedFunction(const char* name)
 {

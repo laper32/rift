@@ -7,12 +7,17 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Fundamental.Interop;
 using Rift.Runtime.System;
+using Serilog;
+using Serilog.Events;
 
-
+// Rift Runtime is running with host, so we need to make sure .NET Runtime does 
+// not make any unexpected marshalling work.
 [assembly: DisableRuntimeMarshalling]
+
 namespace Rift.Runtime;
 
 public static class Bootstrap
@@ -40,7 +45,8 @@ public static class Bootstrap
 
         var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
-            ValidateOnBuild = true, ValidateScopes = true
+            ValidateOnBuild = true,
+            ValidateScopes = true
         });
 
         ActivateServices(provider);
@@ -58,19 +64,32 @@ public static class Bootstrap
         return true;
     }
 
-    private static void ConfigureLogging(IServiceCollection _)
+    private static void ConfigureLogging(IServiceCollection services)
     {
-
+        Log.Logger = new LoggerConfiguration()
+            .Enrich.FromLogContext()
+            .MinimumLevel.Verbose()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("System.Net.Http", LogEventLevel.Fatal)
+            .CreateLogger();
+        services.AddLogging(logging =>
+        {
+            logging.ClearProviders();
+            logging.AddSerilog();
+            logging.SetMinimumLevel(LogLevel.Information);
+        });
     }
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        services.AddSingleton<IRuntimeInternal, Fundamental.Runtime>();
         services.AddSingleton<IShareSystemInternal, ShareSystem>();
         services.AddSingleton<IPluginSystemInternal, PluginSystem>();
     }
 
     private static void ActivateServices(IServiceProvider provider)
     {
+        provider.GetRequiredService<IRuntimeInternal>();
         provider.GetRequiredService<IShareSystemInternal>();
         provider.GetRequiredService<IPluginSystemInternal>();
     }

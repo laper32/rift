@@ -1,7 +1,10 @@
+#include "rift/coreclr/CoreCLR.h"
+
 #include "rift/coreclr/CoreCLRDelegates.h"
 #include "rift/coreclr/Hostfxr.h"
 
 #include "rift/fundamental/PrimitivePath.h"
+#include "rift/fundamental/String.h"
 
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -10,7 +13,7 @@
 
 #ifdef _WIN32
 #include <windows.h>
-#define STR(s) L##s
+#define STR(s) L##s // NOLINT(clang-diagnostic-unused-macros)
 #else
 #include <dlfcn.h>
 #define STR(s) s
@@ -27,15 +30,20 @@
 #include <string>
 #include <vector>
 
-
 #undef LoadLibrary
 
 namespace rift::coreclr {
 
+// ReSharper disable once IdentifierTypo
 struct HostfxrUtils
 {
+    // Those below are all function pointer!
+
+    // ReSharper disable once CppInconsistentNaming
     hostfxr_initialize_for_runtime_config_fn Init;
+    // ReSharper disable once CppInconsistentNaming
     hostfxr_get_runtime_delegate_fn GetDelegate;
+    // ReSharper disable once CppInconsistentNaming
     hostfxr_close_fn Close;
 } g_HostFxrUtils;
 
@@ -55,7 +63,7 @@ void* LoadLibrary(const char* path)
 void* GetExport(void* h, const char* name)
 {
 #ifdef _WIN32
-    void* f = ::GetProcAddress((HMODULE)h, name);
+    void* f = GetProcAddress(static_cast<HMODULE>(h), name);  // NOLINT(clang-diagnostic-microsoft-cast)
     assert(f != nullptr);
     return f;
 #else
@@ -71,11 +79,11 @@ struct Version
     Version() = default;
     explicit Version(std::string_view input)
     {
-        auto sv_to_int = [](std::string_view input) -> std::optional<int> {
+        auto sv_to_int = [](const std::string_view sv_input) -> std::optional<int> {
             int out{};
-            auto result = std::from_chars(input.data(), input.data() + input.size(), out);
 
-            if (result.ec == std::errc::invalid_argument || result.ec == std::errc::result_out_of_range)
+            if (const auto [ptr, ec] = std::from_chars(sv_input.data(), sv_input.data() + sv_input.size(), out);
+                ec == std::errc::invalid_argument || ec == std::errc::result_out_of_range)
                 return std::nullopt;
 
             return out;
@@ -83,7 +91,7 @@ struct Version
 
         for (auto&& str : input | std::views::split('.'))
         {
-            // 应该不会遇到这个情况
+            // 应该不会遇到这个情况  // NOLINT(clang-diagnostic-invalid-utf8)
             if (_count >= 4)
                 break;
 
@@ -118,11 +126,11 @@ private:
     int _count{};
 };
 
-// TODO: Make it configurable.
 std::string FindDotnetRuntime()
 {
     std::vector<std::filesystem::path> searchPaths{"../dotnet/host/fxr/"};
 #ifdef WIN32
+    // ReSharper disable once StringLiteralTypo
     std::string dll = "hostfxr.dll";
     searchPaths.emplace_back(R"(C:\Program Files\dotnet\host\fxr)");
 #else
@@ -134,13 +142,13 @@ std::string FindDotnetRuntime()
     std::filesystem::path latest_file;
     Version latest_file_version;
 
-    for (auto&& searchPath : searchPaths)
+    for (auto&& search_path : searchPaths)
     {
         // ReSharper disable once CppRedundantQualifier
-        if (!std::filesystem::exists(searchPath))
+        if (!std::filesystem::exists(search_path))
             continue;
 
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(searchPath))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(search_path))
         {
             if (entry.path().filename() != dll)
                 continue;
@@ -169,15 +177,21 @@ bool LoadHostFxr()
 
     void* lib = LoadLibrary(buffer.c_str());
     g_HostFxrUtils.Init =
-        static_cast<hostfxr_initialize_for_runtime_config_fn>(GetExport(lib, "hostfxr_initialize_for_runtime_config"));
+        // ReSharper disable once StringLiteralTypo
+        static_cast<hostfxr_initialize_for_runtime_config_fn>( // NOLINT(clang-diagnostic-microsoft-cast)
+            GetExport(lib, "hostfxr_initialize_for_runtime_config"));
     g_HostFxrUtils.GetDelegate =
-        static_cast<hostfxr_get_runtime_delegate_fn>(GetExport(lib, "hostfxr_get_runtime_delegate"));
-    g_HostFxrUtils.Close = static_cast<hostfxr_close_fn>(GetExport(lib, "hostfxr_close"));
+        // ReSharper disable once StringLiteralTypo
+        static_cast<hostfxr_get_runtime_delegate_fn>( // NOLINT(clang-diagnostic-microsoft-cast)
+            GetExport(lib, "hostfxr_get_runtime_delegate"));
+    // ReSharper disable once StringLiteralTypo
+    g_HostFxrUtils.Close =
+        static_cast<hostfxr_close_fn>(GetExport(lib, "hostfxr_close")); // NOLINT(clang-diagnostic-microsoft-cast)
 
     return (g_HostFxrUtils.Init && g_HostFxrUtils.GetDelegate && g_HostFxrUtils.Close);
 }
 
-load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t* config_path)
+load_assembly_and_get_function_pointer_fn GetDotnetLoadAssembly(const char_t* config_path)
 {
     // Load .NET Core
     void* result = nullptr;
@@ -185,7 +199,7 @@ load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t*
     int rc = g_HostFxrUtils.Init(config_path, nullptr, &cxt);
     if (rc != 0 || cxt == nullptr)
     {
-        std::cerr << "Init failed: " << std::hex << std::showbase << rc << std::endl;
+        std::cerr << "Init failed: " << std::hex << std::showbase << rc << '\n';
         g_HostFxrUtils.Close(cxt);
         return nullptr;
     }
@@ -194,80 +208,59 @@ load_assembly_and_get_function_pointer_fn get_dotnet_load_assembly(const char_t*
     rc = g_HostFxrUtils.GetDelegate(cxt, hdt_load_assembly_and_get_function_pointer, &result);
 
     if (rc != 0 || result == nullptr)
-        std::cerr << "Get delegate failed: " << std::hex << std::showbase << rc << std::endl;
+        std::cerr << "Get delegate failed: " << std::hex << std::showbase << rc << '\n';
 
-    // s_HostFxrUtils.Close(cxt);
-    return static_cast<load_assembly_and_get_function_pointer_fn>(result);
+    return static_cast<load_assembly_and_get_function_pointer_fn>(result); // NOLINT(clang-diagnostic-microsoft-cast)
 }
 
-static load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer = nullptr;
+namespace {
 
-#ifdef _WIN32
-std::wstring widen(const std::string& in)
-{
-    std::wstring out{};
+load_assembly_and_get_function_pointer_fn g_LoadAssemblyAndGetFunctionPointer = nullptr;
 
-    if (in.length() > 0)
-    {
-        // Calculate target buffer size (not including the zero terminator).
-        const auto len =
-            MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, in.c_str(), static_cast<int>(in.size()), nullptr, 0);
-        if (len == 0)
-        {
-            throw std::runtime_error("Invalid character sequence.");
-        }
-
-        out.resize(len);
-        // No error checking. We already know, that the conversion will succeed.
-        MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, in.c_str(), static_cast<int>(in.size()), out.data(),
-                            static_cast<int>(out.size()));
-        // Use out.data() in place of &out[0] for C++17
-    }
-
-    return out;
 }
-#endif
 
-void* GetDotnetFunctionPointer(const char* typeName, const char* method)
+
+void* GetDotnetFunctionPointer(const char* type_name, const char* method)
 {
-    void* pFunc = nullptr;
+    void* ret = nullptr;
 
-    auto entry_dll_path =
+    const auto entry_dll_path =
 #ifdef _WIN32
-        widen(GetExecutablePath().parent_path().parent_path().append("runtime").append("Rift.Runtime.dll").string());
+        Widen(GetExecutablePath().parent_path().parent_path().append("runtime").append("Rift.Runtime.dll").string());
 #else
         GetExecutablePath().parent_path().parent_path().append("runtime").append("Rift.Runtime.dll").string();
 #endif
 
-    int rc = load_assembly_and_get_function_pointer(entry_dll_path.c_str(),
+    // ReSharper disable once CppDeclaratorNeverUsed
+    int rc = g_LoadAssemblyAndGetFunctionPointer(entry_dll_path.c_str(),
 #ifdef _WIN32
-                                                    widen(typeName).c_str(), widen(method).c_str(),
+                                                 Widen(type_name).c_str(), Widen(method).c_str(),
 #else
-                                                    typeName, method,
+                                                 typeName, method,
 #endif
-                                                    UNMANAGEDCALLERSONLY_METHOD, nullptr, &pFunc);
+                                                 UNMANAGEDCALLERSONLY_METHOD, nullptr, &ret);
     assert(rc == 0 && pFunc != nullptr && "Failure: load_assembly_and_get_function_pointer()");
-    return pFunc;
+    return ret;
 }
 
 template <typename T>
-T GetDotnetFunctionPointer(const char* typeName, const char* method)
+T GetDotnetFunctionPointer(const char* type_name, const char* method)
 {
-    return reinterpret_cast<T>(GetDotnetFunctionPointer(typeName, method));
+    return reinterpret_cast<T>(GetDotnetFunctionPointer(type_name, method));
 }
 
-void* GetManagedFunction(const char* name)
+void* GetManagedFunction(const char* fn_name)
 {
-    std::string _name(name);
-    auto methodPos = _name.find_last_of(".");
-    auto assemblyName = _name.substr(0, methodPos);
+    const std::string name(fn_name);
+    const auto method_pos = name.find_last_of('.');
+    const auto assembly_name = name.substr(0, method_pos);
 
     char target[512];
-    snprintf(target, sizeof(target), "Rift.Runtime.%s, Rift.Runtime", assemblyName.c_str());
-    char methodName[512];
-    snprintf(methodName, sizeof(methodName), "%sExport", _name.substr(methodPos + 1).c_str());
+    snprintf(target, sizeof(target), "Rift.Runtime.%s, Rift.Runtime", assembly_name.c_str()); // NOLINT(cert-err33-c)
+    char method_name[512];
+    snprintf(method_name, sizeof(method_name), "%sExport", name.substr(method_pos + 1).c_str()); // NOLINT(cert-err33-c)
 
-    return GetDotnetFunctionPointer(target, methodName);
+    return GetDotnetFunctionPointer(target, method_name);
 }
 
 bool Init()
@@ -276,12 +269,13 @@ bool Init()
     {
         assert(false && "Failure: LoadHostFxr()");
     }
-    auto runtime_config_path =
+    const auto runtime_config_path =
 #if _WIN32
-        widen(GetExecutablePath()
+        Widen(GetExecutablePath()
                   .parent_path()
                   .parent_path()
                   .append("runtime")
+                  // ReSharper disable once StringLiteralTypo
                   .append("Rift.Runtime.runtimeconfig.json")
                   .string());
 #else
@@ -293,7 +287,7 @@ bool Init()
             .string();
 #endif
 
-    load_assembly_and_get_function_pointer = get_dotnet_load_assembly(runtime_config_path.c_str());
+    g_LoadAssemblyAndGetFunctionPointer = GetDotnetLoadAssembly(runtime_config_path.c_str());
     assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
 
     return true;

@@ -29,10 +29,11 @@ message(VERBOSE "*")
 add_library(${PROJECT_NAME} SHARED 
     src/Main.cpp
     src/rift/Main.cpp
-    src/rift/bridge/Adapter.cpp
-    src/rift/coreclr/CoreCLR.cpp 
+    src/rift/bridge/InteropService.cpp
+    src/rift/bridge/natives/CoreNatives.cpp
+    src/rift/coreclr/CoreCLR.cpp
     src/rift/fundamental/PrimitivePath.cpp
- "include/rift/tier1/CUtlVector.h")
+ "src/rift/bridge/natives/CoreNatives.h")
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src)

@@ -1,4 +1,4 @@
-#include "rift/bridge/Adapter.h"
+#include "rift/bridge/InteropService.h"
 #include "rift/coreclr/CoreCLR.h"
 
 #include <print>
@@ -13,7 +13,7 @@ bool Init()
 {
     coreclr::Init();
 
-    bridge::natives::InitNatives();
+    bridge::InitNatives();
 
     const auto clr = !!coreclr::Bootstrap(bridge::GetNatives());
 
@@ -30,9 +30,9 @@ void Shutdown()
 
 const char* RuntimeGetTasks()
 {
-    using WorkspaceManagerGetTasksFn_t = const char* (CORECLR_DELEGATE_CALLTYPE*)();
-    const auto get_tasks = coreclr::GetManagedFunction<WorkspaceManagerGetTasksFn_t>(
-        "Managers.WorkspaceManager.GetTasks");
+    using WorkspaceManagerGetTasksFn_t = const char*(CORECLR_DELEGATE_CALLTYPE*)();
+    const auto get_tasks =
+        coreclr::GetManagedFunction<WorkspaceManagerGetTasksFn_t>("Managers.WorkspaceManager.GetTasks");
 
     return get_tasks();
 }

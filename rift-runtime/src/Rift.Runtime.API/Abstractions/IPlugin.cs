@@ -44,6 +44,7 @@ public abstract class RiftPlugin : IPlugin
 
     public record PluginInterfaceBridge(
         IShareSystem ShareSystem,
+        IPluginSystem PluginSystem,
         string InstancePath,
         string RootPath
     );
@@ -51,6 +52,7 @@ public abstract class RiftPlugin : IPlugin
     private readonly PluginInterfaceBridge _bridge = null!;
 
     public IShareSystem ShareSystem => _bridge.ShareSystem;
+    public IPluginSystem PluginSystem => _bridge.PluginSystem;
 
     /// <summary>
     /// 实例路径, 也就是正在运行的这个.dll的路径
@@ -81,4 +83,5 @@ public interface IPluginInterfaceBridge<out T> where T : RiftPlugin
 {
     T Instance { get; }
     IShareSystem ShareSystem { get; }
+    IPluginSystem PluginSystem { get; }
 }

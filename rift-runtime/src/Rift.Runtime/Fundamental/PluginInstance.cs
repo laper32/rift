@@ -9,6 +9,7 @@ using Rift.Runtime.API.Enums;
 using System.Diagnostics;
 using System.Reflection;
 using Rift.Runtime.API.Attributes;
+using Rift.Runtime.API.Fundamental.Extensions;
 
 namespace Rift.Runtime.Fundamental;
 
@@ -97,21 +98,10 @@ internal class PluginInstance(InterfaceBridge bridge, Assembly entry, string ins
 
         type.BaseType!.SetReadOnlyField("_bridge", instance,
             new RiftPlugin.PluginInterfaceBridge(
-                bridge.Self.Runtime,
-                bridge.Self.CommandSystem,
-                bridge.Self.EntitySystem,
-                bridge.Self.EventSystem,
-                bridge.Self.GameSystem,
-                bridge.Self.HookSystem,
-                bridge.Self.PlayerSystem,
-                bridge.Self.PluginSystem,
-                bridge.Self.ShareSystem,
-                bridge.Self.SteamSystem,
-                bridge.Self.ConVarSystem,
-                bridge.Self.SchemaSystem,
-                instancePath,
-                Descriptor.PluginPath,
-                bridge.Self.MediatR
+                ShareSystem: bridge.ShareSystem,
+                PluginSystem: bridge.PluginSystem,
+                InstancePath: instancePath,
+                RootPath: Descriptor.PluginPath
             )
         );
 
