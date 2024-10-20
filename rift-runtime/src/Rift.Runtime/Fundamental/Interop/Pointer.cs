@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Rift.Runtime.Types;
+namespace Rift.Runtime.Fundamental.Interop;
 
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct Pointer<T> where T : unmanaged
@@ -12,8 +12,8 @@ public unsafe struct Pointer<T> where T : unmanaged
         => ref Unsafe.AsRef<T>(Value);
 
     public static implicit operator Pointer<T>(T* value)
-        => new () { Value = value };
+        => new() { Value = value };
 
     public static implicit operator Pointer<T>(nint value)
-        => (T*) value;
+        => (T*)value;
 }

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Rift.Runtime.Bridge;
+using Rift.Runtime.Fundamental.Interop;
 
 
 [assembly: DisableRuntimeMarshalling]
@@ -12,7 +12,7 @@ public static class Bootstrap
     private static bool Init(nint natives)
     {
         Console.WriteLine("Bootstrap.Init");
-        Adapter.Init(natives);
+        InteropService.Init(natives);
         return true;
         //unsafe
         //{

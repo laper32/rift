@@ -1,31 +1,39 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace Rift.Runtime.Tier1;
+namespace Rift.Runtime.Fundamental.Tier1;
 
+// ReSharper disable ConvertToAutoPropertyWhenPossible
+// ReSharper disable ConvertToAutoPropertyWithPrivateSetter
+// ReSharper disable UnusedMember.Global
 
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct CUtlMemory<T> : IDisposable
     where T : unmanaged
 {
-    private T*  _memory;
+    // For memory alignment. MUST NOT MODIFY IT!
+    private T* _memory;
+
+    // For memory alignment. MUST NOT MODIFY IT!
     private int _allocationCount;
+
+    // For memory alignment. MUST NOT MODIFY IT!
     private int _growSize;
 
     private const int ExternalConstBufferMarker = 1 << 30;
-    private const int ExternalBufferMarker      = 1 << 31;
+    private const int ExternalBufferMarker = 1 << 31;
 
-    public int  AllocationCount       => _allocationCount;
-    public bool IsReadOnly            => (_growSize & ExternalConstBufferMarker)                          != 0;
+    public int AllocationCount => _allocationCount;
+    public bool IsReadOnly => (_growSize & ExternalConstBufferMarker) != 0;
     public bool IsExternallyAllocated => (_growSize & (ExternalConstBufferMarker | ExternalBufferMarker)) != 0;
 
     public CUtlMemory(int growSize, int initAllocationCount)
     {
         _allocationCount = initAllocationCount;
-        _growSize        = growSize & ~(ExternalConstBufferMarker | ExternalBufferMarker);
+        _growSize = growSize & ~(ExternalConstBufferMarker | ExternalBufferMarker);
 
         if (_allocationCount > 0)
         {
-            _memory = (T*) NativeMemory.Alloc((nuint) (_allocationCount * sizeof(T)));
+            _memory = (T*)NativeMemory.Alloc((nuint)(_allocationCount * sizeof(T)));
         }
     }
 
@@ -40,7 +48,7 @@ public unsafe struct CUtlMemory<T> : IDisposable
     {
         if (nGrowSize > 0)
         {
-            nAllocationCount = (1 + ((nNewSize - 1) / nGrowSize)) * nGrowSize;
+            nAllocationCount = (1 + (nNewSize - 1) / nGrowSize) * nGrowSize;
         }
         else
         {
@@ -60,7 +68,7 @@ public unsafe struct CUtlMemory<T> : IDisposable
 
             while (nAllocationCount < nNewSize)
             {
-                var nNewAllocationCount = (nAllocationCount * 9) / 8; // 12.5 %
+                var nNewAllocationCount = nAllocationCount * 9 / 8; // 12.5 %
 
                 if (nNewAllocationCount > nAllocationCount)
                 {
@@ -88,7 +96,7 @@ public unsafe struct CUtlMemory<T> : IDisposable
             throw new InvalidOperationException("Cannot grow a read-only buffer");
         }
 
-        if ((long) _allocationCount + num > int.MaxValue)
+        if ((long)_allocationCount + num > int.MaxValue)
         {
             throw new OutOfMemoryException("Cannot allocate more than 2GB of memory");
         }
@@ -103,39 +111,15 @@ public unsafe struct CUtlMemory<T> : IDisposable
                                                          nAllocationRequested,
                                                          sizeof(T));
 
-        // if m_nAllocationRequested wraps index type I, recalculate
-        // if ((int) (TI) nNewAllocationCount < nAllocationRequested)
-        // {
-        //     if ((int) (TI) nNewAllocationCount == 0 && (int) (TI) (nNewAllocationCount - 1) >= nAllocationRequested)
-        //     {
-        //         --nNewAllocationCount; // deal w/ the common case of m_nAllocationCount == MAX_USHORT + 1
-        //     }
-        //     else
-        //     {
-        //         if ((int) (I) nAllocationRequested != nAllocationRequested)
-        //         {
-        //             // we've been asked to grow memory to a size s.t. the index type can't address the requested amount of memory
-        //             Assert(0);
-        //
-        //             return;
-        //         }
-        //
-        //         while ((int) (I) nNewAllocationCount < nAllocationRequested)
-        //         {
-        //             nNewAllocationCount = (nNewAllocationCount + nAllocationRequested) / 2;
-        //         }
-        //     }
-        // }
-
         _allocationCount = nNewAllocationCount;
 
         if (_memory is not null)
         {
-            _memory = (T*) NativeMemory.Realloc(_memory, (nuint) (_allocationCount * sizeof(T)));
+            _memory = (T*)NativeMemory.Realloc(_memory, (nuint)(_allocationCount * sizeof(T)));
         }
         else
         {
-            _memory = (T*) NativeMemory.Alloc((nuint) (_allocationCount * sizeof(T)));
+            _memory = (T*)NativeMemory.Alloc((nuint)(_allocationCount * sizeof(T)));
         }
 
         if (_memory == null)

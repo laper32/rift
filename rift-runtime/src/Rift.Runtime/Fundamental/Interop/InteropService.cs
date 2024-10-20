@@ -1,15 +1,14 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Rift.Runtime.Tier1;
-using Rift.Runtime.Types;
+using Rift.Runtime.Fundamental.Tier1;
 
-namespace Rift.Runtime.Bridge;
+namespace Rift.Runtime.Fundamental.Interop;
 
 [StructLayout(LayoutKind.Sequential)]
 public unsafe struct RuntimeNative
 {
     public fixed sbyte Name[128];
-    public       nint  Func;
+    public nint Func;
 
     public string NameString
     {
@@ -24,19 +23,10 @@ public unsafe struct RuntimeNative
 }
 
 
-internal static class Adapter
+internal static class InteropService
 {
     public static unsafe bool Init(nint natives)
     {
-        /*
-         ref var nativeVec = ref Unsafe.AsRef<CUtlVector<Pointer<NativeItem>>>(natives.ToPointer());
-
-        foreach (var native in nativeVec)
-        {
-            InstallNative(ref native.AsRef());
-        }
-         */
-
         ref var nativeVec = ref Unsafe.AsRef<CUtlVector<Pointer<RuntimeNative>>>(natives.ToPointer());
 
         Console.WriteLine($"len: {nativeVec.Count}");
@@ -53,7 +43,6 @@ internal static class Adapter
             Console.WriteLine(e);
         }
 
-        
         return true;
     }
 

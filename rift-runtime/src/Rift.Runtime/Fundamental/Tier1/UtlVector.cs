@@ -1,18 +1,22 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-namespace Rift.Runtime.Tier1;
+namespace Rift.Runtime.Fundamental.Tier1;
 
-
+// ReSharper disable ConvertToAutoPropertyWhenPossible
+// ReSharper disable UnusedMember.Global
 [StructLayout(LayoutKind.Sequential)]
-public unsafe struct CUtlVector<T> : IDisposable where T : unmanaged
+public unsafe struct CUtlVector<T>(int growSize = 0, int initSize = 0) : IDisposable
+    where T : unmanaged
 {
-    private int           _size;
-    private CUtlMemory<T> _memory;
-    private T* _elements;
+    // For memory alignment. MUST NOT MODIFY IT!
+    private int _size;
 
-    public CUtlVector(int growSize = 0, int initSize = 0)
-        => _memory = new CUtlMemory<T>(growSize, initSize);
+    // For memory alignment. MUST NOT MODIFY IT!
+    private CUtlMemory<T> _memory = new(growSize, initSize);
+
+    // For memory alignment. MUST NOT MODIFY IT!
+    private T* _elements;
 
     public void Dispose()
     {
@@ -33,7 +37,7 @@ public unsafe struct CUtlVector<T> : IDisposable where T : unmanaged
     {
         if (_size + num > _memory.AllocationCount)
         {
-            _memory.Grow((_size + num) - _memory.AllocationCount);
+            _memory.Grow(_size + num - _memory.AllocationCount);
         }
 
         _size += num;
@@ -78,9 +82,11 @@ public unsafe struct CUtlVector<T> : IDisposable where T : unmanaged
         {
             NativeMemory.Copy(Unsafe.AsPointer(ref _memory[index]),
                 Unsafe.AsPointer(ref _memory[index + num]),
-                (nuint) (numToMove * sizeof(T)));
+                (nuint)(numToMove * sizeof(T)));
         }
     }
 
+
+    // For memory alignment, DO NOT MODIFY IT!
     public int Count => _size;
 }
