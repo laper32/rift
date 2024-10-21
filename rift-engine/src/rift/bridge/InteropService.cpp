@@ -25,17 +25,9 @@ void CreateNativeInternal(const char* name, void* func)
 
 void* GetNatives() { return &g_RuntimeNatives; }
 
-namespace natives {
-
-void ExampleNative() { std::println("rift::bridge::natives::ExampleNative invoked."); }
-
-void Init() { CreateNative("Core.ExampleNative", ExampleNative); }
-
-} // namespace natives
-
 void InitNatives()
 {
-    natives::Init();
+    // ..
     core::natives::Init();
 }
 
