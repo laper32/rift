@@ -4,17 +4,18 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Abstractions;
-using Rift.Runtime.API.Enums;
 using System.Diagnostics;
 using System.Reflection;
+using Rift.Runtime.API.Abstractions;
 using Rift.Runtime.API.Attributes;
+using Rift.Runtime.API.Enums;
 using Rift.Runtime.API.Fundamental.Extensions;
 
 namespace Rift.Runtime.Fundamental;
 
 // 其实这时候用Primary Constructor就很适合.
-internal class PluginInstance(InterfaceBridge bridge, Assembly entry, string instancePath, string pluginPath)
+
+internal class PluginInstance(Assembly entry, string instancePath, string pluginPath)
 {
     private const string DefaultReloadDirectory = "reload";
     public class PluginDescriptor(string instancePath, string pluginPath)
@@ -58,7 +59,7 @@ internal class PluginInstance(InterfaceBridge bridge, Assembly entry, string ins
         {
             MakeError("An error occured when loading plugin.", new BadImageFormatException("Cannot get version info."));
             Status = PluginStatus.Failed;
-            
+
             return false;
         }
 
@@ -98,8 +99,6 @@ internal class PluginInstance(InterfaceBridge bridge, Assembly entry, string ins
 
         type.BaseType!.SetReadOnlyField("_bridge", instance,
             new RiftPlugin.PluginInterfaceBridge(
-                ShareSystem: bridge.ShareSystem,
-                PluginSystem: bridge.PluginSystem,
                 InstancePath: instancePath,
                 RootPath: Descriptor.PluginPath
             )
@@ -144,7 +143,7 @@ internal class PluginInstance(InterfaceBridge bridge, Assembly entry, string ins
     public void Unload(bool shutdown = false)
     {
         Instance?.OnUnload();
-        
+
         // 如果没有错误, 那么就正常的把状态置空, 否则, 保存当前状态.
         if (Error is null)
         {

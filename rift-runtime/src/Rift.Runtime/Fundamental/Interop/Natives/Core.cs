@@ -6,7 +6,7 @@
 
 namespace Rift.Runtime.Fundamental.Interop.Natives;
 
-public static partial class Core
+public static unsafe partial class Core
 {
-    public static partial void ExampleNative();
+    public static partial sbyte* GetExecutablePath();
 }

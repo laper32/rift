@@ -36,16 +36,10 @@ internal static class InteropService
 {
     internal static readonly Dictionary<string, nint> NativeFunctions = new (StringComparer.OrdinalIgnoreCase);
 
-    static void ExampleNative()
-    {
-        Core.ExampleNative();
-    }
 
     public static unsafe bool Init(nint natives)
     {
         ref var nativeVec = ref Unsafe.AsRef<CUtlVector<Pointer<RuntimeNative>>>(natives.ToPointer());
-
-        Console.WriteLine($"len: {nativeVec.Count}");
 
         try
         {
@@ -58,7 +52,6 @@ internal static class InteropService
         {
             Console.WriteLine(e);
         }
-        ExampleNative();
 
         return true;
     }

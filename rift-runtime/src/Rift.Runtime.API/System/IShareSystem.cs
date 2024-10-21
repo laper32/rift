@@ -4,19 +4,24 @@
 // All Rights Reserved
 // ===========================================================================
 
-
-using Rift.Runtime.API.Abstractions;
 using System.Diagnostics.CodeAnalysis;
+using Rift.Runtime.API.Abstractions;
 
 namespace Rift.Runtime.API.System;
-
-
-// ReSharper disable UnusedMember.Global
 
 public interface IShareSystem
 {
     /// <summary>
-    /// 添加接口
+    /// 考虑到这些API也会同时暴露给脚本系统，DI的方式不再适合。<br/>
+    ///
+    /// 所以，所有需要对外的System/Manager等，都会提供一个Instance实例。
+    /// </summary>
+    public static IShareSystem Instance { get; protected set; } = null!;
+
+    /// <summary>
+    /// 添加接口 <br/>
+    ///
+    /// 脚本就别干这事了，添加接口只能是插件层以上才能做！
     /// </summary>
     /// <param name="interface">接口类</param>
     /// <param name="plugin">插件实例</param>

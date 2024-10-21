@@ -10,7 +10,7 @@
   <ItemGroup>
     <Folder Include="Enums\" />
     <Folder Include="Attributes\" />
-    <Folder Include="Fundamental\Extensions\" />
+    <Folder Include="Manager\" />
   </ItemGroup>
 
   <ItemGroup>

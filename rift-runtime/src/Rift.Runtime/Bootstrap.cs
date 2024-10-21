@@ -8,11 +8,15 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Rift.Runtime.API.Manager;
+using Rift.Runtime.API.System;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Fundamental.Interop;
+using Rift.Runtime.Manager;
 using Rift.Runtime.System;
 using Serilog;
 using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 
 // Rift Runtime is running with host, so we need to make sure .NET Runtime does 
 // not make any unexpected marshalling work.
@@ -25,21 +29,19 @@ public static class Bootstrap
     [UnmanagedCallersOnly]
     private static int Init(nint natives)
     {
-        Console.WriteLine("Bootstrap.Init");
         InteropService.Init(natives);
-        return Initialize();
+        return InitImpl();
     }
 
     [UnmanagedCallersOnly]
     private static void Shutdown()
     {
-
+        ShutdownImpl();
     }
 
-    private static int Initialize()
+    private static int InitImpl()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<InterfaceBridge>();
         ConfigureLogging(services);
         ConfigureServices(services);
 
@@ -50,27 +52,54 @@ public static class Bootstrap
         });
 
         ActivateServices(provider);
+        
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (!Boot())
+        {
+            return 1;
+        }
 
-        return !Boot(provider) ? 1 : 0;
+        IWorkspaceManager.Instance.ParseWorkspace();
+
+        return 0;
     }
 
-    private static bool Boot(IServiceProvider provider)
+    private static void ShutdownImpl()
     {
-        if (!InitSystems(provider))
+        ShutdownManagers();
+        ShutdownSystems();
+    }
+
+    private static bool Boot()
+    {
+        if (!InitSystems())
         {
             return false;
         }
 
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (!InitManagers())
+        {
+            return false;
+        }
+
+        
         return true;
     }
 
     private static void ConfigureLogging(IServiceCollection services)
     {
+        const string consoleTemplate = "L [{Timestamp:MM/dd HH:mm:ss}] | {Level} | {SourceContext}{Scope} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .MinimumLevel.Verbose()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .MinimumLevel.Override("System.Net.Http", LogEventLevel.Fatal)
+            .WriteTo.Logger(lc => lc
+                .Filter.ByIncludingOnly(e => e.Level >= LogEventLevel.Information)
+                .WriteTo.Console(theme: AnsiConsoleTheme.Code,
+                    outputTemplate: consoleTemplate,
+                    applyThemeToRedirectedOutput: false))
             .CreateLogger();
         services.AddLogging(logging =>
         {
@@ -84,36 +113,67 @@ public static class Bootstrap
     {
         services.AddSingleton<IRuntimeInternal, Fundamental.Runtime>();
         services.AddSingleton<IShareSystemInternal, ShareSystem>();
+        services.AddSingleton<IScriptSystemInternal, ScriptSystem>();
         services.AddSingleton<IPluginSystemInternal, PluginSystem>();
+
+        services.AddSingleton<IWorkspaceManagerInternal, WorkspaceManager>();
     }
 
     private static void ActivateServices(IServiceProvider provider)
     {
         provider.GetRequiredService<IRuntimeInternal>();
         provider.GetRequiredService<IShareSystemInternal>();
+        provider.GetRequiredService<IScriptSystemInternal>();
         provider.GetRequiredService<IPluginSystemInternal>();
+
+        provider.GetRequiredService<IWorkspaceManagerInternal>();
     }
 
-    private static bool InitSystems(IServiceProvider provider)
+    private static bool InitSystems()
     {
-        var shareSystem = provider.GetRequiredService<IShareSystemInternal>();
+        var shareSystem = (ShareSystem)IShareSystem.Instance;
         if (!shareSystem.Init())
         {
-            Console.WriteLine("Failed to startup ShareSystem");
+            Console.WriteLine("Failed to init ShareSystem.");
             return false;
         }
 
-        var pluginSystem = provider.GetRequiredService<IPluginSystemInternal>();
-
+        var scriptSystem = (ScriptSystem)IScriptSystem.Instance;
         // ReSharper disable once InvertIf
-        if (!pluginSystem.Init())
+        if (!scriptSystem.Init())
         {
-            Console.WriteLine("Failed to startup PluginSystem");
+            Console.WriteLine("Failed to initialize ScriptSystem.");
             return false;
         }
-
-        // ..
 
         return true;
+    }
+
+    private static void ShutdownSystems()
+    {
+        var scriptSystem = (ScriptSystem)IScriptSystem.Instance;
+        scriptSystem.Shutdown();
+
+        var shareSystem = (ShareSystem)IShareSystem.Instance;
+        shareSystem.Shutdown();
+    }
+
+    private static bool InitManagers()
+    {
+        var workspaceManager = (WorkspaceManager)IWorkspaceManager.Instance;
+
+        // ReSharper disable once ConvertIfStatementToReturnStatement
+        if (!workspaceManager.Init())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static void ShutdownManagers()
+    {
+        var workspaceManager = (WorkspaceManager)IWorkspaceManager.Instance;
+        workspaceManager.Shutdown();
     }
 }

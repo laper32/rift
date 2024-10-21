@@ -5,7 +5,6 @@
 // ===========================================================================
 
 using Rift.Runtime.API.Enums;
-using Rift.Runtime.API.System;
 
 namespace Rift.Runtime.API.Abstractions;
 
@@ -40,19 +39,11 @@ public abstract class RiftPlugin : IPlugin
 {
     public record PluginInfo(string Name, string Author, string Version, string Url, string Description);
 
-    public readonly PluginInfo MyInfo = null!;
+    public PluginInfo MyInfo = null!;
 
-    public record PluginInterfaceBridge(
-        IShareSystem ShareSystem,
-        IPluginSystem PluginSystem,
-        string InstancePath,
-        string RootPath
-    );
+    public record PluginInterfaceBridge(string InstancePath, string RootPath);
 
     private readonly PluginInterfaceBridge _bridge = null!;
-
-    public IShareSystem ShareSystem => _bridge.ShareSystem;
-    public IPluginSystem PluginSystem => _bridge.PluginSystem;
 
     /// <summary>
     /// 实例路径, 也就是正在运行的这个.dll的路径
@@ -64,24 +55,15 @@ public abstract class RiftPlugin : IPlugin
     /// </summary>
     public string MyPath => _bridge.RootPath;
 
-    public virtual bool OnLoad() => true;
-
-    public virtual void OnAllLoaded()
-    {
-
-    }
-
-    public virtual void OnUnload()
-    {
-
-    }
-
     public Guid UniqueId { get; } = Guid.NewGuid();
-}
 
-public interface IPluginInterfaceBridge<out T> where T : RiftPlugin
-{
-    T Instance { get; }
-    IShareSystem ShareSystem { get; }
-    IPluginSystem PluginSystem { get; }
+    public bool OnLoad() => true;
+
+    public void OnAllLoaded()
+    {
+    }
+
+    public void OnUnload()
+    {
+    }
 }
