@@ -9,7 +9,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Rift.Runtime.API.Fundamental.Interop;
 using Rift.Runtime.API.Fundamental.Tier1;
-using Rift.Runtime.Fundamental.Interop.Natives;
 
 namespace Rift.Runtime.Fundamental.Interop;
 

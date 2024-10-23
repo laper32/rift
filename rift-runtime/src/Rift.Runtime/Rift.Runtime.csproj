@@ -10,6 +10,7 @@
 
 	<ItemGroup>
 	  <Folder Include="Fundamental\Interop\Natives\" />
+	  <Folder Include="Manifest\" />
 	</ItemGroup>
 
 	<ItemGroup>

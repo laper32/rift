@@ -1,4 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.Runtime.InteropServices;
 
 namespace Rift.Runtime.API.Fundamental.Interop;
 

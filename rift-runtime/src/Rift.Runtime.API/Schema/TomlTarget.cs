@@ -1,4 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.Runtime.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 

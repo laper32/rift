@@ -1,9 +1,16 @@
-﻿namespace Rift.Runtime.API.Manifest;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+namespace Rift.Runtime.API.Manifest;
 
 public record WorkspaceManifest(
-    List<string> Members,
-    List<string> Excludes,
-    string PluginScriptPath,
-    string MetadataScriptPath,
-    string DependenciesScriptPath
+    string? Name,
+    List<string>? Members,
+    List<string>? Excludes,
+    string? Plugins,
+    string? Metadata,
+    string? Dependencies
     );

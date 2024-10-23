@@ -1,4 +1,10 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Fundamental.Interop;

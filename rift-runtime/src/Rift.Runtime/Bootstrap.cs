@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manager;
 using Rift.Runtime.API.System;
 using Rift.Runtime.Fundamental;
@@ -27,7 +28,7 @@ namespace Rift.Runtime;
 public static class Bootstrap
 {
     [UnmanagedCallersOnly]
-    private static int Init(nint natives)
+    private static bool Init(nint natives)
     {
         InteropService.Init(natives);
         return InitImpl();
@@ -39,7 +40,7 @@ public static class Bootstrap
         ShutdownImpl();
     }
 
-    private static int InitImpl()
+    private static bool InitImpl()
     {
         var services = new ServiceCollection();
         ConfigureLogging(services);
@@ -56,12 +57,12 @@ public static class Bootstrap
         // ReSharper disable once ConvertIfStatementToReturnStatement
         if (!Boot())
         {
-            return 1;
+            return false;
         }
 
-        IWorkspaceManager.Instance.ParseWorkspace();
+        IWorkspaceManager.Instance.LoadWorkspace(Environment.CurrentDirectory);
 
-        return 0;
+        return true;
     }
 
     private static void ShutdownImpl()

@@ -4,11 +4,12 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.API.System;
+namespace Rift.Runtime.API.Manifest;
 
-public interface IPluginSystem
+public interface IManifest
 {
-    public static IPluginSystem Instance { get; protected set; } = null!;
-
-
+    public string Name { get; }
+    public string? Dependencies { get; }
+    public string? Plugins { get; }
+    public string? Metadata { get; }
 }

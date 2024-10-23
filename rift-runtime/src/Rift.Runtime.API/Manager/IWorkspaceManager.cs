@@ -1,8 +1,22 @@
-﻿namespace Rift.Runtime.API.Manager;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Rift.Runtime.API.Manifest;
+
+namespace Rift.Runtime.API.Manager;
 
 public interface IWorkspaceManager
 {
-    public static IWorkspaceManager Instance { get; protected set; }
+    public static IWorkspaceManager Instance { get; protected set; } = null!;
 
-    void ParseWorkspace();
+    /// <summary>
+    /// 项目根目录
+    /// </summary>
+    public string Root { get; }
+
+    void LoadWorkspace(string path);
+    //public IEitherManifest<T>? ReadManifest<T>(string path) where T : class;
 }
