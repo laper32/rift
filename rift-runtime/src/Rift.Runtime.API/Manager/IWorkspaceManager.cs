@@ -17,6 +17,6 @@ public interface IWorkspaceManager
     /// </summary>
     public string Root { get; }
 
-    void LoadWorkspace(string path);
+    void LoadPackage(string path);
     //public IEitherManifest<T>? ReadManifest<T>(string path) where T : class;
 }

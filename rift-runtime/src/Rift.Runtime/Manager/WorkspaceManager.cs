@@ -4,11 +4,13 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using Rift.Runtime.API.Abstractions;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manager;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Schema;
+using Rift.Runtime.Manifest;
 using Tomlyn;
 
 namespace Rift.Runtime.Manager;
@@ -23,7 +25,7 @@ public class Package(IManifest manifest, string manifestPath)
     {
         get
         {
-            if (manifest.Dependencies is {} dependencies)
+            if (manifest.Dependencies is { } dependencies)
             {
                 return WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies);
             }
@@ -69,7 +71,7 @@ public class VirtualPackage(IVirtualManifest virtualManifest, string manifestPat
     {
         get
         {
-            if (virtualManifest.Dependencies is {} dependencies)
+            if (virtualManifest.Dependencies is { } dependencies)
             {
                 return WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies);
             }
@@ -117,39 +119,49 @@ internal interface IMaybePackage
     public string? Dependencies { get; }
     public string? Plugins { get; }
     public string? Metadata { get; }
+    public string ManifestPath { get; }
 }
 
 internal class MaybePackage<T>(T data) : IMaybePackage
 {
-    public IMaybePackage.EMaybePackage PackageType { get; } = data switch
+    public IMaybePackage.EMaybePackage Type { get; init; } = data switch
     {
-        Package package => IMaybePackage.EMaybePackage.Package,
-        VirtualPackage package => IMaybePackage.EMaybePackage.Virtual,
+        Package => IMaybePackage.EMaybePackage.Package,
+        VirtualPackage => IMaybePackage.EMaybePackage.Virtual,
         _ => throw new InvalidOperationException("Only accepts `Package` or `VirtualPackage`.")
     };
 
-    public string Name => data switch
+    public T Data { get; init; } = data;
+
+    public string ManifestPath => Data switch
+    {
+        Package package => package.ManifestPath,
+        VirtualPackage package => package.ManifestPath,
+        _ => throw new InvalidOperationException("Why you at here?")
+    };
+
+    public string Name => Data switch
     {
         Package package => package.Name,
         VirtualPackage package => package.Name,
         _ => string.Empty
     };
 
-    public string? Dependencies => data switch
+    public string? Dependencies => Data switch
     {
-        Package package => package.Dependencies ,
+        Package package => package.Dependencies,
         VirtualPackage package => package.Dependencies,
         _ => null
     };
 
-    public string? Plugins => data switch
+    public string? Plugins => Data switch
     {
         Package package => package.Plugins,
         VirtualPackage package => package.Plugins,
         _ => null
     };
 
-    public string? Metadata => data switch
+    public string? Metadata => Data switch
     {
         Package package => package.Metadata,
         VirtualPackage package => package.Metadata,
@@ -164,20 +176,16 @@ public class WorkspaceManager : IWorkspaceManagerInternal
 {
     internal readonly Dictionary<string, IMaybePackage> Packages = [];
 
+    public string Root { get; internal set; }
+
     public WorkspaceManager()
     {
+        Root = "__Unknown__";
         IWorkspaceManager.Instance = this;
     }
 
     public bool Init()
     {
-        const string filePath = @"D:\\workshop\\projects\\common_usage\\.py\\generic\\rift-workspace\\Rift.toml";
-        Console.WriteLine($"{filePath} => IsDir => {Directory.Exists(filePath)}");
-        Console.WriteLine($"{filePath} => IsFile => {File.Exists(filePath)}");
-
-        const string dirPath = @"D:\\workshop\\projects\\common_usage\\.py\\generic\\rift-workspace";
-        Console.WriteLine($"{dirPath} => IsDir => {Directory.Exists(dirPath)}");
-        Console.WriteLine($"{dirPath} =>IsFile => {File.Exists(dirPath)}");
         return true;
     }
 
@@ -185,25 +193,260 @@ public class WorkspaceManager : IWorkspaceManagerInternal
     {
     }
 
-    public void LoadWorkspace(string path)
+    public void LoadPackage(string path)
     {
         // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
         // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
-        Root = GetRootManifest(path);
+        var rootManifest = GetRootManifest(path);
+        if (rootManifest.EndsWith(Definitions.ManifestIdentifier))
+        {
+            rootManifest = Path.GetDirectoryName(rootManifest)!;
+        }
+
+        Root = rootManifest;
+
+        var manifest = ReadManifest(path);
+
+        switch (manifest)
+        {
+            case EitherManifest<Manifest<ProjectManifest>> projectManifest:
+            {
+                var package = new Package(projectManifest.Data, path);
+                if (projectManifest.Data.Data.Target is not null)
+                {
+                    var targetManifest = projectManifest.Data.Data.Target;
+                    var targetPackage = new Package(new Manifest<TargetManifest>(targetManifest), path);
+                    Packages.Add(targetPackage.Name, new MaybePackage<Package>(targetPackage));
+                }
+                Packages.Add(package.Name, new MaybePackage<Package>(package));
+                break;
+            }
+            case EitherManifest<Manifest<TargetManifest>> targetManifest:
+            {
+                var package = new Package(targetManifest.Data, path);
+                Packages.Add(package.Name, new MaybePackage<Package>(package));
+                break;
+            }
+            case EitherManifest<VirtualManifest<FolderManifest>> folderManifest:
+            {
+                var virtualPackage = new VirtualPackage(folderManifest.Data, path);
+                Packages.Add(virtualPackage.Name, new MaybePackage<VirtualPackage>(virtualPackage));
+                break;
+            }
+            case EitherManifest<VirtualManifest<WorkspaceManifest>> workspaceManifest:
+            {
+                var virtualPackage = new VirtualPackage(workspaceManifest.Data, path);
+                Packages.Add(virtualPackage.Name, new MaybePackage<VirtualPackage>(virtualPackage));
+                break;
+            }
+            default:
+                throw new InvalidOperationException("Why you at here?");
+        }
+
+        Console.WriteLine(JsonSerializer.Serialize(Packages, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        }));
     }
 
-    public TomlManifest? LoadManifest(string path)
+    public TomlManifest LoadManifest(string path)
     {
-        try
+        var text = File.ReadAllText(path);
+        var content = Toml.ToModel<TomlManifest>(text, options: new TomlModelOptions
         {
-            var text = File.ReadAllText(path);
-            var content = Toml.ToModel<TomlManifest>(text);
-            return content;
-        }
-        catch (Exception)
+            IgnoreMissingProperties = true
+        });
+        return content;
+    }
+
+    public IEitherManifest ReadManifest(string path)
+    {
+        var schema = LoadManifest(path);
+        if (schema is null)
         {
-            return null;
+            throw new InvalidOperationException($"Failed to load manifest from `{path}`");
         }
+
+        if (schema.Workspace is { } workspace)
+        {
+            if (schema.Folder is not null || schema.Project is not null || schema.Target is not null)
+            {
+                throw new InvalidOperationException("Workspace and Folder/Project/Target can't be used together.");
+            }
+
+            var workspaceName = "";
+            var schemaName = workspace.Name;
+
+            if (schemaName != null)
+            {
+                workspaceName = schemaName;
+            }
+            else
+            {
+                var manifestLocation = Path.GetDirectoryName(path)!;
+                var workspaceRoot = Root;
+                if (workspaceRoot.Equals(manifestLocation))
+                {
+                    workspaceName = Path.GetFileName(manifestLocation);
+                }
+            }
+
+            return new EitherManifest<VirtualManifest<WorkspaceManifest>>(
+                new VirtualManifest<WorkspaceManifest>(
+                    new WorkspaceManifest(
+                        Name: workspaceName,
+                        Members: workspace.Members ?? [],
+                        Exclude: workspace.Exclude ?? [],
+                        Plugins: workspace.Plugins,
+                        Dependencies: workspace.Dependencies,
+                        Metadata: workspace.Metadata
+                    )
+                )
+            );
+        }
+
+        if (schema.Folder is { } folder)
+        {
+            if (schema.Workspace is not null || schema.Project is not null || schema.Target is not null)
+            {
+                throw new InvalidOperationException(
+                    "Workspace and Folder/Project/Target can't be used together.");
+            }
+
+            var folderName = "";
+            var schemaName = folder.Name;
+
+            if (schemaName != null)
+            {
+                folderName = schemaName;
+            }
+            else
+            {
+                var manifestLocation = Path.GetDirectoryName(path)!;
+
+                var workspaceRoot = Root;
+                if (workspaceRoot.Equals(manifestLocation))
+                {
+                    folderName = Path.GetFileName(manifestLocation);
+                }
+            }
+
+            return new EitherManifest<VirtualManifest<FolderManifest>>(
+                new VirtualManifest<FolderManifest>(
+                    new FolderManifest(
+                        Name: folderName,
+                        Members: schema.Folder.Members ?? [],
+                        Exclude: schema.Folder.Exclude ?? []
+                    )
+                )
+            );
+
+        }
+
+        if (schema.Project is { } project)
+        {
+            if (schema.Folder is not null || schema.Workspace is not null)
+            {
+                throw new InvalidOperationException("Workspace and Folder/Project/Plugin can't be used together.");
+            }
+
+            var sameLayeredTarget = schema.Target;
+
+            if (sameLayeredTarget is not null)
+            {
+                if (project.Members is not null || project.Exclude is not null)
+                {
+                    throw new InvalidOperationException("`project.members` and `project.exclude` cannot occur when `[target]` field exists.");
+                }
+
+                var targetManifest = new TargetManifest(
+                    Name: sameLayeredTarget.Name,
+                    Type: sameLayeredTarget.Type,
+                    Dependencies: sameLayeredTarget.Dependencies,
+                    Metadata: sameLayeredTarget.Metadata,
+                    Plugins: sameLayeredTarget.Plugins
+                );
+
+                var projectManifest = new ProjectManifest(
+                    Name: project.Name,
+                    Authors: project.Authors,
+                    Version: project.Version,
+                    Description: project.Description ?? string.Empty,
+                    Dependencies: project.Dependencies,
+                    Metadata: project.Metadata,
+                    Plugins: project.Plugins,
+                    Target: targetManifest,
+                    Members: null,
+                    Exclude: null
+                );
+                var manifest = new Manifest<ProjectManifest>(projectManifest);
+                var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
+                return ret;
+            }
+            else
+            {
+                var projectMembers = project.Members ?? [];
+                var projectExclude = project.Exclude ?? [];
+                var projectManifest = new ProjectManifest(
+                    Name: project.Name,
+                    Authors: project.Authors,
+                    Version: project.Version,
+                    Description: project.Description ?? string.Empty,
+                    Dependencies: project.Dependencies,
+                    Metadata: project.Metadata,
+                    Plugins: project.Plugins,
+                    Target: null,
+                    Members: projectMembers,
+                    Exclude: projectExclude
+                );
+                var manifest = new Manifest<ProjectManifest>(projectManifest);
+                var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
+                return ret;
+            }
+        }
+
+        // ReSharper disable once InvertIf
+        if (schema.Target is { } target)
+        {
+            if (schema.Folder is not null || schema.Workspace is not null)
+            {
+                throw new InvalidOperationException("Target cannot used together with `[workspace]` or `[folder0000]`");
+            }
+
+            return new EitherManifest<Manifest<TargetManifest>>(
+                new Manifest<TargetManifest>(
+                    new TargetManifest(
+                        Name: target.Name,
+                        Type: target.Type,
+                        Plugins: target.Plugins,
+                        Dependencies: target.Dependencies,
+                        Metadata: target.Metadata
+                    )
+                )
+            );
+
+        }
+
+        throw new InvalidOperationException("No any workspace schema field found.");
+    }
+
+    /// <summary>
+    /// 计算脚本路径是基于传入的Manifest路径判断的。 <br/>
+    /// 此时传入的Manifest路径一定带有Rift.toml
+    /// </summary>
+    /// <param name="manifestPath">Manifest路径</param>
+    /// <param name="scriptPath">脚本路径</param>
+    /// <returns></returns>
+    public static string GetActualScriptPath(string manifestPath, string scriptPath)
+    {
+        if (!manifestPath.EndsWith("Rift.toml"))
+        {
+            throw new InvalidOperationException("No `Rift.toml` found.");
+        }
+
+
+        return Path.Combine(Path.GetDirectoryName(manifestPath)!, scriptPath);
     }
 
     private string GetRootManifest(string manifestPath)
@@ -252,96 +495,4 @@ public class WorkspaceManager : IWorkspaceManagerInternal
         throw new Exception(
             $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory.");
     }
-
-    /// <summary>
-    /// 计算脚本路径是基于传入的Manifest路径判断的。 <br/>
-    /// 此时传入的Manifest路径一定带有Rift.toml
-    /// </summary>
-    /// <param name="manifestPath">Manifest路径</param>
-    /// <param name="scriptPath">脚本路径</param>
-    /// <returns></returns>
-    public static string GetActualScriptPath(string manifestPath, string scriptPath)
-    {
-        if (!manifestPath.EndsWith("Rift.toml"))
-        {
-            throw new InvalidOperationException("No `Rift.toml` found.");
-        }
-
-
-        return Path.Combine(Path.GetDirectoryName(manifestPath)!, scriptPath);
-    }
-
-    //public IEitherManifest? ReadManifest(string path)
-    //{
-    //    var deserializedManifest = LoadManifest(path);
-    //    if (deserializedManifest is not null)
-    //    {
-    //        if (deserializedManifest.Workspace is {} workspace)
-    //        {
-    //            if (deserializedManifest.Folder is not null || deserializedManifest.Project is not null ||
-    //                deserializedManifest.Target is not null)
-    //            {
-    //                throw new InvalidOperationException("Workspace manifest cannot contain project, folder or target.");
-    //            }
-
-    //        }
-
-
-    //        return new EitherManifest();
-    //    }
-    //    else
-    //    {
-    //        return null;
-    //    }
-    //}
-    public string Root { get; internal set; }
-
-    //public IEitherManifest<T>? ReadManifest<T>(string path) where T : class
-    //{
-    //    var deserializedManifest = LoadManifest(path);
-
-    //    if (deserializedManifest is not null)
-    //    {
-    //        if (deserializedManifest.Workspace is { } workspace)
-    //        {
-    //            if (deserializedManifest.Folder is not null || deserializedManifest.Project is not null ||
-    //                deserializedManifest.Target is not null)
-    //            {
-    //                throw new InvalidOperationException("Workspace manifest cannot contain project, folder or target.");
-    //            }
-
-    //            var workspaceNameActual = "";
-    //            var workspaceName = workspace.Name ?? string.Empty;
-    //            workspaceName = workspaceName.Trim();
-    //            if (string.IsNullOrEmpty(workspaceName))
-    //            {
-    //                var manifestLocation = Path.GetDirectoryName(path);
-    //            }
-    //            else
-    //            {
-                    
-    //            }
-
-    //            /*
-    //              let workspace_manifest = manifest.workspace.unwrap();
-    //                                  // 如果workspace manifest里面没有指定名字，那么我们就认为这个workspace的文件夹名字就是其名字。
-    //                                  // 毕竟按理说这里就是root。。。所以这么写也没什么问题。
-    //                                  let mut workspace_name = "";
-    //                                  if workspace_manifest.name.is_none() {
-    //                                      let manifest_location = path.parent().unwrap();
-    //                                      let workspace_root = WorkspaceManager::instance().root();
-    //                                      if workspace_root.eq(manifest_location) {
-    //                                          workspace_name =
-    //                                              manifest_location.file_name().unwrap().to_str().unwrap();
-    //                                      }
-    //                                  } else {
-    //                                      workspace_name = workspace_manifest.name.as_ref().unwrap();
-    //                                  }
-    //             */
-                
-    //        }
-    //    }
-
-    //    return null;
-    //}
 }

@@ -60,7 +60,7 @@ public static class Bootstrap
             return false;
         }
 
-        IWorkspaceManager.Instance.LoadWorkspace(Environment.CurrentDirectory);
+        IWorkspaceManager.Instance.LoadPackage(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
 
         return true;
     }

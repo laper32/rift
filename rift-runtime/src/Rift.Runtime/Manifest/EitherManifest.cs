@@ -8,14 +8,45 @@ using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-//public class EitherManifest<T>(T manifest) : IEitherManifest<T>
-//{
-//    public IEitherManifest<T>.EManifestType ManifestType { get; init; } = manifest switch
-//    {
-//        WorkspaceManifest or FolderManifest => IEitherManifest<T>.EManifestType.Virtual,
-//        TargetManifest or ProjectManifest => IEitherManifest<T>.EManifestType.Real,
-//        _ => throw new InvalidOperationException("Invalid manifest")
-//    };
+public interface IEitherManifest
+{
+    public string Name { get; }
+}
 
-//    public T Manifest { get; } = manifest;
-//}
+public enum EManifestType
+{
+    Virtual,
+    Real
+}
+
+public record EitherManifest<T> : IEitherManifest
+{
+    public EitherManifest(T manifest)
+    {
+        if (manifest is not (IManifest or IVirtualManifest))
+        {
+            throw new InvalidOperationException("Only accepts `IManifest` or `IVirtualManifest`");
+        }
+
+        Type = manifest switch
+        {
+            IVirtualManifest => EManifestType.Virtual,
+            IManifest => EManifestType.Real,
+            _ => throw new ArgumentOutOfRangeException(nameof(manifest), manifest,
+                "Only accepts `VirtualManifest` or `Manifest`")
+        };
+        Data = manifest;
+    }
+
+    //[JsonIgnore]
+    public T Data { get; init; }
+
+    public EManifestType Type { get; init; }
+
+    public string Name => Data switch
+    {
+        IManifest real => real.Name,
+        IVirtualManifest virtualManifest => virtualManifest.Name,
+        _ => throw new ArgumentException("Invalid manifest type.")
+    };
+}
