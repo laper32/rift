@@ -169,42 +169,85 @@ internal class MaybePackage<T>(T data) : IMaybePackage
     };
 }
 
-
 internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable;
 
 public class WorkspaceManager : IWorkspaceManagerInternal
 {
     internal readonly Dictionary<string, IMaybePackage> Packages = [];
 
-    public string Root { get; internal set; }
+    public EWorkspaceStatus Status { get; internal set; }
+    public string           Root   { get; internal set; }
 
     public WorkspaceManager()
     {
-        Root = "__Unknown__";
+        Root                       = "__Unknown__";
+        Status                     = EWorkspaceStatus.Unknown;
         IWorkspaceManager.Instance = this;
     }
 
     public bool Init()
     {
+        Status = EWorkspaceStatus.Init;
+
         return true;
     }
 
     public void Shutdown()
     {
+        Status = EWorkspaceStatus.Unknown;
+    }
+
+    #region Package operations
+
+    public void LoadPackages(string manifestPath)
+    {
+        var manifest = ReadManifest(manifestPath);
+        // https://stackoverflow.com/questions/50817568/resharper-does-wrong-tabbing-on-switch-case
+        // for switch indentation correct.
+        switch (manifest.Type)
+        {
+            case EManifestType.Real:
+            {
+                switch (manifest)
+                {
+                    case EitherManifest<Manifest<ProjectManifest>> projectManifest:
+                    {
+                        break;
+                    }
+                    case EitherManifest<Manifest<TargetManifest>> targetManifest:
+                    {
+                        /*if self.packages.contains_key(manifest_path) {
+                               return;
+                           }
+                           self.load(manifest_path);*/
+                        if (Packages.ContainsKey(targetManifest.Name))
+                        {
+                            return;
+                        }
+                        break;
+                    }
+                    default:
+                    {
+                        throw new InvalidOperationException("Why you at here?");
+                    }
+                }
+
+                break;
+            }
+            case EManifestType.Virtual:
+            {
+
+                break;
+            }
+            default:
+            {
+                throw new InvalidOperationException("?");
+            }
+        }
     }
 
     public void LoadPackage(string path)
     {
-        // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
-        // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
-        var rootManifest = GetRootManifest(path);
-        if (rootManifest.EndsWith(Definitions.ManifestIdentifier))
-        {
-            rootManifest = Path.GetDirectoryName(rootManifest)!;
-        }
-
-        Root = rootManifest;
-
         var manifest = ReadManifest(path);
 
         switch (manifest)
@@ -249,6 +292,23 @@ public class WorkspaceManager : IWorkspaceManagerInternal
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         }));
     }
+
+    public void SetRootPath(string path)
+    {
+        // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
+        // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
+        var rootManifest = GetRootManifest(path);
+        if (rootManifest.EndsWith(Definitions.ManifestIdentifier))
+        {
+            rootManifest = Path.GetDirectoryName(rootManifest)!;
+        }
+
+        Root = rootManifest;
+    }
+
+    #endregion
+
+    #region Manifest operations
 
     public TomlManifest LoadManifest(string path)
     {
@@ -431,6 +491,8 @@ public class WorkspaceManager : IWorkspaceManagerInternal
         throw new InvalidOperationException("No any workspace schema field found.");
     }
 
+
+
     /// <summary>
     /// 计算脚本路径是基于传入的Manifest路径判断的。 <br/>
     /// 此时传入的Manifest路径一定带有Rift.toml
@@ -495,4 +557,6 @@ public class WorkspaceManager : IWorkspaceManagerInternal
         throw new Exception(
             $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory.");
     }
+
+    #endregion
 }

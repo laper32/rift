@@ -8,16 +8,19 @@ using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-public interface IEitherManifest
-{
-    public string Name { get; }
-}
-
 public enum EManifestType
 {
     Virtual,
     Real
 }
+
+public interface IEitherManifest
+{
+    public string Name { get; }
+    public EManifestType Type { get; }
+}
+
+
 
 public record EitherManifest<T> : IEitherManifest
 {
