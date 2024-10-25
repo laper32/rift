@@ -62,7 +62,15 @@ public static class Bootstrap
         }
 
         IWorkspaceManager.Instance.SetRootPath(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
-        IWorkspaceManager.Instance.LoadPackage(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
+        try
+        {
+            IWorkspaceManager.Instance.LoadWorkspace();
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"Error when loading workspace: {e.Message}");
+        }
 
         return true;
     }

@@ -36,6 +36,5 @@ public interface IWorkspaceManager
     public string Root { get; }
 
     void SetRootPath(string path);
-
-    void LoadPackage(string path);
+    void LoadWorkspace();
 }
