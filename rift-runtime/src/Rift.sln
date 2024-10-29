@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rift.Runtime", "Rift.Runtim
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rift.Runtime.Generator", "Rift.Runtime.Generator\Rift.Runtime.Generator.csproj", "{5E051B1E-13AB-4B58-B47A-EC53C17DF3C1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.API", "Rift.Runtime.API\Rift.Runtime.API.csproj", "{2ACA2296-A790-4895-8866-58CB7E849161}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rift.Runtime.API", "Rift.Runtime.API\Rift.Runtime.API.csproj", "{2ACA2296-A790-4895-8866-58CB7E849161}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +30,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6856D3BB-08FE-469F-93E9-32139ED98E76}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,10 @@
+[project]
+name = "simplest"
+authors = ["laper32"]
+dependencies = "rift/dependencies.csx"
+plugins = "rift/plugins.csx"
+metadata = "rift/metadata.csx"
+
+[target]
+name = "simplest"
+type = "rift"

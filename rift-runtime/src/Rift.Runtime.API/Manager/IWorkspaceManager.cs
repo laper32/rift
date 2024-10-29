@@ -37,4 +37,5 @@ public interface IWorkspaceManager
 
     void SetRootPath(string path);
     void LoadWorkspace();
+    void PrintMessage();
 }

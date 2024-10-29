@@ -9,6 +9,7 @@ using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manager;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Schema;
+using Rift.Runtime.API.System;
 using Rift.Runtime.Manifest;
 using Tomlyn;
 
@@ -174,7 +175,6 @@ internal class WorkspacePackages
 
     public void Load(string manifestPath)
     {
-        Console.WriteLine($"Loading: {manifestPath}");
         var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
@@ -379,7 +379,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
     public bool Init()
     {
         Status = EWorkspaceStatus.Init;
-
         return true;
     }
 
@@ -408,6 +407,12 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
     public void LoadWorkspace()
     {
         Packages.LoadRecursively(Path.Combine(Root, Definitions.ManifestIdentifier));
+        EvaluateManifestScripts();
+    }
+
+    public void PrintMessage()
+    {
+        Console.WriteLine("Invoked.");
     }
 
     #region Manifest operations
@@ -593,8 +598,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
         throw new InvalidOperationException($"No any workspace schema field found, path: `{path}`");
     }
 
-
-
     /// <summary>
     /// 计算脚本路径是基于传入的Manifest路径判断的。 <br/>
     /// 此时传入的Manifest路径一定带有Rift.toml
@@ -658,6 +661,55 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
         throw new Exception(
             $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory.");
+    }
+
+    #endregion
+
+    #region Scripts operations
+
+    private void EvaluateManifestScripts()
+    {
+        RetrieveWorkspacePlugins();
+        RetrieveWorkspaceDependencies();
+        RetrieveWorkspaceMetadata();
+    }
+
+    private void RetrieveWorkspaceDependencies()
+    {
+        foreach (var package in Packages.Packages)
+        {
+            if (package.Value.Dependencies is not { } dependencies)
+            {
+                continue;
+            }
+            IScriptSystem.Instance.EvaluateScript(dependencies);
+        }
+    }
+
+    private void RetrieveWorkspaceMetadata()
+    {
+        foreach (var package in Packages.Packages)
+        {
+            if (package.Value.Metadata is not { } metadata)
+            {
+                continue;
+            }
+
+            IScriptSystem.Instance.EvaluateScript(metadata);
+        }
+    }
+
+    private void RetrieveWorkspacePlugins()
+    {
+        foreach (var package in Packages.Packages)
+        {
+            if (package.Value.Plugins is not { } plugins)
+            {
+                continue;
+            }
+
+            IScriptSystem.Instance.EvaluateScript(plugins);
+        }
     }
 
     #endregion

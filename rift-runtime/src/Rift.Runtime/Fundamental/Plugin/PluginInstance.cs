@@ -11,7 +11,7 @@ using Rift.Runtime.API.Attributes;
 using Rift.Runtime.API.Enums;
 using Rift.Runtime.API.Fundamental.Extensions;
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Fundamental.Plugin;
 
 // 其实这时候用Primary Constructor就很适合.
 
