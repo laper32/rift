@@ -10,7 +10,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
-using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Abstractions;
 using Rift.Runtime.API.System;
 using Rift.Runtime.Fundamental.Script;
@@ -21,7 +20,7 @@ internal interface IScriptSystemInternal : IScriptSystem, IInitializable;
 
 internal class ScriptSystem : IScriptSystemInternal
 {
-    public ScriptSystem(ILoggerFactory factory)
+    public ScriptSystem()
     {
         IScriptSystem.Instance = this;
         ScriptContext          = null;
@@ -85,10 +84,7 @@ internal class ScriptSystem : IScriptSystemInternal
 
     public bool Init()
     {
-        _importLibraries.AddRange(_preImportedSdkLibraries);
-
-        _importNamespaces.AddRange(_preImportedSdkNamespaces);
-
+        AddLibraries(["Rift.Runtime.API"]);
         _init = true;
         _shutdown = false;
         return true;
@@ -118,19 +114,31 @@ internal class ScriptSystem : IScriptSystemInternal
 
         using var loader           = new InteractiveAssemblyLoader();
         var       loadedAssemblies = CreateLoadedAssembliesMap();
-        var runtimeSharedLibraries = loadedAssemblies.GetValueOrDefault("Rift.Runtime.API") ??
-                                     throw new DirectoryNotFoundException("Impossible!");
 
-        loader.RegisterDependency(dependency: runtimeSharedLibraries);
+        var runtimeSharedLibraries = new List<Assembly>();
+
+        _importLibraries.ForEach(fileName =>
+        {
+            var lib = loadedAssemblies.GetValueOrDefault(fileName);
+            if (lib is null)
+            {
+                return;
+            }
+            runtimeSharedLibraries.Add(lib);
+        });
+
+        runtimeSharedLibraries.ForEach(loader.RegisterDependency);
+
 
         // 脚本只应该考虑本地文件，不应该考虑跨包引用的情况，哪怕这些包在同一个workspace下。
         // 如果你有这个情况，你更应该思考项目组织是否合理。
         // 如果你有共同引用，你应当根据这个项目写一个插件（写插件的成本几乎为0）
         var resolver = new SourceFileResolver([], ScriptContext.Location);
         var opts = ScriptOptions.Default
+            .AddImports(_preImportedSdkNamespaces)
             .AddImports(_importNamespaces)
-            .AddReferences(_importLibraries)
-            .AddReferences([runtimeSharedLibraries])
+            .AddReferences(_preImportedSdkLibraries)
+            .AddReferences(runtimeSharedLibraries)
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
@@ -149,6 +157,7 @@ internal class ScriptSystem : IScriptSystemInternal
             script.RunAsync().Wait(TimeSpan.FromSeconds(timedOutUnitSec));
         }
     }
+
     private static Dictionary<string, Assembly> CreateLoadedAssembliesMap()
     {
         // Build up a map of loaded assemblies that picks runtime assembly with the highest version.

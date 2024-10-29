@@ -60,10 +60,12 @@ public static class Bootstrap
             return false;
         }
 
-        IWorkspaceManager.Instance.SetRootPath(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
+        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
+        workspaceManager.SetRootPath(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
+
         try
         {
-            IWorkspaceManager.Instance.LoadWorkspace();
+            workspaceManager.LoadWorkspace();
         }
         catch (Exception e)
         {

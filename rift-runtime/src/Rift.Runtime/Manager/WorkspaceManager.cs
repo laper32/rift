@@ -15,6 +15,14 @@ using Tomlyn;
 
 namespace Rift.Runtime.Manager;
 
+public enum EWorkspaceStatus
+{
+    Unknown,
+    Init,
+    Ready,
+    Failed
+}
+
 public class Package(IManifest manifest, string manifestPath)
 {
     public string Name => manifest.Name;
@@ -122,46 +130,46 @@ internal interface IMaybePackage
     public string ManifestPath { get; }
 }
 
-internal class MaybePackage<T>(T data) : IMaybePackage
+internal class MaybePackage<T>(T value) : IMaybePackage
 {
-    public IMaybePackage.EMaybePackage Type { get; init; } = data switch
+    public IMaybePackage.EMaybePackage Type { get; init; } = value switch
     {
         Package => IMaybePackage.EMaybePackage.Package,
         VirtualPackage => IMaybePackage.EMaybePackage.Virtual,
         _ => throw new InvalidOperationException("Only accepts `Package` or `VirtualPackage`.")
     };
 
-    public T Data { get; init; } = data;
+    public T Value { get; init; } = value;
 
-    public string ManifestPath => Data switch
+    public string ManifestPath => Value switch
     {
         Package package => package.ManifestPath,
         VirtualPackage package => package.ManifestPath,
         _ => throw new InvalidOperationException("Why you at here?")
     };
 
-    public string Name => Data switch
+    public string Name => Value switch
     {
         Package package => package.Name,
         VirtualPackage package => package.Name,
         _ => string.Empty
     };
 
-    public string? Dependencies => Data switch
+    public string? Dependencies => Value switch
     {
         Package package => package.Dependencies,
         VirtualPackage package => package.Dependencies,
         _ => null
     };
 
-    public string? Plugins => Data switch
+    public string? Plugins => Value switch
     {
         Package package => package.Plugins,
         VirtualPackage package => package.Plugins,
         _ => null
     };
 
-    public string? Metadata => Data switch
+    public string? Metadata => Value switch
     {
         Package package => package.Metadata,
         VirtualPackage package => package.Metadata,
@@ -360,7 +368,14 @@ internal class WorkspacePackages
 
 }
 
-internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable;
+internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
+{
+    public EWorkspaceStatus Status { get; }
+
+    void LoadWorkspace();
+
+    void SetRootPath(string path);
+}
 
 internal class WorkspaceManager : IWorkspaceManagerInternal
 {
