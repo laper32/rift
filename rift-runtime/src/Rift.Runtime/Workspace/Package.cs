@@ -20,7 +20,7 @@ internal class Package(IManifest manifest, string manifestPath)
         {
             if (manifest.Dependencies is { } dependencies)
             {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies);
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies));
             }
 
             return null;
@@ -33,7 +33,7 @@ internal class Package(IManifest manifest, string manifestPath)
         {
             if (manifest.Plugins is { } plugins)
             {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, plugins);
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, plugins));
             }
 
             return null;
@@ -46,7 +46,7 @@ internal class Package(IManifest manifest, string manifestPath)
         {
             if (manifest.Metadata is { } metadata)
             {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, metadata);
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
             }
 
             return null;

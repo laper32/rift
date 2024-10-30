@@ -14,8 +14,4 @@ public interface IWorkspaceManager
     /// 项目根目录
     /// </summary>
     public string Root { get; }
-
-    void PrintMessage();
-
-
 }

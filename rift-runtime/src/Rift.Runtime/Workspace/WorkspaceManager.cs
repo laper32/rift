@@ -10,6 +10,7 @@ using Rift.Runtime.API.Schema;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Manifest;
+using Rift.Runtime.Scripting;
 using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
@@ -21,11 +22,14 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
     void LoadWorkspace();
 
     void SetRootPath(string path);
+
+    public void AddMetadataForPackage(string key, object value);
 }
 
 internal class WorkspaceManager : IWorkspaceManagerInternal
 {
-    private readonly Packages _packages = new();
+    private readonly  Packages         _packages        = new();
+    internal readonly PackageInstances PackageInstances = new();
 
     public EWorkspaceStatus Status { get; internal set; }
     public string Root { get; internal set; }
@@ -68,12 +72,23 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
     public void LoadWorkspace()
     {
         _packages.LoadRecursively(Path.Combine(Root, Definitions.ManifestIdentifier));
-        EvaluateManifestScripts();
+        ValidateWorkspace();
+        ActivatePackage();
+        PackageInstances.DumpPackagesMetadata();
     }
 
-    public void PrintMessage()
+    public void ValidateWorkspace()
     {
-        Console.WriteLine("Invoked.");
+    }
+
+    public void ActivatePackage()
+    {
+        foreach (var (packageName, maybePackage) in _packages.Value)
+        {
+            PackageInstances.Add(packageName, new PackageInstance(maybePackage));
+        }
+
+        EvaluateManifestScripts();
     }
 
     #region Manifest operations
@@ -179,6 +194,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                 throw new InvalidOperationException("Workspace and Folder/Project/Plugin can't be used together.");
             }
 
+            // 如果此时Project和Target在同一级，此时Target的脚本文件将会被直接无视，只看project级别的脚本文件。
             var sameLayeredTarget = schema.Target;
 
             if (sameLayeredTarget is not null)
@@ -188,12 +204,27 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                     throw new InvalidOperationException("`project.members` and `project.exclude` cannot occur when `[target]` field exists.");
                 }
 
+                //if (sameLayeredTarget.Dependencies is not null)
+                //{
+                //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s dependency script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
+                //}
+
+                //if (sameLayeredTarget.Plugins is not null)
+                //{
+                //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s plugins script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
+                //}
+
+                //if (sameLayeredTarget.Metadata is not null)
+                //{
+                //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s metadata script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
+                //}
+
                 var targetManifest = new TargetManifest(
                     Name: sameLayeredTarget.Name,
                     Type: sameLayeredTarget.Type,
-                    Dependencies: sameLayeredTarget.Dependencies,
-                    Metadata: sameLayeredTarget.Metadata,
-                    Plugins: sameLayeredTarget.Plugins
+                    Dependencies: null,
+                    Metadata: null,
+                    Plugins: null
                 );
 
                 var projectManifest = new ProjectManifest(
@@ -372,6 +403,24 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             IScriptSystem.Instance.EvaluateScript(plugins);
         }
     }
+
+    public void AddMetadataForPackage(string key, object value)
+    {
+        var scriptSystem = (IScriptSystemInternal)IScriptSystem.Instance;
+        if (scriptSystem.ScriptContext is not { } scriptContext)
+        {
+            throw new InvalidOperationException("This function is only allowed in package dependency script.");
+        }
+
+        if (PackageInstances.FindPackageFromScriptPath(scriptContext.Path) is not { } packageInstance)
+        {
+            throw new InvalidOperationException($"Unable to find package from manifest path: `{scriptContext.Path}`");
+        }
+
+        packageInstance.Metadata.Add(key, value);
+    }
+
+    
 
     #endregion
 }

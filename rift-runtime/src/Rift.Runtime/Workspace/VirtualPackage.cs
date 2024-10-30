@@ -1,6 +1,7 @@
 ﻿using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Workspace;
+
 internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestPath)
 {
     public string Name         => virtualManifest.Name;
@@ -13,7 +14,7 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         {
             if (virtualManifest.Dependencies is { } dependencies)
             {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies);
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies));
             }
 
             return null;
@@ -26,7 +27,7 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         {
             if (virtualManifest.Plugins is { } plugins)
             {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, plugins);
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, plugins));
             }
 
             return null;
@@ -39,7 +40,7 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         {
             if (virtualManifest.Metadata is { } metadata)
             {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, metadata);
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
             }
 
             return null;

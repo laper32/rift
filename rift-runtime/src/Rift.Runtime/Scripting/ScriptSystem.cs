@@ -112,7 +112,8 @@ internal class ScriptSystem : IScriptSystemInternal
 
     public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
     {
-        ScriptContext = new ScriptContext(scriptPath);
+        // make sure script context path passed in is canonicalized.
+        ScriptContext = new ScriptContext(Path.GetFullPath(scriptPath));
 
         using var loader = new InteractiveAssemblyLoader();
         var loadedAssemblies = CreateLoadedAssembliesMap();

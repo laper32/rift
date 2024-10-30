@@ -47,8 +47,8 @@ public record VirtualManifest<T> : IVirtualManifest
     public string? Dependencies => Value switch
     {
         WorkspaceManifest workspace => workspace.Dependencies,
-        FolderManifest => throw new ArgumentException("[folder] does not have `dependencies` field."),
-        _ => throw new ArgumentException("Invalid manifest type.")
+        FolderManifest              => throw new ArgumentException("[folder] does not have `dependencies` field."),
+        _                           => throw new ArgumentException("Invalid manifest type.")
     };
 
     public string? Plugins => Value switch
