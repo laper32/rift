@@ -7,7 +7,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Rift.Runtime.Fundamental.Plugin;
+namespace Rift.Runtime.Plugin;
 
 internal class InstanceContext : AssemblyLoadContext
 {
@@ -20,15 +20,15 @@ internal class InstanceContext : AssemblyLoadContext
 internal class PluginContext : InstanceContext
 {
     private readonly AssemblyDependencyResolver _resolver;
-    private readonly AssemblyLoadContext        _sharedContext;
-    public           Assembly                   Entry      { get; }
-    public           string                     EntryPath  { get; }
-    public           string                     PluginPath => Directory.GetParent(EntryPath)!.FullName;
+    private readonly AssemblyLoadContext _sharedContext;
+    public Assembly Entry { get; }
+    public string EntryPath { get; }
+    public string PluginPath => Directory.GetParent(EntryPath)!.FullName;
     public PluginContext(string entryPath, AssemblyLoadContext sharedContext)
     {
         _sharedContext = sharedContext;
-        EntryPath      = entryPath;
-        _resolver      = new AssemblyDependencyResolver(entryPath);
+        EntryPath = entryPath;
+        _resolver = new AssemblyDependencyResolver(entryPath);
         var asmName = AssemblyName.GetAssemblyName(EntryPath);
         if (_sharedContext.Assemblies.Where(x => x.GetName().Name == asmName.Name).FirstOrDefault() is { } asm)
         {

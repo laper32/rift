@@ -4,16 +4,12 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.API.Abstractions;
+namespace Rift.Runtime.Workspace;
 
-// ReSharper disable once IdentifierTypo
-public interface IInitializable
+internal enum EWorkspaceStatus
 {
-    bool Init();
-
-    void PostInit()
-    {
-
-    }
-    void Shutdown();
+    Unknown,
+    Init,
+    Ready,
+    Failed
 }

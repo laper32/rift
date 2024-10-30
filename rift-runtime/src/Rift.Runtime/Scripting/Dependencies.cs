@@ -4,9 +4,14 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Fundamental.Interop.Natives;
+using Rift.Runtime.API.Scripting;
 
-internal static unsafe partial class Core
+namespace Rift.Runtime.Scripting;
+
+public static class Dependencies
 {
-    public static partial sbyte* GetExecutablePath();
+    public static void Add<T>(T dependency) where T: class, IPackageDependency
+    {
+
+    }
 }

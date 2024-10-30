@@ -9,12 +9,13 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Manager;
-using Rift.Runtime.API.System;
+using Rift.Runtime.API.Scripting;
+using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Fundamental.Interop;
-using Rift.Runtime.Manager;
-using Rift.Runtime.System;
+using Rift.Runtime.Plugin;
+using Rift.Runtime.Scripting;
+using Rift.Runtime.Workspace;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -25,7 +26,7 @@ using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Rift.Runtime;
 
-public static class Bootstrap
+internal static class Bootstrap
 {
     [UnmanagedCallersOnly]
     private static bool Init(nint natives)

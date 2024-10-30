@@ -5,9 +5,9 @@
 // ===========================================================================
 
 using System.Diagnostics.CodeAnalysis;
-using Rift.Runtime.API.Abstractions;
+using Rift.Runtime.API.Plugin;
 
-namespace Rift.Runtime.API.System;
+namespace Rift.Runtime.API.Fundamental;
 
 public interface IShareSystem
 {

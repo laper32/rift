@@ -4,20 +4,28 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.API.Abstractions;
+namespace Rift.Runtime.API.Plugin;
 
 /// <summary>
-/// 所有接口都必须继承该接口.
+/// 插件状态
 /// </summary>
-public interface ISharable
+public enum PluginStatus
 {
+    None = 0,
     /// <summary>
-    /// 接口名
+    /// 已加载
     /// </summary>
-    string InterfaceName { get; }
-
+    Checked,
     /// <summary>
-    /// 接口版本
+    /// 运行中
     /// </summary>
-    uint InterfaceVersion { get; }
+    Running,
+    /// <summary>
+    /// 运行时发生错误
+    /// </summary>
+    Error,
+    /// <summary>
+    /// 发生错误无法运行
+    /// </summary>
+    Failed,
 }

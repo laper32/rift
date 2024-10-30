@@ -8,13 +8,13 @@ using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-public enum EManifestType
+internal enum EManifestType
 {
     Virtual,
     Real
 }
 
-public interface IEitherManifest
+internal interface IEitherManifest
 {
     public string Name { get; }
     public EManifestType Type { get; }
@@ -22,7 +22,7 @@ public interface IEitherManifest
 
 
 
-public record EitherManifest<T> : IEitherManifest
+internal record EitherManifest<T> : IEitherManifest
 {
     public EitherManifest(T manifest)
     {
@@ -38,15 +38,15 @@ public record EitherManifest<T> : IEitherManifest
             _ => throw new ArgumentOutOfRangeException(nameof(manifest), manifest,
                 "Only accepts `VirtualManifest` or `Manifest`")
         };
-        Data = manifest;
+        Value = manifest;
     }
 
     //[JsonIgnore]
-    public T Data { get; init; }
+    public T Value { get; init; }
 
     public EManifestType Type { get; init; }
 
-    public string Name => Data switch
+    public string Name => Value switch
     {
         IManifest real => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,

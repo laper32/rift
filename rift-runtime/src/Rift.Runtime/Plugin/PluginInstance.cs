@@ -6,12 +6,10 @@
 
 using System.Diagnostics;
 using System.Reflection;
-using Rift.Runtime.API.Abstractions;
-using Rift.Runtime.API.Attributes;
-using Rift.Runtime.API.Enums;
 using Rift.Runtime.API.Fundamental.Extensions;
+using Rift.Runtime.API.Plugin;
 
-namespace Rift.Runtime.Fundamental.Plugin;
+namespace Rift.Runtime.Plugin;
 
 // 其实这时候用Primary Constructor就很适合.
 
@@ -227,4 +225,4 @@ internal class PluginInstance(Assembly entry, string instancePath, string plugin
     }
 }
 
-public record PluginRuntimeInfo(string Name, string Author, string Version, string Url, string Description, string Path, string EntryPath, string Identifier, PluginStatus Status, Guid UniqueId, Exception? Error) : IPluginRuntimeInfo;
+internal record PluginRuntimeInfo(string Name, string Author, string Version, string Url, string Description, string Path, string EntryPath, string Identifier, PluginStatus Status, Guid UniqueId, Exception? Error) : IPluginRuntimeInfo;

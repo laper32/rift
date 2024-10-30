@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.API.Attributes;
+namespace Rift.Runtime.API.Plugin;
 
 /// <summary>
 /// 插件元数据

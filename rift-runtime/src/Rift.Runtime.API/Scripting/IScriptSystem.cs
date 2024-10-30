@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.API.System;
+namespace Rift.Runtime.API.Scripting;
 
 public interface IScriptSystem
 {
@@ -12,6 +12,6 @@ public interface IScriptSystem
 
     public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15);
 
-    public void AddLibraries(IEnumerable<string>  libraries);
+    public void AddLibraries(IEnumerable<string> libraries);
     public void AddNamespaces(IEnumerable<string> namespaces);
 }

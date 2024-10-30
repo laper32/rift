@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Fundamental.Script;
+namespace Rift.Runtime.Scripting;
 
 internal class ScriptContext(string path)
 {

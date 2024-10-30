@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.API.System;
+namespace Rift.Runtime.API.Plugin;
 
 public interface IPluginSystem
 {

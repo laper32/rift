@@ -5,11 +5,10 @@
 // ===========================================================================
 
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.API.Abstractions;
 using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.System;
+using Rift.Runtime.API.Plugin;
 
-namespace Rift.Runtime.System;
+namespace Rift.Runtime.Fundamental;
 
 internal interface IShareSystemInternal : IShareSystem, IInitializable;
 

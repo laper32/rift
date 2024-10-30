@@ -4,369 +4,15 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Abstractions;
 using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Manager;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Schema;
-using Rift.Runtime.API.System;
+using Rift.Runtime.API.Scripting;
+using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Manifest;
 using Tomlyn;
 
-namespace Rift.Runtime.Manager;
-
-public enum EWorkspaceStatus
-{
-    Unknown,
-    Init,
-    Ready,
-    Failed
-}
-
-public class Package(IManifest manifest, string manifestPath)
-{
-    public string Name => manifest.Name;
-    public string ManifestPath => manifestPath;
-    public string Root => Directory.GetParent(ManifestPath)!.FullName;
-
-    public string? Dependencies
-    {
-        get
-        {
-            if (manifest.Dependencies is { } dependencies)
-            {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies);
-            }
-
-            return null;
-        }
-    }
-
-    public string? Plugins
-    {
-        get
-        {
-            if (manifest.Plugins is { } plugins)
-            {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, plugins);
-            }
-
-            return null;
-        }
-    }
-
-    public string? Metadata
-    {
-        get
-        {
-            if (manifest.Metadata is { } metadata)
-            {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, metadata);
-            }
-
-            return null;
-        }
-    }
-}
-
-public class VirtualPackage(IVirtualManifest virtualManifest, string manifestPath)
-{
-    public string Name => virtualManifest.Name;
-    public string ManifestPath => manifestPath;
-    public string Root => Directory.GetParent(ManifestPath)!.FullName;
-
-    public string? Dependencies
-    {
-        get
-        {
-            if (virtualManifest.Dependencies is { } dependencies)
-            {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies);
-            }
-
-            return null;
-        }
-    }
-
-    public string? Plugins
-    {
-        get
-        {
-            if (virtualManifest.Plugins is { } plugins)
-            {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, plugins);
-            }
-
-            return null;
-        }
-    }
-
-    public string? Metadata
-    {
-        get
-        {
-            if (virtualManifest.Metadata is { } metadata)
-            {
-                return WorkspaceManager.GetActualScriptPath(ManifestPath, metadata);
-            }
-
-            return null;
-        }
-    }
-}
-
-internal interface IMaybePackage
-{
-    public enum EMaybePackage
-    {
-        Package,
-        Virtual
-    }
-
-    public string Name { get; }
-    public string? Dependencies { get; }
-    public string? Plugins { get; }
-    public string? Metadata { get; }
-    public string ManifestPath { get; }
-}
-
-internal class MaybePackage<T>(T value) : IMaybePackage
-{
-    public IMaybePackage.EMaybePackage Type { get; init; } = value switch
-    {
-        Package => IMaybePackage.EMaybePackage.Package,
-        VirtualPackage => IMaybePackage.EMaybePackage.Virtual,
-        _ => throw new InvalidOperationException("Only accepts `Package` or `VirtualPackage`.")
-    };
-
-    public T Value { get; init; } = value;
-
-    public string ManifestPath => Value switch
-    {
-        Package package => package.ManifestPath,
-        VirtualPackage package => package.ManifestPath,
-        _ => throw new InvalidOperationException("Why you at here?")
-    };
-
-    public string Name => Value switch
-    {
-        Package package => package.Name,
-        VirtualPackage package => package.Name,
-        _ => string.Empty
-    };
-
-    public string? Dependencies => Value switch
-    {
-        Package package => package.Dependencies,
-        VirtualPackage package => package.Dependencies,
-        _ => null
-    };
-
-    public string? Plugins => Value switch
-    {
-        Package package => package.Plugins,
-        VirtualPackage package => package.Plugins,
-        _ => null
-    };
-
-    public string? Metadata => Value switch
-    {
-        Package package => package.Metadata,
-        VirtualPackage package => package.Metadata,
-        _ => null
-    };
-}
-
-internal class WorkspacePackages
-{
-    internal readonly Dictionary<string, IMaybePackage> Packages = [];
-
-    public void Load(string manifestPath)
-    {
-        var manifest = WorkspaceManager.ReadManifest(manifestPath);
-        switch (manifest.Type)
-        {
-            case EManifestType.Real:
-            {
-                switch (manifest)
-                {
-                    case EitherManifest<Manifest<ProjectManifest>> projectManifest:
-                    {
-                        if (Packages.ContainsKey(projectManifest.Name))
-                        {
-                            throw new InvalidOperationException($"Package already exists: `{projectManifest.Name}`");
-                        }
-                        var package = new Package(projectManifest.Data, manifestPath);
-                        if (projectManifest.Data.Data.Target is not null)
-                        {
-                            var targetManifest = projectManifest.Data.Data.Target;
-                            var targetPackage = new Package(new Manifest<TargetManifest>(targetManifest), manifestPath);
-                            Packages.Add(targetPackage.Name, new MaybePackage<Package>(targetPackage));
-                        }
-                        Packages.Add(package.Name, new MaybePackage<Package>(package));
-                        break;
-                    }
-                    case EitherManifest<Manifest<TargetManifest>> targetManifest:
-                    {
-                        if (Packages.ContainsKey(targetManifest.Name))
-                        {
-                            throw new InvalidOperationException($"Package already exists: `{targetManifest.Name}`");
-                        }
-
-                        var package = new Package(targetManifest.Data, manifestPath);
-                        Packages.Add(package.Name, new MaybePackage<Package>(package));
-                        break;
-                    }
-                    default:
-                    {
-                        throw new InvalidOperationException("Why you at here?");
-                    }
-                }
-                break;
-            }
-            case EManifestType.Virtual:
-            {
-                switch (manifest)
-                {
-                    case EitherManifest<VirtualManifest<FolderManifest>> folderManifest:
-                    {
-                        if (Packages.ContainsKey(folderManifest.Name))
-                        {
-                            throw new InvalidOperationException($"Package already exists: `{folderManifest.Name}`");
-                        }
-
-                        var virtualPackage = new VirtualPackage(folderManifest.Data, manifestPath);
-                        Packages.Add(virtualPackage.Name, new MaybePackage<VirtualPackage>(virtualPackage));
-                        break;
-                    }
-                    case EitherManifest<VirtualManifest<WorkspaceManifest>> workspaceManifest:
-                    {
-                        if (Packages.ContainsKey(workspaceManifest.Name))
-                        {
-                            throw new InvalidOperationException($"Package already exists: `{workspaceManifest.Name}`");
-                        }
-
-                        var virtualPackage = new VirtualPackage(workspaceManifest.Data, manifestPath);
-                        Packages.Add(virtualPackage.Name, new MaybePackage<VirtualPackage>(virtualPackage));
-                        break;
-                    }
-                    default:
-                    {
-                        throw new InvalidOperationException("Why you at here?");
-                    }
-                }
-                break;
-            }
-            default:
-            {
-                throw new InvalidOperationException("Why are you here?");
-            }
-        }
-    }
-
-    public void LoadRecursively(string manifestPath)
-    {
-        var manifest = WorkspaceManager.ReadManifest(manifestPath);
-        switch (manifest.Type)
-        {
-            case EManifestType.Real:
-            {
-                switch (manifest)
-                {
-                    case EitherManifest<Manifest<ProjectManifest>> projectManifest:
-                    {
-                        if (Packages.ContainsKey(projectManifest.Name))
-                        {
-                            return;
-                        }
-
-                        Load(manifestPath);
-                        if (projectManifest.Data.Data.Members is { } members)
-                        {
-                            foreach (var fullPath in members.Select(member => Path.Combine(Path.GetDirectoryName(manifestPath)!, member, Definitions.ManifestIdentifier)))
-                            {
-                                LoadRecursively(fullPath);
-                            }
-                        }
-
-                        break;
-                    }
-                    case EitherManifest<Manifest<TargetManifest>> targetManifest:
-                    {
-                        if (Packages.ContainsKey(targetManifest.Name))
-                        {
-                            return;
-                        }
-
-                        Load(manifestPath);
-                        break;
-                    }
-                    default:
-                    {
-                        throw new InvalidOperationException("Why you at here?");
-                    }
-                }
-                break;
-            }
-
-            case EManifestType.Virtual:
-            {
-                switch (manifest)
-                {
-                    case EitherManifest<VirtualManifest<FolderManifest>> folderManifest:
-                    {
-                        if (Packages.ContainsKey(folderManifest.Name))
-                        {
-                            return;
-                        }
-
-                        Load(manifestPath);
-
-                        if (folderManifest.Data.Data.Members is { } members)
-                        {
-                            foreach (var fullPath in members.Select(member => Path.Combine(Path.GetDirectoryName(manifestPath)!, member, Definitions.ManifestIdentifier)))
-                            {
-                                LoadRecursively(fullPath);
-                            }
-                        }
-
-                        break;
-                    }
-
-                    case EitherManifest<VirtualManifest<WorkspaceManifest>> workspaceManifest:
-                    {
-                        if (Packages.ContainsKey(workspaceManifest.Name))
-                        {
-                            return;
-                        }
-
-                        Load(manifestPath);
-
-                        if (workspaceManifest.Data.Data.Members is { } members)
-                        {
-                            foreach (var fullPath in members.Select(member => Path.Combine(Path.GetDirectoryName(manifestPath)!, member, Definitions.ManifestIdentifier)))
-                            {
-                                LoadRecursively(fullPath);
-                            }
-                        }
-
-                        break;
-                    }
-                    default:
-                    {
-                        throw new InvalidOperationException("Why you at here?");
-                    }
-                }
-                break;
-            }
-            default:
-            {
-                throw new InvalidOperationException("Why you at here?");
-            }
-        }
-    }
-
-}
+namespace Rift.Runtime.Workspace;
 
 internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
 {
@@ -379,7 +25,7 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
 
 internal class WorkspaceManager : IWorkspaceManagerInternal
 {
-    internal readonly WorkspacePackages Packages = new();
+    private readonly Packages _packages = new();
 
     public EWorkspaceStatus Status { get; internal set; }
     public string Root { get; internal set; }
@@ -421,7 +67,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     public void LoadWorkspace()
     {
-        Packages.LoadRecursively(Path.Combine(Root, Definitions.ManifestIdentifier));
+        _packages.LoadRecursively(Path.Combine(Root, Definitions.ManifestIdentifier));
         EvaluateManifestScripts();
     }
 
@@ -691,7 +337,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     private void RetrieveWorkspaceDependencies()
     {
-        foreach (var package in Packages.Packages)
+        foreach (var package in _packages.Value)
         {
             if (package.Value.Dependencies is not { } dependencies)
             {
@@ -703,7 +349,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     private void RetrieveWorkspaceMetadata()
     {
-        foreach (var package in Packages.Packages)
+        foreach (var package in _packages.Value)
         {
             if (package.Value.Metadata is not { } metadata)
             {
@@ -716,7 +362,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     private void RetrieveWorkspacePlugins()
     {
-        foreach (var package in Packages.Packages)
+        foreach (var package in _packages.Value)
         {
             if (package.Value.Plugins is not { } plugins)
             {

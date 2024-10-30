@@ -4,9 +4,16 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Fundamental.Interop.Natives;
+namespace Rift.Runtime.API.Fundamental;
 
-internal static unsafe partial class Core
+// ReSharper disable once IdentifierTypo
+public interface IInitializable
 {
-    public static partial sbyte* GetExecutablePath();
+    bool Init();
+
+    void PostInit()
+    {
+
+    }
+    void Shutdown();
 }

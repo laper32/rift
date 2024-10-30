@@ -4,9 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Manifest;
-
-namespace Rift.Runtime.API.Manager;
+namespace Rift.Runtime.API.Workspace;
 
 public interface IWorkspaceManager
 {

@@ -4,9 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Enums;
-
-namespace Rift.Runtime.API.Abstractions;
+namespace Rift.Runtime.API.Plugin;
 
 // ReSharper disable UnusedMemberInSuper.Global
 

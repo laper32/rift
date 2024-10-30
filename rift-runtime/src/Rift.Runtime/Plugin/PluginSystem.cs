@@ -4,10 +4,10 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Abstractions;
-using Rift.Runtime.API.System;
+using Rift.Runtime.API.Fundamental;
+using Rift.Runtime.API.Plugin;
 
-namespace Rift.Runtime.System;
+namespace Rift.Runtime.Plugin;
 
 internal interface IPluginSystemInternal : IPluginSystem, IInitializable;
 
@@ -20,6 +20,6 @@ internal class PluginSystem : IPluginSystemInternal
 
     public void Shutdown()
     {
-        
+
     }
 }

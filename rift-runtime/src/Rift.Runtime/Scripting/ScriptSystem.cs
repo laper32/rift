@@ -10,20 +10,22 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
-using Rift.Runtime.API.Abstractions;
-using Rift.Runtime.API.System;
-using Rift.Runtime.Fundamental.Script;
+using Rift.Runtime.API.Fundamental;
+using Rift.Runtime.API.Scripting;
 
-namespace Rift.Runtime.System;
+namespace Rift.Runtime.Scripting;
 
-internal interface IScriptSystemInternal : IScriptSystem, IInitializable;
+internal interface IScriptSystemInternal : IScriptSystem, IInitializable
+{
+    public ScriptContext? ScriptContext { get; }
+}
 
 internal class ScriptSystem : IScriptSystemInternal
 {
     public ScriptSystem()
     {
         IScriptSystem.Instance = this;
-        ScriptContext          = null;
+        ScriptContext = null;
     }
 
     public ScriptContext? ScriptContext { get; private set; }
@@ -81,10 +83,10 @@ internal class ScriptSystem : IScriptSystemInternal
     private readonly List<string> _importLibraries = [];
     private readonly List<string> _importNamespaces = [];
 
-
     public bool Init()
     {
-        AddLibraries(["Rift.Runtime.API"]);
+        AddLibraries(["Rift.Runtime"]);
+        AddNamespaces(["Rift.Runtime.Scripting"]);
         _init = true;
         _shutdown = false;
         return true;
@@ -112,8 +114,8 @@ internal class ScriptSystem : IScriptSystemInternal
     {
         ScriptContext = new ScriptContext(scriptPath);
 
-        using var loader           = new InteractiveAssemblyLoader();
-        var       loadedAssemblies = CreateLoadedAssembliesMap();
+        using var loader = new InteractiveAssemblyLoader();
+        var loadedAssemblies = CreateLoadedAssembliesMap();
 
         var runtimeSharedLibraries = new List<Assembly>();
 
@@ -129,20 +131,22 @@ internal class ScriptSystem : IScriptSystemInternal
 
         runtimeSharedLibraries.ForEach(loader.RegisterDependency);
 
-
         // 脚本只应该考虑本地文件，不应该考虑跨包引用的情况，哪怕这些包在同一个workspace下。
         // 如果你有这个情况，你更应该思考项目组织是否合理。
         // 如果你有共同引用，你应当根据这个项目写一个插件（写插件的成本几乎为0）
         var resolver = new SourceFileResolver([], ScriptContext.Location);
         var opts = ScriptOptions.Default
+            // 相当于你不用额外写using 某个具体的包
+            // 比如说你不用额外写using System;
             .AddImports(_preImportedSdkNamespaces)
             .AddImports(_importNamespaces)
+            // 运行脚本需要加载的包。
             .AddReferences(_preImportedSdkLibraries)
             .AddReferences(runtimeSharedLibraries)
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
-        var script  = CSharpScript.Create(ScriptContext.Text, opts, assemblyLoader: loader);
+        var script = CSharpScript.Create(ScriptContext.Text, opts, assemblyLoader: loader);
         var compile = script.Compile();
         if (compile.Any())
         {
@@ -155,6 +159,9 @@ internal class ScriptSystem : IScriptSystemInternal
         else
         {
             script.RunAsync().Wait(TimeSpan.FromSeconds(timedOutUnitSec));
+
+            // reset.
+            ScriptContext = null;
         }
     }
 

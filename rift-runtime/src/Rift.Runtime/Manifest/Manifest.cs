@@ -18,34 +18,34 @@ public record Manifest<T> : IManifest
             throw new ArgumentException("Manifest must be of type TargetManifest or ProjectManifest");
         }
 
-        Data = manifest;
+        Value = manifest;
     }
 
     [JsonIgnore]
-    public T Data { get; init; }
+    public T Value { get; init; }
 
-    public string Name => Data switch
+    public string Name => Value switch
     {
         ProjectManifest project => project.Name,
         TargetManifest target => target.Name,
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
-    public string? Dependencies => Data switch
+    public string? Dependencies => Value switch
     {
         ProjectManifest project => project.Dependencies,
         TargetManifest target => target.Dependencies,
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
-    public string? Plugins => Data switch
+    public string? Plugins => Value switch
     {
         ProjectManifest project => project.Plugins,
         TargetManifest target => target.Plugins,
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
-    public string? Metadata => Data switch
+    public string? Metadata => Value switch
     {
         ProjectManifest project => project.Metadata,
         TargetManifest target => target.Metadata,
