@@ -85,8 +85,8 @@ internal class ScriptSystem : IScriptSystemInternal, IInitializable
 
     public bool Init()
     {
-        AddLibraries(["Rift.Runtime"]);
-        AddNamespaces(["Rift.Runtime.Scripting"]);
+        AddLibrary(["Rift.Runtime"]);
+        AddNamespace(["Rift.Runtime.Scripting"]);
         _init = true;
         _shutdown = false;
         return true;
@@ -98,14 +98,24 @@ internal class ScriptSystem : IScriptSystemInternal, IInitializable
         _init = false;
     }
 
+    public void AddLibrary(string library)
+    {
+        _importLibraries.Add(library);
+    }
+
     // 估计这里还要做额外处理。。因为还涉及到版本号的问题。
     // 先不管他，之后再说
-    public void AddLibraries(IEnumerable<string> libraries)
+    public void AddLibrary(IEnumerable<string> libraries)
     {
         _importLibraries.AddRange(libraries);
     }
 
-    public void AddNamespaces(IEnumerable<string> namespaces)
+    public void AddNamespace(string @namespace)
+    {
+        _importNamespaces.Add(@namespace);
+    }
+
+    public void AddNamespace(IEnumerable<string> namespaces)
     {
         _importNamespaces.AddRange(namespaces);
     }

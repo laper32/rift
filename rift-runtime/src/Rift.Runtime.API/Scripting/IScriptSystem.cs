@@ -11,7 +11,12 @@ public interface IScriptSystem
     public static IScriptSystem Instance { get; protected set; } = null!;
 
     public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15);
+    
+    public void AddLibrary(string library);
+    
+    public void AddLibrary(IEnumerable<string> libraries);
 
-    public void AddLibraries(IEnumerable<string> libraries);
-    public void AddNamespaces(IEnumerable<string> namespaces);
+    public void AddNamespace(string @namespace);
+
+    public void AddNamespace(IEnumerable<string> namespaces);
 }

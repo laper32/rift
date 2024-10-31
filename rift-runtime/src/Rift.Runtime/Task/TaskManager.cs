@@ -1,4 +1,10 @@
-﻿using Rift.Runtime.API.Fundamental;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Task;
 
@@ -18,7 +24,7 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
 
     public bool Init()
     {
-        IScriptSystem.Instance.AddNamespaces(["Rift.Runtime.Task"]);
+        IScriptSystem.Instance.AddNamespace("Rift.Runtime.Task");
         return true;
     }
 

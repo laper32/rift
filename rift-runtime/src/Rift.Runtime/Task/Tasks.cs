@@ -1,4 +1,10 @@
-﻿// ReSharper disable UnusedMember.Global
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+// ReSharper disable UnusedMember.Global
 
 namespace Rift.Runtime.Task;
 
