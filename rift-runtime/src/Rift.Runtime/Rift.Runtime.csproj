@@ -32,4 +32,8 @@
 	  <ProjectReference Include="..\Rift.Runtime.Generator\Rift.Runtime.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="Rift.Runtime.API.Scripting.ScriptShared" />
+	</ItemGroup>
+
 </Project>

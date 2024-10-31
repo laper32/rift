@@ -14,7 +14,6 @@ internal class PackageInstance(IMaybePackage package)
 
 internal class PackageInstances
 {
-
     private readonly Dictionary<string, PackageInstance> _value = [];
 
     public void Add(string packageName, PackageInstance instance)

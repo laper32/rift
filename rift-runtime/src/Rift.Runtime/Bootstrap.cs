@@ -10,11 +10,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Scripting;
+using Rift.Runtime.API.Task;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Fundamental.Interop;
 using Rift.Runtime.Plugin;
 using Rift.Runtime.Scripting;
+using Rift.Runtime.Task;
 using Rift.Runtime.Workspace;
 using Serilog;
 using Serilog.Events;
@@ -129,6 +131,7 @@ internal static class Bootstrap
         services.AddSingleton<IPluginSystemInternal, PluginSystem>();
 
         services.AddSingleton<IWorkspaceManagerInternal, WorkspaceManager>();
+        services.AddSingleton<ITaskManagerInternal, TaskManager>();
     }
 
     private static void ActivateServices(IServiceProvider provider)
@@ -139,6 +142,7 @@ internal static class Bootstrap
         provider.GetRequiredService<IPluginSystemInternal>();
 
         provider.GetRequiredService<IWorkspaceManagerInternal>();
+        provider.GetRequiredService<ITaskManagerInternal>();
     }
 
     private static bool InitSystems()
@@ -179,6 +183,8 @@ internal static class Bootstrap
         {
             return false;
         }
+
+        var taskManager = (TaskManager)ITaskManager.Instance;
 
         return true;
     }

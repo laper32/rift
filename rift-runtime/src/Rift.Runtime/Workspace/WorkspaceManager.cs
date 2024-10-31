@@ -15,7 +15,7 @@ using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
-internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
+internal interface IWorkspaceManagerInternal : IWorkspaceManager
 {
     public EWorkspaceStatus Status { get; }
 
@@ -31,7 +31,7 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
     void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
 }
 
-internal class WorkspaceManager : IWorkspaceManagerInternal
+internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 {
     private readonly Packages _packages = new();
     internal readonly PackageInstances PackageInstances = new();

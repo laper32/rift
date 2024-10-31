@@ -13,7 +13,7 @@ internal class InstanceContext : AssemblyLoadContext
 {
     public InstanceContext() : base(true)
     {
-        Resolving += (_, args) => AppDomain.CurrentDomain.GetAssemblies().Where(x => x.GetName().Name == args.Name).FirstOrDefault();
+        Resolving += (_, args) => AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == args.Name);
     }
 }
 
@@ -30,7 +30,7 @@ internal class PluginContext : InstanceContext
         EntryPath = entryPath;
         _resolver = new AssemblyDependencyResolver(entryPath);
         var asmName = AssemblyName.GetAssemblyName(EntryPath);
-        if (_sharedContext.Assemblies.Where(x => x.GetName().Name == asmName.Name).FirstOrDefault() is { } asm)
+        if (_sharedContext.Assemblies.FirstOrDefault(x => x.GetName().Name == asmName.Name) is { } asm)
         {
             Entry = asm;
             return;
@@ -44,8 +44,7 @@ internal class PluginContext : InstanceContext
     {
         var ret = _sharedContext
             .Assemblies
-            .Where(x => x.GetName().Name == assemblyName.Name)
-            .FirstOrDefault();
+            .FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
         if (ret != null)
         {
             return ret;

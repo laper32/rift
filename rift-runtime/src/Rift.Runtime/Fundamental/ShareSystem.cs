@@ -10,9 +10,9 @@ using Rift.Runtime.API.Plugin;
 
 namespace Rift.Runtime.Fundamental;
 
-internal interface IShareSystemInternal : IShareSystem, IInitializable;
+internal interface IShareSystemInternal : IShareSystem;
 
-internal class ShareSystem : IShareSystemInternal
+internal class ShareSystem : IShareSystemInternal, IInitializable
 {
     private bool _init;
     private bool _shutdown;

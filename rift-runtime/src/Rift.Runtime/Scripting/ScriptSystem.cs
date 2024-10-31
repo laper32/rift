@@ -15,12 +15,12 @@ using Rift.Runtime.API.Scripting;
 
 namespace Rift.Runtime.Scripting;
 
-internal interface IScriptSystemInternal : IScriptSystem, IInitializable
+internal interface IScriptSystemInternal : IScriptSystem
 {
     public ScriptContext? ScriptContext { get; }
 }
 
-internal class ScriptSystem : IScriptSystemInternal
+internal class ScriptSystem : IScriptSystemInternal, IInitializable
 {
     public ScriptSystem()
     {
