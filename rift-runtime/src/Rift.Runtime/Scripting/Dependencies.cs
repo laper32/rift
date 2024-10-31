@@ -8,15 +8,24 @@
 // 原因只有一个：暴露给脚本的API不能设计的过于复杂，且很多时候脚本是没办法看到dll里面有什么API的。
 
 using Rift.Runtime.API.Scripting;
+using Rift.Runtime.API.Workspace;
+using Rift.Runtime.Workspace;
 
 // ReSharper disable UnusedMember.Global
 
 namespace Rift.Runtime.Scripting;
 
-public static class Dependencies
+public class Dependencies
 {
-    public static void Add<T>(T dependency) where T: class, IPackageDependency
+    public static void Add<T>(T dependency) where T: class, IPackageImportDeclarator
     {
+        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
+        workspaceManager.AddDependencyForPackage(dependency);
+    }
 
+    public static void Add<T>(IEnumerable<T> dependencies) where T : class, IPackageImportDeclarator
+    {
+        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
+        workspaceManager.AddDependencyForPackage(dependencies);
     }
 }

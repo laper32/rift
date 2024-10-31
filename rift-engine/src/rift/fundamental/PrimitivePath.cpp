@@ -1,5 +1,10 @@
-#include "rift/fundamental/PrimitivePath.h"
+// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
 
+#include "rift/fundamental/PrimitivePath.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN

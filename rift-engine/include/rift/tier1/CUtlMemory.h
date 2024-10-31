@@ -18,7 +18,6 @@
 #pragma once
 #endif
 
-#include <string.h>
 #ifdef NO_STL
 template <class T>
 void *operator new(size_t count, T *ptr) {
@@ -29,9 +28,8 @@ return ptr;
 #else
 #include "new"
 #endif
-#include <stdlib.h>
-#include <math.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #define Assert(x) assert(x)
 

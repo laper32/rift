@@ -1,5 +1,12 @@
+// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
 #ifndef RIFT_ENGINE_BRIDGE_INTEROP_SERVICE_H
 #define RIFT_ENGINE_BRIDGE_INTEROP_SERVICE_H
+
 #include "rift/fundamental/Char.h"
 
 namespace rift::bridge {

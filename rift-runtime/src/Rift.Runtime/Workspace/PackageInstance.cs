@@ -9,7 +9,7 @@ internal class PackageInstance(IMaybePackage package)
 
     public Dictionary<string, object> Metadata { get; init; } = [];
     public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, object> Plugins { get; init; } = [];
+    public Dictionary<string, Scripting.Plugin> Plugins { get; init; } = [];
 }
 
 internal class PackageInstances

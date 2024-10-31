@@ -1,3 +1,9 @@
+// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
 #include "rift/bridge/InteropService.h"
 
 #include "rift/bridge/natives/CoreNatives.h"
@@ -7,9 +13,7 @@
 
 #include <print>
 
-
 namespace rift::bridge {
-
 
 namespace {
 CUtlVector<RuntimeNative*> g_RuntimeNatives;

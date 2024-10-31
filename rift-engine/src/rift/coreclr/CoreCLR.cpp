@@ -1,3 +1,9 @@
+// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
 #include "rift/coreclr/CoreCLR.h"
 
 #include "rift/coreclr/CoreCLRDelegates.h"

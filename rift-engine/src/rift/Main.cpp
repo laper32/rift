@@ -1,3 +1,9 @@
+// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
 #include "rift/bridge/InteropService.h"
 #include "rift/coreclr/CoreCLR.h"
 

@@ -23,12 +23,17 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
 
     void SetRootPath(string path);
 
-    public void AddMetadataForPackage(string key, object value);
+    void AddMetadataForPackage(string key, object value);
+    void AddDependencyForPackage(IPackageImportDeclarator declarator);
+    void AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators);
+
+    void AddPluginForPackage(Scripting.Plugin plugin);
+    void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
 }
 
 internal class WorkspaceManager : IWorkspaceManagerInternal
 {
-    private readonly  Packages         _packages        = new();
+    private readonly Packages _packages = new();
     internal readonly PackageInstances PackageInstances = new();
 
     public EWorkspaceStatus Status { get; internal set; }
@@ -406,6 +411,44 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     public void AddMetadataForPackage(string key, object value)
     {
+        var packageInstance = GetPackageInstance();
+
+        packageInstance.Metadata.Add(key, value);
+    }
+
+    public void AddDependencyForPackage(IPackageImportDeclarator declarator)
+    {
+        var packageInstance = GetPackageInstance();
+        packageInstance.Dependencies.Add(declarator.Name, declarator);
+    }
+
+    public void AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
+    {
+        var packageInstance = GetPackageInstance();
+
+        foreach (var declarator in declarators)
+        {
+            packageInstance.Dependencies.Add(declarator.Name, declarator);
+        }
+    }
+
+    public void AddPluginForPackage(Scripting.Plugin plugin)
+    {
+        var packageInstance = GetPackageInstance();
+        packageInstance.Plugins.Add(plugin.Name, plugin);
+    }
+
+    public void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins)
+    {
+        var packageInstance = GetPackageInstance();
+        foreach (var plugin in plugins)
+        {
+            packageInstance.Plugins.Add(plugin.Name, plugin);
+        }
+    }
+
+    private PackageInstance GetPackageInstance()
+    {
         var scriptSystem = (IScriptSystemInternal)IScriptSystem.Instance;
         if (scriptSystem.ScriptContext is not { } scriptContext)
         {
@@ -417,10 +460,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             throw new InvalidOperationException($"Unable to find package from manifest path: `{scriptContext.Path}`");
         }
 
-        packageInstance.Metadata.Add(key, value);
+        return packageInstance;
     }
-
-    
 
     #endregion
 }
