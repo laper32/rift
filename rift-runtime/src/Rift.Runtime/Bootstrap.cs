@@ -178,19 +178,27 @@ internal static class Bootstrap
     {
         var workspaceManager = (WorkspaceManager)IWorkspaceManager.Instance;
 
-        // ReSharper disable once ConvertIfStatementToReturnStatement
+        // ReSharper disable ConvertIfStatementToReturnStatement
         if (!workspaceManager.Init())
         {
             return false;
         }
 
         var taskManager = (TaskManager)ITaskManager.Instance;
+        if (!taskManager.Init())
+        {
+            return false;
+        }
+        // ReSharper restore ConvertIfStatementToReturnStatement
 
         return true;
     }
 
     private static void ShutdownManagers()
     {
+        var taskManager = (TaskManager) ITaskManager.Instance;
+        taskManager.Shutdown();
+
         var workspaceManager = (WorkspaceManager)IWorkspaceManager.Instance;
         workspaceManager.Shutdown();
     }
