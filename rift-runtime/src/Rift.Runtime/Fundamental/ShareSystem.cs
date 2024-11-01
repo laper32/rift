@@ -14,8 +14,6 @@ internal interface IShareSystemInternal : IShareSystem;
 
 internal class ShareSystem : IShareSystemInternal, IInitializable
 {
-    private bool _init;
-    private bool _shutdown;
     private readonly ILogger<ShareSystem> _logger;
     public ShareSystem()
     {
@@ -51,15 +49,12 @@ internal class ShareSystem : IShareSystemInternal, IInitializable
 
     public bool Init()
     {
-        _init = true;
-        _shutdown = false;
-        Console.WriteLine("ShareSystem.Init");
+
         return true;
     }
 
     public void Shutdown()
     {
-        _shutdown = true;
-        _init = false;
+
     }
 }

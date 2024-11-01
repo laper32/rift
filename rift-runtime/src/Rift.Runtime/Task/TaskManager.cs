@@ -24,11 +24,12 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
 
     public bool Init()
     {
-        IScriptSystem.Instance.AddNamespace("Rift.Runtime.Task");
+        IScriptManager.Instance.AddNamespace("Rift.Runtime.Task");
         return true;
     }
 
     public void Shutdown()
     {
+        IScriptManager.Instance.RemoveNamespace("Rift.Runtime.Task");
     }
 }

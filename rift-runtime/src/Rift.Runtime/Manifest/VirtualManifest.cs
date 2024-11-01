@@ -9,7 +9,7 @@ using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-public record VirtualManifest<T> : IVirtualManifest
+internal record VirtualManifest<T> : IVirtualManifest
 {
     public VirtualManifest(T manifest)
     {

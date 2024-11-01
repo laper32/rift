@@ -65,8 +65,8 @@ internal static class InteropService
 
             var pos = name.LastIndexOf('.');
 
-            var typeName = name[..pos]       ?? throw new Exception("Failed to parse native method namespace");
-            var sMethod  = name[(pos + 1)..] ?? throw new Exception("Failed to parse native method name");
+            var typeName = name[..pos]       ?? throw new Exception("Shutdown to parse native method namespace");
+            var sMethod  = name[(pos + 1)..] ?? throw new Exception("Shutdown to parse native method name");
 
             var sType = $"{asmNameSpace}.Fundamental.Interop.Natives.{typeName}";
 
@@ -77,14 +77,14 @@ internal static class InteropService
 
             if (type is null)
             {
-                Console.WriteLine($"Failed to find type \"{sType}\"");
+                Console.WriteLine($"Shutdown to find type \"{sType}\"");
 
                 return;
             }
 
             if (type.GetField($"_{sMethod}", BindingFlags.Static | BindingFlags.NonPublic) is not { } field)
             {
-                Console.WriteLine($"Failed to find method \"{sMethod}\" in type \"{sType}\"");
+                Console.WriteLine($"Shutdown to find method \"{sMethod}\" in type \"{sType}\"");
 
                 return;
             }
@@ -95,7 +95,7 @@ internal static class InteropService
         }
         catch (Exception ex)
         {
-            Console.WriteLine("Failed to bind native.", ex);
+            Console.WriteLine("Shutdown to bind native.", ex);
         }
     }
 }

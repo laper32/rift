@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
+using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Task;
 using Rift.Runtime.API.Workspace;
@@ -75,30 +76,29 @@ internal static class Bootstrap
             Console.WriteLine($"Error when loading workspace: {e.Message}");
         }
 
+        var pluginManager = (IPluginManagerInternal) IPluginManager.Instance;
+        pluginManager.LoadPlugins();
+
         return true;
     }
 
     private static void ShutdownImpl()
     {
-        ShutdownManagers();
-        ShutdownSystems();
+        ShutdownComponents();
     }
 
     private static bool Boot()
     {
-        if (!InitSystems())
+        try
         {
+            InitComponents();
+            return true;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
             return false;
         }
-
-        // ReSharper disable once ConvertIfStatementToReturnStatement
-        if (!InitManagers())
-        {
-            return false;
-        }
-
-        
-        return true;
     }
 
     private static void ConfigureLogging(IServiceCollection services)
@@ -127,8 +127,8 @@ internal static class Bootstrap
     {
         services.AddSingleton<IRuntimeInternal, Fundamental.Runtime>();
         services.AddSingleton<IShareSystemInternal, ShareSystem>();
-        services.AddSingleton<IScriptSystemInternal, ScriptSystem>();
-        services.AddSingleton<IPluginSystemInternal, PluginSystem>();
+        services.AddSingleton<IScriptManagerInternal, ScriptManager>();
+        services.AddSingleton<IPluginManagerInternal, PluginManager>();
 
         services.AddSingleton<IWorkspaceManagerInternal, WorkspaceManager>();
         services.AddSingleton<ITaskManagerInternal, TaskManager>();
@@ -138,68 +138,61 @@ internal static class Bootstrap
     {
         provider.GetRequiredService<IRuntimeInternal>();
         provider.GetRequiredService<IShareSystemInternal>();
-        provider.GetRequiredService<IScriptSystemInternal>();
-        provider.GetRequiredService<IPluginSystemInternal>();
+        provider.GetRequiredService<IScriptManagerInternal>();
+        provider.GetRequiredService<IPluginManagerInternal>();
 
         provider.GetRequiredService<IWorkspaceManagerInternal>();
         provider.GetRequiredService<ITaskManagerInternal>();
     }
 
-    private static bool InitSystems()
+    private static void InitComponents()
     {
         var shareSystem = (ShareSystem)IShareSystem.Instance;
         if (!shareSystem.Init())
         {
-            Console.WriteLine("Failed to init ShareSystem.");
-            return false;
+            throw new InvalidOperationException("Shutdown to init ShareSystem.");
         }
 
-        var scriptSystem = (ScriptSystem)IScriptSystem.Instance;
-        // ReSharper disable once InvertIf
-        if (!scriptSystem.Init())
+        var scriptManager = (ScriptManager)IScriptManager.Instance;
+        if (!scriptManager.Init())
         {
-            Console.WriteLine("Failed to initialize ScriptSystem.");
-            return false;
+            throw new InvalidOperationException("Shutdown to init ScriptManager.");
         }
 
-        return true;
-    }
+        var pluginManager = (PluginManager) IPluginManager.Instance;
+        if (!pluginManager.Init())
+        {
+            throw new InvalidOperationException("Shutdown to init PluginManager.");
+        }
 
-    private static void ShutdownSystems()
-    {
-        var scriptSystem = (ScriptSystem)IScriptSystem.Instance;
-        scriptSystem.Shutdown();
-
-        var shareSystem = (ShareSystem)IShareSystem.Instance;
-        shareSystem.Shutdown();
-    }
-
-    private static bool InitManagers()
-    {
         var workspaceManager = (WorkspaceManager)IWorkspaceManager.Instance;
-
-        // ReSharper disable ConvertIfStatementToReturnStatement
         if (!workspaceManager.Init())
         {
-            return false;
+            throw new InvalidOperationException("Shutdown to init WorkspaceManager.");
         }
 
         var taskManager = (TaskManager)ITaskManager.Instance;
         if (!taskManager.Init())
         {
-            return false;
+            throw new InvalidOperationException("Shutdown to init TaskManager.");
         }
-        // ReSharper restore ConvertIfStatementToReturnStatement
-
-        return true;
     }
 
-    private static void ShutdownManagers()
+    private static void ShutdownComponents()
     {
         var taskManager = (TaskManager) ITaskManager.Instance;
         taskManager.Shutdown();
 
         var workspaceManager = (WorkspaceManager)IWorkspaceManager.Instance;
         workspaceManager.Shutdown();
+
+        var pluginManager = (PluginManager) IPluginManager.Instance;
+        pluginManager.Shutdown();
+
+        var scriptManager = (ScriptManager) IScriptManager.Instance;
+        scriptManager.Shutdown();
+
+        var shareSystem = (ShareSystem)IShareSystem.Instance;
+        shareSystem.Shutdown();
     }
 }

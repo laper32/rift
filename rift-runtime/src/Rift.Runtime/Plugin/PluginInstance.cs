@@ -78,7 +78,7 @@ internal class PluginInstance(Assembly entry, string instancePath, string plugin
 
         if (Activator.CreateInstance(type) is not RiftPlugin instance)
         {
-            MakeError("An error occured when loading plugin.", new BadImageFormatException("Failed to create instance!"));
+            MakeError("An error occured when loading plugin.", new BadImageFormatException("Shutdown to create instance!"));
             Status = PluginStatus.Failed;
 
             return false;
@@ -115,7 +115,7 @@ internal class PluginInstance(Assembly entry, string instancePath, string plugin
             if (Instance == null || !Instance.OnLoad())
             {
 
-                throw new InvalidOperationException($"Failed to load plugin \"{Descriptor.PluginPath}\".");
+                throw new InvalidOperationException($"Shutdown to load plugin \"{Descriptor.PluginPath}\".");
             }
 
             if (Error != null)
@@ -163,7 +163,7 @@ internal class PluginInstance(Assembly entry, string instancePath, string plugin
     {
         Error = e;
 
-        //bridge.PluginSystem.Logger.LogError(Error, message);
+        //bridge.PluginManager.Logger.LogError(Error, message);
     }
 
     private string[]? GetUpdateFiles()

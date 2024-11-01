@@ -9,7 +9,7 @@ using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-public record Manifest<T> : IManifest
+internal record Manifest<T> : IManifest
 {
     public Manifest(T manifest)
     {

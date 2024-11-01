@@ -15,23 +15,29 @@ using Rift.Runtime.API.Scripting;
 
 namespace Rift.Runtime.Scripting;
 
-internal interface IScriptSystemInternal : IScriptSystem
+internal interface IScriptManagerInternal : IScriptManager
 {
     public ScriptContext? ScriptContext { get; }
 }
 
-internal class ScriptSystem : IScriptSystemInternal, IInitializable
+internal class ScriptManager : IScriptManagerInternal, IInitializable
 {
-    public ScriptSystem()
+    enum Status
     {
-        IScriptSystem.Instance = this;
+        Unknown,
+        Init,
+        Ready,
+        Shutdown
+    }
+
+    public ScriptManager()
+    {
+        IScriptManager.Instance = this;
         ScriptContext = null;
     }
 
-    public ScriptContext? ScriptContext { get; private set; }
-
-    private bool _init;
-    private bool _shutdown;
+    public  ScriptContext? ScriptContext { get; private set; }
+    private Status         _status       { get; set; } = Status.Unknown;
 
     /// <summary>
     /// Check <seealso cref="ScriptOptions"/> for more details. 
@@ -85,21 +91,25 @@ internal class ScriptSystem : IScriptSystemInternal, IInitializable
 
     public bool Init()
     {
+        _status = Status.Init;
         AddLibrary(["Rift.Runtime"]);
         AddNamespace(["Rift.Runtime.Scripting"]);
-        _init = true;
-        _shutdown = false;
+        _status = Status.Ready;
         return true;
     }
 
     public void Shutdown()
     {
-        _shutdown = true;
-        _init = false;
+        RemoveNamespace(["Rift.Runtime.Scripting"]);
+        RemoveLibrary(["Rift.Runtime"]);
+
+        _status = Status.Shutdown;
     }
 
     public void AddLibrary(string library)
     {
+        CheckAvailable();
+
         _importLibraries.Add(library);
     }
 
@@ -107,21 +117,63 @@ internal class ScriptSystem : IScriptSystemInternal, IInitializable
     // 先不管他，之后再说
     public void AddLibrary(IEnumerable<string> libraries)
     {
+        CheckAvailable();
+
         _importLibraries.AddRange(libraries);
+    }
+
+    public void RemoveLibrary(string library)
+    {
+        CheckAvailable();
+
+        _importLibraries.Remove(library);
+    }
+
+    public void RemoveLibrary(IEnumerable<string> libraries)
+    {
+        CheckAvailable();
+
+        foreach (var library in libraries)
+        {
+            _importLibraries.Remove(library);
+        }
     }
 
     public void AddNamespace(string @namespace)
     {
+        CheckAvailable();
+
         _importNamespaces.Add(@namespace);
     }
 
     public void AddNamespace(IEnumerable<string> namespaces)
     {
+        CheckAvailable();
+
         _importNamespaces.AddRange(namespaces);
+    }
+
+    public void RemoveNamespace(string @namespace)
+    {
+        CheckAvailable();
+
+        _importNamespaces.Remove(@namespace);
+    }
+
+    public void RemoveNamespace(IEnumerable<string> namespaces)
+    {
+        CheckAvailable();
+
+        foreach (var @namespace in namespaces)
+        {
+            _importNamespaces.Remove(@namespace);
+        }
     }
 
     public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
     {
+        CheckAvailable();
+
         // make sure script context path passed in is canonicalized.
         ScriptContext = new ScriptContext(Path.GetFullPath(scriptPath));
 
@@ -173,6 +225,14 @@ internal class ScriptSystem : IScriptSystemInternal, IInitializable
 
             // reset.
             ScriptContext = null;
+        }
+    }
+
+    private void CheckAvailable()
+    {
+        if (_status is not (Status.Init or Status.Ready))
+        {
+            throw new InvalidOperationException("ScriptManager is not available");
         }
     }
 

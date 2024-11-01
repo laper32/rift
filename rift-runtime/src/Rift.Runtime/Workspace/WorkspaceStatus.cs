@@ -11,5 +11,5 @@ internal enum EWorkspaceStatus
     Unknown,
     Init,
     Ready,
-    Failed
+    Shutdown
 }

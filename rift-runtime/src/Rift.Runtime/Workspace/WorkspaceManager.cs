@@ -10,6 +10,7 @@ using Rift.Runtime.API.Schema;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Manifest;
+using Rift.Runtime.Plugin;
 using Rift.Runtime.Scripting;
 using Tomlyn;
 
@@ -17,8 +18,6 @@ namespace Rift.Runtime.Workspace;
 
 internal interface IWorkspaceManagerInternal : IWorkspaceManager
 {
-    public EWorkspaceStatus Status { get; }
-
     void LoadWorkspace();
 
     void SetRootPath(string path);
@@ -29,32 +28,35 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager
 
     void AddPluginForPackage(Scripting.Plugin plugin);
     void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
+
+    List<PluginDeclarator> CollectPluginsForLoad();
 }
 
 internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 {
+
     private readonly Packages _packages = new();
     internal readonly PackageInstances PackageInstances = new();
 
-    public EWorkspaceStatus Status { get; internal set; }
-    public string Root { get; internal set; }
+    private EWorkspaceStatus _status;
+    public string           Root { get; internal set; }
 
     public WorkspaceManager()
     {
         Root = "__Unknown__";
-        Status = EWorkspaceStatus.Unknown;
+        _status = EWorkspaceStatus.Unknown;
         IWorkspaceManager.Instance = this;
     }
 
     public bool Init()
     {
-        Status = EWorkspaceStatus.Init;
+        _status = EWorkspaceStatus.Init;
         return true;
     }
 
     public void Shutdown()
     {
-        Status = EWorkspaceStatus.Unknown;
+        _status = EWorkspaceStatus.Shutdown;
     }
 
     #region Fundamental operations
@@ -79,11 +81,15 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         _packages.LoadRecursively(Path.Combine(Root, Definitions.ManifestIdentifier));
         ValidateWorkspace();
         ActivatePackage();
-        PackageInstances.DumpPackagesMetadata();
+        _status = EWorkspaceStatus.Ready;
     }
 
     public void ValidateWorkspace()
     {
+        // TODO: 检查是否存在脚本错误引用的问题
+        // TODO:    包括但不限于:
+        // TODO:        多个field引用同一个脚本
+        // TODO:        field引用非自身包的脚本
     }
 
     public void ActivatePackage()
@@ -113,7 +119,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         var schema = LoadManifest(path);
         if (schema is null)
         {
-            throw new InvalidOperationException($"Failed to load manifest from `{path}`");
+            throw new InvalidOperationException($"Shutdown to load manifest from `{path}`");
         }
 
         if (schema.Workspace is { } workspace)
@@ -379,7 +385,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             {
                 continue;
             }
-            IScriptSystem.Instance.EvaluateScript(dependencies);
+            IScriptManager.Instance.EvaluateScript(dependencies);
         }
     }
 
@@ -392,7 +398,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 continue;
             }
 
-            IScriptSystem.Instance.EvaluateScript(metadata);
+            IScriptManager.Instance.EvaluateScript(metadata);
         }
     }
 
@@ -405,7 +411,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 continue;
             }
 
-            IScriptSystem.Instance.EvaluateScript(plugins);
+            IScriptManager.Instance.EvaluateScript(plugins);
         }
     }
 
@@ -449,7 +455,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
     private PackageInstance GetPackageInstance()
     {
-        var scriptSystem = (IScriptSystemInternal)IScriptSystem.Instance;
+        var scriptSystem = (IScriptManagerInternal)IScriptManager.Instance;
         if (scriptSystem.ScriptContext is not { } scriptContext)
         {
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
@@ -464,4 +470,18 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
     }
 
     #endregion
+
+    public List<PluginDeclarator> CollectPluginsForLoad()
+    {
+        CheckAvailable();
+        return PackageInstances.CollectPluginsForLoad();
+    }
+
+    private void CheckAvailable()
+    {
+        if (_status is not (EWorkspaceStatus.Ready or EWorkspaceStatus.Init))
+        {
+            throw new InvalidOperationException("WorkspaceManager is not available.");
+        }
+    }
 }
