@@ -7,6 +7,7 @@
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.Manifest;
+using System.Text.Json;
 
 namespace Rift.Runtime.Workspace;
 
@@ -176,7 +177,6 @@ internal class Packages
                         {
                             return;
                         }
-
                         Load(manifestPath);
                         break;
                     }
@@ -243,5 +243,15 @@ internal class Packages
                 throw new InvalidOperationException("Why you at here?");
             }
         }
+    }
+    public void DumpPackagesMetadata()
+    {
+        Console.WriteLine("DumpPackagesMetadata...");
+        var str = JsonSerializer.Serialize(Value, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+        Console.WriteLine(str);
+        Console.WriteLine("...End");
     }
 }

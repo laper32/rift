@@ -19,10 +19,15 @@ internal interface IPluginManagerInternal : IPluginManager, IInitializable
 
 internal class PluginManager : IPluginManagerInternal
 {
+    private const string PluginDirectoryName    = "plugins";
+    private       string _installationPluginPath = Path.Combine(IRuntime.Instance.InstallationPath, PluginDirectoryName);
+    private       string _userPluginPath         = Path.Combine(IRuntime.Instance.UserPath, PluginDirectoryName);
+
     public PluginManager()
     {
         IPluginManager.Instance = this;
     }
+
     public bool Init()
     {
         return true;

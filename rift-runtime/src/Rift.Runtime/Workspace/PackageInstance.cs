@@ -61,29 +61,26 @@ internal class PackageInstances
         return packageInstance;
     }
 
-    public void DumpPackagesMetadata()
+    public void DumpInstancesMetadata()
     {
-        // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
-        foreach (var instance in _value)
+        Console.WriteLine("DumpInstancesMetadata...");
+        var str = JsonSerializer.Serialize(_value, new JsonSerializerOptions
         {
-            var str = JsonSerializer.Serialize(instance, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            });
-            Console.WriteLine(str);
-        }
+            WriteIndented = true
+        });
+        Console.WriteLine(str);
+        Console.WriteLine("...End");
     }
 
     public List<PluginDeclarator> CollectPluginsForLoad()
     {
         var result = new List<PluginDeclarator>();
-        Console.WriteLine($"instances => {_value.Count}");
 
-        foreach (var (instanceName, instance) in _value)
+        foreach (var (_, instance) in _value)
         {
             if (instance.Plugins.Count <= 0)
             {
-                break;
+                continue;
             }
 
             foreach (var (pluginName, plugin) in instance.Plugins)

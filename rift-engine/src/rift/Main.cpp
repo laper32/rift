@@ -7,8 +7,6 @@
 #include "rift/bridge/InteropService.h"
 #include "rift/coreclr/CoreCLR.h"
 
-#include <print>
-
 #include "coreclr/CoreCLRDelegates.h"
 
 
@@ -23,15 +21,12 @@ bool Init()
 
     const auto clr = !!coreclr::Bootstrap(bridge::GetNatives());
 
-    std::println("{}", clr);
-
     return clr;
 }
 
 void Shutdown()
 {
     coreclr::Shutdown();
-    std::println("Rift.Runtime.Shutdown");
 }
 
 const char* RuntimeGetTasks()

@@ -78,7 +78,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
     public void LoadWorkspace()
     {
-        _packages.LoadRecursively(Path.Combine(Root, Definitions.ManifestIdentifier));
+        var manifestPath = Path.Combine(Root, Definitions.ManifestIdentifier);
+        _packages.LoadRecursively(manifestPath);
         ValidateWorkspace();
         ActivatePackage();
         _status = EWorkspaceStatus.Ready;

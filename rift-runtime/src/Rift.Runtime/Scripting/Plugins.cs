@@ -70,6 +70,7 @@ public static class Plugins
     public static void Add(Plugin plugin)
     {
         var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
+        Console.WriteLine($"{plugin.Name}, {plugin.Version}");
         workspaceManager.AddPluginForPackage(plugin);
     }
 

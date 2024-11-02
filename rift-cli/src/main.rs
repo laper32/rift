@@ -4,6 +4,8 @@
 // All Rights Reserved
 // ===========================================================================
 
+#[allow(dead_code)]
+
 mod engine {
     mod ffi {
         use std::ffi::c_char;
@@ -32,7 +34,7 @@ mod engine {
 
 fn main() {
     engine::init();
-    println!("{}", engine::get_tasks());
+    // println!("{}", engine::get_tasks());
 
     engine::shutdown();
 }
