@@ -48,4 +48,10 @@ internal class PluginManager : IPluginManagerInternal
         });
         Console.WriteLine(result);
     }
+
+    private void EnumerateExistingPlugins()
+    {
+    }
+
+    
 }

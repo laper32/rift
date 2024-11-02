@@ -76,7 +76,7 @@ internal class PackageInstances
     {
         var result = new List<PluginDeclarator>();
 
-        foreach (var (_, instance) in _value)
+        foreach (var (packageName, instance) in _value)
         {
             if (instance.Plugins.Count <= 0)
             {
@@ -89,7 +89,23 @@ internal class PackageInstances
                 {
                     throw new InvalidOperationException($"{pluginName}'s instance is null.");
                 }
-                result.Add(new PluginDeclarator(pluginName, plugin.Version));
+
+                var trimmedPluginName = pluginName.Trim();
+
+                if (string.IsNullOrEmpty(trimmedPluginName))
+                {
+                    // TODO: Warning here, use workspaceManager's logger.
+                    Console.WriteLine($"Warning: found a plugin name is empty, the package: `{packageName}`");
+                    continue;
+                }
+
+                var trimmedPluginVersion = plugin.Version.Trim();
+                if (string.IsNullOrEmpty(trimmedPluginVersion))
+                {
+                    trimmedPluginVersion = "latest";
+                }
+
+                result.Add(new PluginDeclarator(trimmedPluginName, trimmedPluginVersion));
 
             }
         }

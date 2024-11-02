@@ -55,13 +55,13 @@ public abstract class RiftPlugin : IPlugin
 
     public Guid UniqueId { get; } = Guid.NewGuid();
 
-    public bool OnLoad() => true;
+    public virtual bool OnLoad() => true;
 
-    public void OnAllLoaded()
+    public virtual void OnAllLoaded()
     {
     }
 
-    public void OnUnload()
+    public virtual void OnUnload()
     {
     }
 }

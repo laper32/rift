@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rift.Runtime.Generator", "R
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Rift.Runtime.API", "Rift.Runtime.API\Rift.Runtime.API.csproj", "{2ACA2296-A790-4895-8866-58CB7E849161}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{FABA0B98-34E9-41D9-8D1A-250D01F22425}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Generate", "Plugins\Rift.Generate\Rift.Generate.csproj", "{C9257D8C-F105-43FE-B82E-20CF98E22E71}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,9 +31,16 @@ Global
 		{2ACA2296-A790-4895-8866-58CB7E849161}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2ACA2296-A790-4895-8866-58CB7E849161}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2ACA2296-A790-4895-8866-58CB7E849161}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9257D8C-F105-43FE-B82E-20CF98E22E71}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9257D8C-F105-43FE-B82E-20CF98E22E71}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9257D8C-F105-43FE-B82E-20CF98E22E71}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9257D8C-F105-43FE-B82E-20CF98E22E71}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C9257D8C-F105-43FE-B82E-20CF98E22E71} = {FABA0B98-34E9-41D9-8D1A-250D01F22425}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6856D3BB-08FE-469F-93E9-32139ED98E76}
