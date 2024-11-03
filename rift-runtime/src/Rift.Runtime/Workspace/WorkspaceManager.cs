@@ -29,7 +29,7 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager
     void AddPluginForPackage(Scripting.Plugin plugin);
     void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
 
-    List<PluginDeclarator> CollectPluginsForLoad();
+    IEnumerable<PluginDeclarator> CollectPluginsForLoad();
 }
 
 internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
@@ -472,7 +472,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
     #endregion
 
-    public List<PluginDeclarator> CollectPluginsForLoad()
+    public IEnumerable<PluginDeclarator> CollectPluginsForLoad()
     {
         CheckAvailable();
         return PackageInstances.CollectPluginsForLoad();
