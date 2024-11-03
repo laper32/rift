@@ -19,9 +19,11 @@ internal interface IPluginManagerInternal : IPluginManager, IInitializable
 
 internal class PluginManager : IPluginManagerInternal
 {
-    private const string PluginDirectoryName    = "plugins";
-    private       string _installationPluginPath = Path.Combine(IRuntime.Instance.InstallationPath, PluginDirectoryName);
-    private       string _userPluginPath         = Path.Combine(IRuntime.Instance.UserPath, PluginDirectoryName);
+    private const string PluginDirectoryName = "plugins";
+    private const string PluginLibraryPathName = "lib"; // eg. ~/.rift/plugins/Example/lib/Example.dll
+    private const string PluginBinaryName = "bin"; // eg. ~/.rift/plugins/Google.Protobuf/bin/protoc.exe
+    private string _installationPluginPath = Path.Combine(IRuntime.Instance.InstallationPath, PluginDirectoryName);
+    private string _userPluginPath = Path.Combine(IRuntime.Instance.UserPath, PluginDirectoryName);
 
     public PluginManager()
     {
@@ -40,7 +42,7 @@ internal class PluginManager : IPluginManagerInternal
 
     public void LoadPlugins()
     {
-        var workspaceManager    = (IWorkspaceManagerInternal) IWorkspaceManager.Instance;
+        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
         var declarators = workspaceManager.CollectPluginsForLoad();
         var result = JsonSerializer.Serialize(declarators, new JsonSerializerOptions
         {
@@ -53,5 +55,5 @@ internal class PluginManager : IPluginManagerInternal
     {
     }
 
-    
+
 }
