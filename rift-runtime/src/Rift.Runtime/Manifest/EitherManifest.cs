@@ -11,7 +11,8 @@ namespace Rift.Runtime.Manifest;
 internal enum EManifestType
 {
     Virtual,
-    Real
+    Real,
+    Rift
 }
 
 internal interface IEitherManifest
@@ -26,18 +27,20 @@ internal record EitherManifest<T> : IEitherManifest
 {
     public EitherManifest(T manifest)
     {
-        if (manifest is not (IManifest or IVirtualManifest))
+        if (manifest is not (IManifest or IVirtualManifest or IRiftManifest))
         {
-            throw new InvalidOperationException("Only accepts `IManifest` or `IVirtualManifest`");
+            throw new InvalidOperationException("Only accepts `IManifest`, `IVirtualManifest`, or `IRiftManifest`");
         }
 
         Type = manifest switch
         {
             IVirtualManifest => EManifestType.Virtual,
-            IManifest => EManifestType.Real,
+            IManifest        => EManifestType.Real,
+            IRiftManifest    => EManifestType.Rift,
             _ => throw new ArgumentOutOfRangeException(nameof(manifest), manifest,
-                "Only accepts `VirtualManifest` or `Manifest`")
+                "Only accepts `VirtualManifest`, `Manifest`, or `RiftManifest`")
         };
+
         Value = manifest;
     }
 
@@ -50,6 +53,7 @@ internal record EitherManifest<T> : IEitherManifest
     {
         IManifest real => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,
+        IRiftManifest riftManifest => riftManifest.Name,
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 }

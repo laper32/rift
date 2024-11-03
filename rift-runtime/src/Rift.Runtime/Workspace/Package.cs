@@ -137,6 +137,10 @@ internal class Packages
                 }
                 break;
             }
+            case EManifestType.Rift:
+            {
+                throw new InvalidOperationException("`Unable to parse Rift-specific manifests.");
+            }
             default:
             {
                 throw new InvalidOperationException("Why are you here?");
@@ -237,6 +241,10 @@ internal class Packages
                     }
                 }
                 break;
+            }
+            case EManifestType.Rift:
+            {
+                throw new InvalidOperationException("Unable to parse Rift specific manifests.");
             }
             default:
             {

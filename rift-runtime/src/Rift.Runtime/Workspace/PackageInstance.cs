@@ -72,10 +72,8 @@ internal class PackageInstances
         Console.WriteLine("...End");
     }
 
-    public IEnumerable<PluginDeclarator> CollectPluginsForLoad()
+    public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
     {
-        //var result = new List<PluginDeclarator>();
-
         foreach (var (packageName, instance) in _value)
         {
             if (instance.Plugins.Count <= 0)
@@ -105,12 +103,8 @@ internal class PackageInstances
                     trimmedPluginVersion = "latest";
                 }
 
-                yield return new PluginDeclarator(trimmedPluginName, trimmedPluginVersion);
-                //result.Add(new PluginDeclarator(trimmedPluginName, trimmedPluginVersion));
-
+                yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
             }
         }
-
-        //return result;
     }
 }

@@ -29,7 +29,7 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager
     void AddPluginForPackage(Scripting.Plugin plugin);
     void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
 
-    IEnumerable<PluginDeclarator> CollectPluginsForLoad();
+    IEnumerable<PluginDescriptor> CollectPluginsForLoad();
 }
 
 internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
@@ -82,6 +82,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         _packages.LoadRecursively(manifestPath);
         ValidateWorkspace();
         ActivatePackage();
+        PackageInstances.DumpInstancesMetadata();
         _status = EWorkspaceStatus.Ready;
     }
 
@@ -125,9 +126,9 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
         if (schema.Workspace is { } workspace)
         {
-            if (schema.Folder is not null || schema.Project is not null || schema.Target is not null)
+            if (schema.Folder is not null || schema.Project is not null || schema.Target is not null || schema.Plugin is not null)
             {
-                throw new InvalidOperationException("Workspace and Folder/Project/Target can't be used together.");
+                throw new InvalidOperationException("Workspace and Folder/Project/Target/Plugin can't be used together.");
             }
 
             var workspaceName = "";
@@ -163,10 +164,10 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
         if (schema.Folder is { } folder)
         {
-            if (schema.Workspace is not null || schema.Project is not null || schema.Target is not null)
+            if (schema.Workspace is not null || schema.Project is not null || schema.Target is not null || schema.Plugin is not null)
             {
                 throw new InvalidOperationException(
-                    "Workspace and Folder/Project/Target can't be used together.");
+                    "Workspace and Folder/Project/Target/Plugin can't be used together.");
             }
 
             var folderName = "";
@@ -201,7 +202,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
         if (schema.Project is { } project)
         {
-            if (schema.Folder is not null || schema.Workspace is not null)
+            if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
             {
                 throw new InvalidOperationException("Workspace and Folder/Project/Plugin can't be used together.");
             }
@@ -277,12 +278,11 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             }
         }
 
-        // ReSharper disable once InvertIf
         if (schema.Target is { } target)
         {
-            if (schema.Folder is not null || schema.Workspace is not null)
+            if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
             {
-                throw new InvalidOperationException("Target cannot used together with `[workspace]` or `[folder0000]`");
+                throw new InvalidOperationException("Target cannot used together with `[workspace]`, `[folder]`, or `[plugin]`");
             }
 
             return new EitherManifest<Manifest<TargetManifest>>(
@@ -296,7 +296,28 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     )
                 )
             );
+        }
 
+        // ReSharper disable once InvertIf
+        if (schema.Plugin is { } plugin)
+        {
+            if (schema.Folder is not null || schema.Workspace is not null || schema.Project is not null || schema.Target is not null)
+            {
+                throw new InvalidOperationException("Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
+            }
+
+            return new EitherManifest<Manifest<PluginManifest>>(
+                new Manifest<PluginManifest>(
+                    new PluginManifest(
+                        Name: plugin.Name,
+                        Authors: plugin.Authors,
+                        Version: plugin.Version,
+                        Description: plugin.Description ?? string.Empty,
+                        Metadata: plugin.Metadata,
+                        Dependency: plugin.Dependency
+                    )
+                )
+            );
         }
 
         throw new InvalidOperationException($"No any workspace schema field found, path: `{path}`");
@@ -472,7 +493,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
     #endregion
 
-    public IEnumerable<PluginDeclarator> CollectPluginsForLoad()
+    public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
     {
         CheckAvailable();
         return PackageInstances.CollectPluginsForLoad();

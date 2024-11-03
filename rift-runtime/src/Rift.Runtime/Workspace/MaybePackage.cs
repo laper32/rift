@@ -6,14 +6,15 @@
 
 namespace Rift.Runtime.Workspace;
 
+internal enum EMaybePackage
+{
+    Package,
+    Virtual,
+    Rift
+}
+
 internal interface IMaybePackage
 {
-    public enum EMaybePackage
-    {
-        Package,
-        Virtual
-    }
-
     public string  Name         { get; }
     public string? Dependencies { get; }
     public string? Plugins      { get; }
@@ -23,10 +24,11 @@ internal interface IMaybePackage
 
 internal class MaybePackage<T>(T value) : IMaybePackage
 {
-    public IMaybePackage.EMaybePackage Type { get; init; } = value switch
+    public EMaybePackage Type { get; init; } = value switch
     {
-        Package        => IMaybePackage.EMaybePackage.Package,
-        VirtualPackage => IMaybePackage.EMaybePackage.Virtual,
+        Package        => EMaybePackage.Package,
+        VirtualPackage => EMaybePackage.Virtual,
+        RiftPackage    => EMaybePackage.Rift,
         _              => throw new InvalidOperationException("Only accepts `Package` or `VirtualPackage`.")
     };
 
@@ -36,6 +38,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
     {
         Package package        => package.ManifestPath,
         VirtualPackage package => package.ManifestPath,
+        RiftPackage package    => package.ManifestPath,
         _                      => throw new InvalidOperationException("Why you at here?")
     };
 
@@ -43,6 +46,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
     {
         Package package        => package.Name,
         VirtualPackage package => package.Name,
+        RiftPackage package    => package.Name,
         _                      => string.Empty
     };
 
@@ -50,6 +54,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
     {
         Package package        => package.Dependencies,
         VirtualPackage package => package.Dependencies,
+        RiftPackage package    => package.Dependencies,
         _                      => null
     };
 
@@ -64,6 +69,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
     {
         Package package        => package.Metadata,
         VirtualPackage package => package.Metadata,
+        RiftPackage package    => package.Metadata,
         _                      => null
     };
 }

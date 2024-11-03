@@ -12,15 +12,18 @@ namespace Rift.Runtime.API.Schema;
 // ReSharper disable StringLiteralTypo
 public class TomlManifest
 {
-    [DataMember(Name = "target")] 
+    [DataMember(Name = "target")]
     public TomlTarget? Target { get; set; }
-    
+
     [DataMember(Name = "project")]
     public TomlProject? Project { get; set; }
-    
-    [DataMember(Name = "folder")]
+
+    [DataMember(Name = "folder")] 
     public TomlFolder? Folder { get; set; }
 
-    [DataMember(Name = "workspace")]
+    [DataMember(Name = "workspace")] 
     public TomlWorkspace? Workspace { get; set; }
+
+    [DataMember(Name = "plugin")] 
+    public TomlPlugin? Plugin { get; set; }
 }
