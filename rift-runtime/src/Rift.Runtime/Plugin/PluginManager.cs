@@ -6,6 +6,7 @@
 
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Plugin;
+using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Workspace;
 
@@ -14,6 +15,10 @@ namespace Rift.Runtime.Plugin;
 internal interface IPluginManagerInternal : IPluginManager, IInitializable
 {
     void LoadPlugins();
+
+    bool AddDependencyForPlugin(IPackageImportDeclarator declarator);
+    bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators);
+    bool AddMetadataForPlugin(string key, object value);
 }
 
 internal class PluginManager : IPluginManagerInternal
@@ -38,13 +43,17 @@ internal class PluginManager : IPluginManagerInternal
     {
         var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
         var declarators = workspaceManager.CollectPluginsForLoad();
-        
+        foreach (var declarator in declarators)
+        {
+            _identities.FindPlugin(declarator);
+        }
         //var result = JsonSerializer.Serialize(declarators, new JsonSerializerOptions
         //{
         //    WriteIndented = true
         //});
         //Console.WriteLine(result);
     }
+
 
     ///// <summary>
     ///// 获取插件入口dll <br/>
@@ -67,4 +76,18 @@ internal class PluginManager : IPluginManagerInternal
     //    return File.Exists(entryDll) ? entryDll : string.Empty;
     //}
 
+    public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
+    {
+        return _identities.AddDependencyForPlugin(declarator);
+    }
+
+    public bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
+    {
+        return _identities.AddDependencyForPlugin(declarators);
+    }
+
+    public bool AddMetadataForPlugin(string key, object value)
+    {
+        return _identities.AddMetadataForPlugin(key, value);
+    }
 }

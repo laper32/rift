@@ -1,7 +1,11 @@
-﻿using Rift.Runtime.API.Fundamental;
+﻿using System.Text.Json;
+using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
+using Rift.Runtime.API.Scripting;
 using Rift.Runtime.Manifest;
+using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
+using Semver;
 
 // 我感觉逃不了课的，不管怎么操作最后都要回到扫一遍你有没有这个插件包
 
@@ -9,21 +13,24 @@ namespace Rift.Runtime.Plugin;
 
 internal class PluginIdentity(IMaybePackage package)
 {
-    public IMaybePackage Value { get; init; } = package;
+    public IMaybePackage              Value        { get; init; } = package;
+    public Dictionary<string, object> Dependencies { get; init; } = [];
+    public Dictionary<string, object> Metadata     { get; init; } = [];
+
 }
 
 internal class PluginIdentities
 {
-    private const    string PluginDirectoryName     = "plugins";
-    private const    string PluginLibraryName       = "lib";       // eg. ~/.rift/plugins/Example/lib/Example.dll 
-    private readonly string _installationPluginPath = Path.Combine(IRuntime.Instance.InstallationPath, PluginDirectoryName);
-    private readonly string _userPluginPath         = Path.Combine(IRuntime.Instance.UserPath, PluginDirectoryName);
+    private const string PluginDirectoryName = "plugins";
+    private const string PluginLibraryName = "lib";       // eg. ~/.rift/plugins/Example/lib/Example.dll 
 
-    // TODO: 之后可以参考python怎么处理多源的情况的。
-    // 现在我们只会考虑安装路径和用户路径。
+    private readonly List<PluginIdentity> _identities = [];
 
-    private readonly List<PluginIdentity> _installationPluginIdentities = [];
-    private readonly List<PluginIdentity> _userHomePluginIdentities     = [];
+    private readonly List<string> _pluginSearchPaths =
+    [
+        Path.Combine(IRuntime.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
+        Path.Combine(IRuntime.Instance.UserPath, PluginDirectoryName), // 用户目录。
+    ];
 
     private PluginIdentity CreatePluginIdentity(string manifestPath)
     {
@@ -42,7 +49,7 @@ internal class PluginIdentities
                     }
                     default:
                     {
-                        throw new InvalidOperationException("Only supports Rift specific manifests."); 
+                        throw new InvalidOperationException("Only supports Rift specific manifests.");
                     }
                 }
             }
@@ -57,17 +64,244 @@ internal class PluginIdentities
 
     // 插件系统不可能出现套娃情况的，所有插件只会有一层。
 
-    // 想了想，似乎可以不用非得扫一遍
-    public void EnumerateInstallationPathPlugins()
+
+    public void AddSearchPath(string path)
     {
-        var pluginsPath = Directory.GetDirectories(_installationPluginPath);
-        foreach (var pluginPath in pluginsPath)
+        _pluginSearchPaths.Add(path);
+    }
+
+    /// <summary>
+    /// 根据Descriptor找插件 <br/>
+    /// 注：<br/>
+    /// <remarks>
+    ///     1. 插件的名字一定是文件夹的名字，且版本是根据文件夹名来做分类。 <br/>
+    ///     2. 通过Rift.toml解析插件包。
+    /// </remarks>
+    /// </summary>
+    /// <param name="descriptor"></param>
+    public void FindPlugin(PluginDescriptor descriptor)
+    {
+        var uniqueSearchPaths = _pluginSearchPaths.Distinct().ToList();
+
+        /*
+         插件的一些规则：
+        1. 传入的插件名一定等于其文件夹的名字。
+        2. 通过以版本号命名的文件夹做区分。
+
+        插件搜索规则：
+        1. 根据提供的搜索路径搜寻插件。
+        2. 如果找到了插件，根据提供的搜索路径的先后顺序决定调用哪个插件。
+
+        插件结果筛选：
+        1. 如果发现插件的版本等一致，直接用第一个结果
+        2. 如果发现版本不一致，排序，然后选出第一个。
+        3. 如果标记的是latest，只查最新版。
+         */
+
+        // TODO: Windows默认对大小写不敏感，Linux默认大小写敏感。
+        // TODO: 我们需要处理Linux环境下同名但大小写不同导致的文件夹不同的问题。
+        // TODO: 现版本我们只考虑Windows，不考虑Linux
+
+        uniqueSearchPaths.ForEach(x =>
         {
-            var versionsPath = Directory.GetDirectories(pluginPath);
-            foreach (var versionPath in versionsPath)
+            FindPluginFromSearchPath(x, descriptor);
+        });
+
+    }
+
+    private void FindPluginFromSearchPath(string path, PluginDescriptor descriptor)
+    {
+        var pluginPath = Path.Combine(path, descriptor.Name);
+        var pluginVersionsDir = Directory.GetDirectories(pluginPath);
+        var pluginVersions = new List<SemVersion>();
+
+        foreach (var s in pluginVersionsDir)
+        {
+            var versionDir = Path.GetFileName(s);
+            if (SemVersion.TryParse(versionDir, out var version))
             {
-                Console.WriteLine($"{pluginPath} => {versionPath}");
+                pluginVersions.Add(version);
+            }
+        }
+
+        if (pluginVersionsDir.Length <= 0)
+        {
+            Console.WriteLine("No version found, why?");
+            return;
+        }
+
+        var latestVersion = pluginVersions.Max(SemVersion.SortOrderComparer)!;
+
+        if (descriptor.Version.Equals("latest", StringComparison.OrdinalIgnoreCase))
+        {
+            var latestPluginPath = Path.Combine(pluginPath, latestVersion.ToString());
+
+            if (!Directory.Exists(latestPluginPath))
+            {
+                Console.WriteLine("Plugin not found.");
+                return;
+            }
+
+            var latestPluginManifestPath = Path.Combine(latestPluginPath, Definitions.ManifestIdentifier);
+
+            var identity = MakeIdentity(latestPluginManifestPath);
+            RetrievePluginDependencies(identity);
+            Console.WriteLine("FindPluginFromSearchPath...");
+            Console.WriteLine(JsonSerializer.Serialize(identity, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            }));
+            Console.WriteLine("...End");
+        }
+        else
+        {
+            if (!SemVersion.TryParse(descriptor.Version, out var userDefinedVersion))
+            {
+                Console.WriteLine($"Incorrect version input => `{descriptor.Name}`: `{descriptor.Version}`");
+                return;
+            }
+
+            var selectedPluginPath = Path.Combine(pluginPath, userDefinedVersion.ToString());
+            if (!Directory.Exists(selectedPluginPath))
+            {
+                Console.WriteLine("Plugin not found.");
+                return;
+            }
+
+            // eg: ~/.rift/plugins/rift.generate/1.0.0/Rift.toml
+            var selectedPluginManifestPath = Path.Combine(selectedPluginPath, Definitions.ManifestIdentifier);
+        }
+    }
+
+    private IMaybePackage ParseManifest(string manifestPath)
+    {
+        var manifest = WorkspaceManager.ReadManifest(manifestPath);
+        switch (manifest.Type)
+        {
+            case EManifestType.Rift:
+            {
+                return manifest switch
+                {
+                    EitherManifest<RiftManifest<PluginManifest>> pluginManifest => new MaybePackage<RiftPackage>(
+                        new RiftPackage(pluginManifest.Value, manifestPath)),
+                    _ => throw new NotSupportedException("Only accepts `[plugin]`")
+                };
+            }
+            case EManifestType.Real:
+            case EManifestType.Virtual:
+            default:
+            {
+                throw new NotSupportedException("Only accepts `[plugin]`");
             }
         }
     }
+
+    private PluginIdentity MakeIdentity(string manifestPath)
+    {
+        var manifest = ParseManifest(manifestPath);
+        var identity = new PluginIdentity(manifest);
+        return identity;
+    }
+
+    private void RetrievePluginDependencies(PluginIdentity identity)
+    {
+        var scriptPath = identity.Value.Dependencies;
+        if (scriptPath is null)
+        {
+            return;
+        }
+        IScriptManager.Instance.EvaluateScript(scriptPath);
+        //var plugin = identity.Value;
+        //if (plugin is not { } pluginValue)
+        //{
+        //    return;
+        //}
+
+        //var dependencies = pluginValue.Dependencies;
+        //if (dependencies is not { } dependency)
+        //{
+        //    return;
+        //}
+
+        //foreach (var (key, value) in dependency)
+        //{
+        //    if (value is not IPackageImportDeclarator declarator)
+        //    {
+        //        continue;
+        //    }
+
+        //    var dependencyIdentity = FindPluginIdentityFromScriptPath(declarator.Name);
+        //    if (dependencyIdentity is not { } identity)
+        //    {
+        //        continue;
+        //    }
+
+        //    identity.Dependencies.Add(key, identity);
+        //}
+    }
+
+    public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
+    {
+        if (GetPluginIdentity() is not { } identity)
+        {
+            return false;
+        }
+
+        identity.Dependencies.Add(declarator.Name, declarator);
+
+        return true;
+    }
+
+    public bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
+    {
+        if (GetPluginIdentity() is not { } identity)
+        {
+            return false;
+        }
+
+        foreach (var declarator in declarators)
+        {
+            identity.Dependencies.Add(declarator.Name, declarator);
+        }
+
+        return true;
+    }
+
+    public bool AddMetadataForPlugin(string key, object value)
+    {
+        if (GetPluginIdentity() is not { } identity)
+        {
+            return false;
+        }
+
+        identity.Metadata.Add(key, value);
+        return true;
+    }
+
+
+    public PluginIdentity? GetPluginIdentity()
+    {
+        var scriptSystem = (IScriptManagerInternal)IScriptManager.Instance;
+        if (scriptSystem.ScriptContext is not { } scriptContext)
+        {
+            throw new InvalidOperationException("This function is only allowed in package dependency script.");
+        }
+        return FindPluginIdentityFromScriptPath(scriptContext.Path);
+    }
+
+    private PluginIdentity? FindPluginIdentityFromScriptPath(string scriptPath)
+    {
+        var instance = _identities.FirstOrDefault(x =>
+        {
+            var canonicalizedPath = Path.GetFullPath(scriptPath);
+            Console.WriteLine($"CanonicalizedPath => {canonicalizedPath}");
+            var isPlugin = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isDependency = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isMetadata = x.Value.Metadata?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            return isPlugin || isDependency || isMetadata;
+        });
+        Console.WriteLine($"FindPluginIdentityFromScriptPath => IsNull => {instance is null}");
+        return instance;
+    }
+
 }

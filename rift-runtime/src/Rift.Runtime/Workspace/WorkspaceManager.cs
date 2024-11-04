@@ -22,12 +22,12 @@ internal interface IWorkspaceManagerInternal : IWorkspaceManager
 
     void SetRootPath(string path);
 
-    void AddMetadataForPackage(string key, object value);
-    void AddDependencyForPackage(IPackageImportDeclarator declarator);
-    void AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators);
+    bool AddMetadataForPackage(string key, object value);
+    bool AddDependencyForPackage(IPackageImportDeclarator declarator);
+    bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators);
 
-    void AddPluginForPackage(Scripting.Plugin plugin);
-    void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
+    bool AddPluginForPackage(Scripting.Plugin plugin);
+    bool AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
 
     IEnumerable<PluginDescriptor> CollectPluginsForLoad();
 }
@@ -82,7 +82,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         _packages.LoadRecursively(manifestPath);
         ValidateWorkspace();
         ActivatePackage();
-        PackageInstances.DumpInstancesMetadata();
+        //PackageInstances.DumpInstancesMetadata();
         _status = EWorkspaceStatus.Ready;
     }
 
@@ -306,15 +306,15 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 throw new InvalidOperationException("Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
             }
 
-            return new EitherManifest<Manifest<PluginManifest>>(
-                new Manifest<PluginManifest>(
+            return new EitherManifest<RiftManifest<PluginManifest>>(
+                new RiftManifest<PluginManifest>(
                     new PluginManifest(
                         Name: plugin.Name,
                         Authors: plugin.Authors,
                         Version: plugin.Version,
                         Description: plugin.Description ?? string.Empty,
                         Metadata: plugin.Metadata,
-                        Dependency: plugin.Dependency
+                        Dependency: plugin.Dependencies
                     )
                 )
             );
@@ -437,45 +437,70 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         }
     }
 
-    public void AddMetadataForPackage(string key, object value)
+    public bool AddMetadataForPackage(string key, object value)
     {
-        var packageInstance = GetPackageInstance();
+        if (GetPackageInstance() is not { } instance)
+        {
+            return false;
+        }
+        instance.Metadata.Add(key, value);
+        return true;
 
-        packageInstance.Metadata.Add(key, value);
     }
 
-    public void AddDependencyForPackage(IPackageImportDeclarator declarator)
+    public bool AddDependencyForPackage(IPackageImportDeclarator declarator)
     {
-        var packageInstance = GetPackageInstance();
-        packageInstance.Dependencies.Add(declarator.Name, declarator);
+        if (GetPackageInstance() is not { } instance)
+        {
+            return false;
+        }
+        instance.Dependencies.Add(declarator.Name, declarator);
+        return true;
+
     }
 
-    public void AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
+    public bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
     {
-        var packageInstance = GetPackageInstance();
+        if (GetPackageInstance() is not { } packageInstance)
+        {
+            return false;
+        }
 
         foreach (var declarator in declarators)
         {
             packageInstance.Dependencies.Add(declarator.Name, declarator);
         }
+
+        return true;
     }
 
-    public void AddPluginForPackage(Scripting.Plugin plugin)
+    public bool AddPluginForPackage(Scripting.Plugin plugin)
     {
-        var packageInstance = GetPackageInstance();
+        if (GetPackageInstance() is not { } packageInstance)
+        {
+            return false;
+        }
+
         packageInstance.Plugins.Add(plugin.Name, plugin);
+        return true;
     }
 
-    public void AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins)
+    public bool AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins)
     {
-        var packageInstance = GetPackageInstance();
+        if (GetPackageInstance() is not { } packageInstance)
+        {
+            return false;
+        }
+
         foreach (var plugin in plugins)
         {
             packageInstance.Plugins.Add(plugin.Name, plugin);
         }
+
+        return true;
     }
 
-    private PackageInstance GetPackageInstance()
+    private PackageInstance? GetPackageInstance()
     {
         var scriptSystem = (IScriptManagerInternal)IScriptManager.Instance;
         if (scriptSystem.ScriptContext is not { } scriptContext)
@@ -483,12 +508,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
         }
 
-        if (PackageInstances.FindPackageFromScriptPath(scriptContext.Path) is not { } packageInstance)
-        {
-            throw new InvalidOperationException($"Unable to find package from manifest path: `{scriptContext.Path}`");
-        }
-
-        return packageInstance;
+        return PackageInstances.FindPackageFromScriptPath(scriptContext.Path);
     }
 
     #endregion

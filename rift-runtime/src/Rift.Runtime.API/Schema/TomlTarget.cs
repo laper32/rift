@@ -13,9 +13,9 @@ namespace Rift.Runtime.API.Schema;
 public class TomlTarget
 {
     [DataMember(Name = "name")]
-    public string Name { get; set; } = null!;
+    public required string Name { get; set; }
     [DataMember(Name = "type")]
-    public string Type { get; set; } = null!;
+    public required string Type { get; set; }
     [DataMember(Name = "plugins")]
     public string? Plugins { get; set; }
     [DataMember(Name = "dependencies")]

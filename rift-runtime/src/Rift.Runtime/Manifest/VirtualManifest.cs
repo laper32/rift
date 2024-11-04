@@ -20,6 +20,7 @@ internal record VirtualManifest<T> : IVirtualManifest
 
         Value = manifest;
     }
+
     [JsonIgnore]
     public T Value { get; init; }
 

@@ -16,7 +16,7 @@ public class TomlFolder
     public string? Name { get; set; }
 
     [DataMember(Name = "members")]
-    public required List<string>? Members { get; set; }
+    public List<string>? Members { get; set; }
 
     [DataMember(Name = "exclude")]
     public List<string>? Exclude { get; set; }
