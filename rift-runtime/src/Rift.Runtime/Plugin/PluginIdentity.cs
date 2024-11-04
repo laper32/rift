@@ -3,7 +3,6 @@ using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.Manifest;
-using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 using Semver;
 
@@ -25,6 +24,8 @@ internal class PluginIdentities
     private const string PluginLibraryName = "lib";       // eg. ~/.rift/plugins/Example/lib/Example.dll 
 
     private readonly List<PluginIdentity> _identities = [];
+
+    private PluginIdentity? _currentEvaluatingIdentity = null;
 
     private readonly List<string> _pluginSearchPaths =
     [
@@ -144,8 +145,10 @@ internal class PluginIdentities
 
             var latestPluginManifestPath = Path.Combine(latestPluginPath, Definitions.ManifestIdentifier);
 
-            var identity = MakeIdentity(latestPluginManifestPath);
+            var identity = CreatePluginIdentity(latestPluginManifestPath);
+            _currentEvaluatingIdentity = identity;
             RetrievePluginDependencies(identity);
+            RetrievePluginMetadata(identity);
             Console.WriteLine("FindPluginFromSearchPath...");
             Console.WriteLine(JsonSerializer.Serialize(identity, new JsonSerializerOptions
             {
@@ -173,36 +176,6 @@ internal class PluginIdentities
         }
     }
 
-    private IMaybePackage ParseManifest(string manifestPath)
-    {
-        var manifest = WorkspaceManager.ReadManifest(manifestPath);
-        switch (manifest.Type)
-        {
-            case EManifestType.Rift:
-            {
-                return manifest switch
-                {
-                    EitherManifest<RiftManifest<PluginManifest>> pluginManifest => new MaybePackage<RiftPackage>(
-                        new RiftPackage(pluginManifest.Value, manifestPath)),
-                    _ => throw new NotSupportedException("Only accepts `[plugin]`")
-                };
-            }
-            case EManifestType.Real:
-            case EManifestType.Virtual:
-            default:
-            {
-                throw new NotSupportedException("Only accepts `[plugin]`");
-            }
-        }
-    }
-
-    private PluginIdentity MakeIdentity(string manifestPath)
-    {
-        var manifest = ParseManifest(manifestPath);
-        var identity = new PluginIdentity(manifest);
-        return identity;
-    }
-
     private void RetrievePluginDependencies(PluginIdentity identity)
     {
         var scriptPath = identity.Value.Dependencies;
@@ -211,57 +184,40 @@ internal class PluginIdentities
             return;
         }
         IScriptManager.Instance.EvaluateScript(scriptPath);
-        //var plugin = identity.Value;
-        //if (plugin is not { } pluginValue)
-        //{
-        //    return;
-        //}
+    }
 
-        //var dependencies = pluginValue.Dependencies;
-        //if (dependencies is not { } dependency)
-        //{
-        //    return;
-        //}
-
-        //foreach (var (key, value) in dependency)
-        //{
-        //    if (value is not IPackageImportDeclarator declarator)
-        //    {
-        //        continue;
-        //    }
-
-        //    var dependencyIdentity = FindPluginIdentityFromScriptPath(declarator.Name);
-        //    if (dependencyIdentity is not { } identity)
-        //    {
-        //        continue;
-        //    }
-
-        //    identity.Dependencies.Add(key, identity);
-        //}
+    private void RetrievePluginMetadata(PluginIdentity identity)
+    {
+        var scriptPath = identity.Value.Metadata;
+        if (scriptPath is null)
+        {
+            return;
+        }
+        IScriptManager.Instance.EvaluateScript(scriptPath);
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
     {
-        if (GetPluginIdentity() is not { } identity)
+        if (_currentEvaluatingIdentity is null)
         {
             return false;
         }
 
-        identity.Dependencies.Add(declarator.Name, declarator);
+        _currentEvaluatingIdentity.Dependencies.Add(declarator.Name, declarator);
 
         return true;
     }
 
     public bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
     {
-        if (GetPluginIdentity() is not { } identity)
+        if (_currentEvaluatingIdentity is null)
         {
             return false;
         }
 
         foreach (var declarator in declarators)
         {
-            identity.Dependencies.Add(declarator.Name, declarator);
+            _currentEvaluatingIdentity.Dependencies.Add(declarator.Name, declarator);
         }
 
         return true;
@@ -269,39 +225,13 @@ internal class PluginIdentities
 
     public bool AddMetadataForPlugin(string key, object value)
     {
-        if (GetPluginIdentity() is not { } identity)
+        if (_currentEvaluatingIdentity is null)
         {
             return false;
         }
 
-        identity.Metadata.Add(key, value);
+        _currentEvaluatingIdentity.Metadata.Add(key, value);
         return true;
-    }
-
-
-    public PluginIdentity? GetPluginIdentity()
-    {
-        var scriptSystem = (IScriptManagerInternal)IScriptManager.Instance;
-        if (scriptSystem.ScriptContext is not { } scriptContext)
-        {
-            throw new InvalidOperationException("This function is only allowed in package dependency script.");
-        }
-        return FindPluginIdentityFromScriptPath(scriptContext.Path);
-    }
-
-    private PluginIdentity? FindPluginIdentityFromScriptPath(string scriptPath)
-    {
-        var instance = _identities.FirstOrDefault(x =>
-        {
-            var canonicalizedPath = Path.GetFullPath(scriptPath);
-            Console.WriteLine($"CanonicalizedPath => {canonicalizedPath}");
-            var isPlugin = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isDependency = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isMetadata = x.Value.Metadata?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            return isPlugin || isDependency || isMetadata;
-        });
-        Console.WriteLine($"FindPluginIdentityFromScriptPath => IsNull => {instance is null}");
-        return instance;
     }
 
 }
