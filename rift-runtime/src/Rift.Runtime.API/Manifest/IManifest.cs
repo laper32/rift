@@ -8,7 +8,11 @@ namespace Rift.Runtime.API.Manifest;
 
 public interface IManifest
 {
-    public string Name { get; }
+    public string  Name    { get; }
+    /// <summary>
+    /// Target不需要版本号，其一定是latest
+    /// </summary>
+    public string? Version { get; } 
     public string? Dependencies { get; }
     public string? Plugins { get; }
     public string? Metadata { get; }

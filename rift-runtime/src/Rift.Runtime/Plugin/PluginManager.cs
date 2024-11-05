@@ -39,14 +39,20 @@ internal class PluginManager : IPluginManagerInternal
 
     }
 
+    /// <summary>
+    /// N.B. 插件系统这里和很多地方不一样的是：我们需要支持没有dll的情况（即：这个插件只有二进制文件，或者只有配置文件）<br/>
+    /// 所以必须有一个中间层给插件做Identity。
+    /// </summary>
     public void LoadPlugins()
     {
         var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
         var declarators = workspaceManager.CollectPluginsForLoad();
         foreach (var declarator in declarators)
         {
-            _identities.FindPlugin(declarator);
+            _identities.Add(declarator);
         }
+
+        _identities.Dump();
         //var result = JsonSerializer.Serialize(declarators, new JsonSerializerOptions
         //{
         //    WriteIndented = true

@@ -31,6 +31,13 @@ internal record Manifest<T> : IManifest
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
+    public string? Version => Value switch
+    {
+        ProjectManifest project => project.Version,
+        TargetManifest          => null,
+        _                       => throw new ArgumentException("Invalid manifest type.")
+    };
+
     public string? Dependencies => Value switch
     {
         ProjectManifest project => project.Dependencies,

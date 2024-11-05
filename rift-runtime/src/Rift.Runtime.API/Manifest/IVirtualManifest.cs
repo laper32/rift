@@ -8,7 +8,7 @@ namespace Rift.Runtime.API.Manifest;
 
 public interface IVirtualManifest
 {
-    public string Name { get; }
+    public string  Name    { get; }
     public List<string> Members { get; }
     public List<string> Exclude { get; }
     public string? Dependencies { get; }

@@ -12,9 +12,9 @@ namespace Rift.Runtime.Plugin;
 
 internal class PluginIdentity(IMaybePackage package)
 {
-    public IMaybePackage              Value        { get; init; } = package;
+    public IMaybePackage Value { get; init; } = package;
     public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, object> Metadata     { get; init; } = [];
+    public Dictionary<string, object> Metadata { get; init; } = [];
 
 }
 
@@ -25,7 +25,7 @@ internal class PluginIdentities
 
     private readonly List<PluginIdentity> _identities = [];
 
-    private PluginIdentity? _currentEvaluatingIdentity = null;
+    private PluginIdentity? _currentEvaluatingIdentity;
 
     private readonly List<string> _pluginSearchPaths =
     [
@@ -40,19 +40,13 @@ internal class PluginIdentities
         {
             case EManifestType.Rift:
             {
-                switch (manifest)
+                return manifest switch
                 {
                     // 插件是存在一个文件夹里通过版本号作为文件夹区分方式的，所以不能直接打死！
-                    case EitherManifest<RiftManifest<PluginManifest>> pluginManifest:
-                    {
-                        var riftPackage = new RiftPackage(pluginManifest.Value, manifestPath);
-                        return new PluginIdentity(new MaybePackage<RiftPackage>(new RiftPackage(pluginManifest.Value, manifestPath)));
-                    }
-                    default:
-                    {
-                        throw new InvalidOperationException("Only supports Rift specific manifests.");
-                    }
-                }
+                    EitherManifest<RiftManifest<PluginManifest>> pluginManifest => new PluginIdentity(
+                        new MaybePackage<RiftPackage>(new RiftPackage(pluginManifest.Value, manifestPath))),
+                    _ => throw new InvalidOperationException("Only supports Rift specific manifests.")
+                };
             }
             case EManifestType.Virtual:
             case EManifestType.Real:
@@ -72,7 +66,7 @@ internal class PluginIdentities
     }
 
     /// <summary>
-    /// 根据Descriptor找插件 <br/>
+    /// 根据Descriptor添加Identity <br/>
     /// 注：<br/>
     /// <remarks>
     ///     1. 插件的名字一定是文件夹的名字，且版本是根据文件夹名来做分类。 <br/>
@@ -80,7 +74,7 @@ internal class PluginIdentities
     /// </remarks>
     /// </summary>
     /// <param name="descriptor"></param>
-    public void FindPlugin(PluginDescriptor descriptor)
+    public void Add(PluginDescriptor descriptor)
     {
         var uniqueSearchPaths = _pluginSearchPaths.Distinct().ToList();
 
@@ -103,14 +97,47 @@ internal class PluginIdentities
         // TODO: 我们需要处理Linux环境下同名但大小写不同导致的文件夹不同的问题。
         // TODO: 现版本我们只考虑Windows，不考虑Linux
 
+        var possiblePlugins = new List<PluginIdentity>();
         uniqueSearchPaths.ForEach(x =>
         {
-            FindPluginFromSearchPath(x, descriptor);
+            if (FindFromSearchPath(x, descriptor) is { } identity)
+            {
+                possiblePlugins.Add(identity);
+            }
         });
-
+        
+        //uniqueSearchPaths.ForEach(x =>
+        //{
+        //    FindFromSearchPath(x, descriptor);
+        //});
+        AnalyzeDependencies();
     }
 
-    private void FindPluginFromSearchPath(string path, PluginDescriptor descriptor)
+    public void Dump()
+    {
+        Console.WriteLine(JsonSerializer.Serialize(_identities, new JsonSerializerOptions
+        {
+            WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        }));
+    }
+
+    private void AnalyzeDependencies()
+    {
+        
+        //_identities.ForEach(x =>
+        //{
+        //    x.Dependencies.ForEach((_, value) =>
+        //    {
+        //        if (value is not Scripting.Plugin pluginDeclarator)
+        //        {
+        //            return;
+        //        }
+        //        Add(new PluginDescriptor(pluginDeclarator.Name, pluginDeclarator.Version));
+        //    });
+        //});
+    }
+
+    private PluginIdentity? FindFromSearchPath(string path, PluginDescriptor descriptor)
     {
         var pluginPath = Path.Combine(path, descriptor.Name);
         var pluginVersionsDir = Directory.GetDirectories(pluginPath);
@@ -127,8 +154,7 @@ internal class PluginIdentities
 
         if (pluginVersionsDir.Length <= 0)
         {
-            Console.WriteLine("No version found, why?");
-            return;
+            return null;
         }
 
         var latestVersion = pluginVersions.Max(SemVersion.SortOrderComparer)!;
@@ -140,39 +166,37 @@ internal class PluginIdentities
             if (!Directory.Exists(latestPluginPath))
             {
                 Console.WriteLine("Plugin not found.");
-                return;
+                return null;
             }
 
             var latestPluginManifestPath = Path.Combine(latestPluginPath, Definitions.ManifestIdentifier);
 
             var identity = CreatePluginIdentity(latestPluginManifestPath);
-            _currentEvaluatingIdentity = identity;
-            RetrievePluginDependencies(identity);
-            RetrievePluginMetadata(identity);
-            Console.WriteLine("FindPluginFromSearchPath...");
-            Console.WriteLine(JsonSerializer.Serialize(identity, new JsonSerializerOptions
-            {
-                WriteIndented = true
-            }));
-            Console.WriteLine("...End");
+            // 顺便检查一下文件夹版本号和manifest版本号是否一致，不一致抛异常。
+            //(identity as MaybePackage<RiftPackage>).
+
+            return identity;
         }
         else
         {
             if (!SemVersion.TryParse(descriptor.Version, out var userDefinedVersion))
             {
                 Console.WriteLine($"Incorrect version input => `{descriptor.Name}`: `{descriptor.Version}`");
-                return;
+                return null;
             }
 
             var selectedPluginPath = Path.Combine(pluginPath, userDefinedVersion.ToString());
             if (!Directory.Exists(selectedPluginPath))
             {
                 Console.WriteLine("Plugin not found.");
-                return;
+                return null;
             }
 
             // eg: ~/.rift/plugins/rift.generate/1.0.0/Rift.toml
             var selectedPluginManifestPath = Path.Combine(selectedPluginPath, Definitions.ManifestIdentifier);
+
+            var identity = CreatePluginIdentity(selectedPluginManifestPath);
+            return identity;
         }
     }
 
