@@ -9,6 +9,4 @@ namespace Rift.Runtime.API.Plugin;
 public interface IPluginManager
 {
     public static IPluginManager Instance { get; protected set; } = null!;
-
-
 }

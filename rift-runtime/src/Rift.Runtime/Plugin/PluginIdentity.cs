@@ -12,16 +12,15 @@ namespace Rift.Runtime.Plugin;
 
 internal class PluginIdentity(IMaybePackage package)
 {
-    public IMaybePackage Value { get; init; } = package;
+    public IMaybePackage              Value        { get; init; } = package;
     public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, object> Metadata { get; init; } = [];
-
+    public Dictionary<string, object> Metadata     { get; init; } = [];
+    public string                     Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
 }
 
 internal class PluginIdentities
 {
     private const string PluginDirectoryName = "plugins";
-    private const string PluginLibraryName = "lib";       // eg. ~/.rift/plugins/Example/lib/Example.dll 
 
     private readonly List<PluginIdentity> _identities = [];
 
@@ -58,7 +57,6 @@ internal class PluginIdentities
     }
 
     // 插件系统不可能出现套娃情况的，所有插件只会有一层。
-
 
     public void AddSearchPath(string path)
     {
@@ -105,12 +103,27 @@ internal class PluginIdentities
                 possiblePlugins.Add(identity);
             }
         });
-        
-        //uniqueSearchPaths.ForEach(x =>
-        //{
-        //    FindFromSearchPath(x, descriptor);
-        //});
-        AnalyzeDependencies();
+        if (possiblePlugins.Count == 0)
+        {
+            return;
+        }
+        var possiblePlugin = possiblePlugins.First();
+        _currentEvaluatingIdentity = possiblePlugin;
+        RetrievePluginDependencies(possiblePlugin);
+        RetrievePluginMetadata(possiblePlugin);
+        _identities.Add(possiblePlugin);
+        AnalyzeDependencies(possiblePlugin);
+    }
+
+    /// <summary>
+    /// 从下到上搜索依赖，所以加载顺序应该是反过来的？
+    /// </summary>
+    /// <returns></returns>
+    public List<PluginIdentity> GetSortedIdentities()
+    {
+        var result = new List<PluginIdentity>(_identities);
+        result.Reverse();
+        return result;
     }
 
     public void Dump()
@@ -121,20 +134,31 @@ internal class PluginIdentities
         }));
     }
 
-    private void AnalyzeDependencies()
+    private void AnalyzeDependencies(PluginIdentity identity)
     {
-        
-        //_identities.ForEach(x =>
-        //{
-        //    x.Dependencies.ForEach((_, value) =>
-        //    {
-        //        if (value is not Scripting.Plugin pluginDeclarator)
-        //        {
-        //            return;
-        //        }
-        //        Add(new PluginDescriptor(pluginDeclarator.Name, pluginDeclarator.Version));
-        //    });
-        //});
+
+        identity.Dependencies.ForEach((key, value) =>
+        {
+            if (value is not Scripting.Plugin declarator)
+            {
+                return;
+            }
+
+            var name = declarator.Name.Trim();
+            if (string.IsNullOrEmpty(name))
+            {
+                Console.WriteLine("Unknown plugin, skip");
+            }
+
+            var version = declarator.Version.Trim();
+            if (string.IsNullOrEmpty(version))
+            {
+                version = "latest";
+            }
+
+            Add(new PluginDescriptor(name, version));
+        });
+
     }
 
     private PluginIdentity? FindFromSearchPath(string path, PluginDescriptor descriptor)
