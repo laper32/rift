@@ -12,10 +12,36 @@ namespace Rift.Runtime.Plugin;
 
 internal class PluginIdentity(IMaybePackage package)
 {
-    public IMaybePackage              Value        { get; init; } = package;
-    public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, object> Metadata     { get; init; } = [];
-    public string                     Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
+    public        IMaybePackage Value { get; init; } = package;
+    public        Dictionary<string, object> Dependencies { get; init; } = [];
+    public        Dictionary<string, object> Metadata { get; init; } = [];
+    public        string Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
+    public        string LibPath => Path.Combine(Location, LibPathName);
+    public        string BinPath => Path.Combine(Location, BinPathName);
+    public        string EntryPath => GetEntryDll();
+    private const string BinPathName = "bin";
+    private const string LibPathName = "lib";
+    private const string PluginEntryToken = "deps.json";
+
+    /// <summary>
+    /// 获取插件入口dll <br/>
+    ///     <remarks>
+    ///         需要特别处理文件的大小写问题，这个函数不负责这个！
+    ///     </remarks>
+    /// </summary>
+    /// <returns></returns>
+    private string GetEntryDll()
+    {
+        var conf = Directory.GetFiles(LibPath, $"*.{PluginEntryToken}");
+        // 首先看.deps.json的数量
+        var entryDll = conf.Length != 1
+            // 如果没有, 看和文件夹同名的.dll
+            ? Path.Combine(LibPath, $"{Value.Name}.dll")
+            // 如果超过了1个, 也就是2个或以上, 只看第一个.deps.json及其配套.dll
+            : conf[0].Replace($".{PluginEntryToken}", ".dll");
+
+        return File.Exists(entryDll) ? entryDll : string.Empty;
+    }
 }
 
 internal class PluginIdentities
@@ -130,14 +156,15 @@ internal class PluginIdentities
     {
         Console.WriteLine(JsonSerializer.Serialize(_identities, new JsonSerializerOptions
         {
-            WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         }));
     }
 
     private void AnalyzeDependencies(PluginIdentity identity)
     {
 
-        identity.Dependencies.ForEach((key, value) =>
+        identity.Dependencies.ForEach((_, value) =>
         {
             if (value is not Scripting.Plugin declarator)
             {
@@ -158,7 +185,6 @@ internal class PluginIdentities
 
             Add(new PluginDescriptor(name, version));
         });
-
     }
 
     private PluginIdentity? FindFromSearchPath(string path, PluginDescriptor descriptor)
