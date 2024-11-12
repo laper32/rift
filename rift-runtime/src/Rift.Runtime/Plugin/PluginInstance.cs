@@ -1,8 +1,7 @@
-﻿using System.Reflection;
+﻿namespace Rift.Runtime.Plugin;
 
-namespace Rift.Runtime.Plugin;
-
-internal class PluginInstance(PluginIdentity identity, Assembly entry)
+internal class PluginInstance(PluginIdentity identity)
 {
-    public PluginIdentity Identity { get; }
+    public PluginIdentity Identity { get; init; } = identity;
+
 }

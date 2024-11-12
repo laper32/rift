@@ -7,10 +7,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Rift.Generate\Rift.Generate.API\Rift.Generate.API.csproj"/>
-	</ItemGroup>
-
-	<ItemGroup>
 		<AssemblyAttribute Include="Rift.Runtime.API.Plugin.PluginShared" />
 	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Rift.Runtime.API\Rift.Runtime.API.csproj" Private="false" ExcludeAssets="runtime"/>
+	</ItemGroup>
+
 </Project>

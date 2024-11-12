@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.Loader;
 
 namespace Rift.Runtime.Plugin;
@@ -11,15 +12,14 @@ internal class PluginInstanceContext : AssemblyLoadContext
     }
 }
 
-internal class PluginContext : PluginInstanceContext
+internal class PluginAssemblyContext : PluginInstanceContext
 {
     private readonly AssemblyDependencyResolver _resolver;
     private readonly AssemblyLoadContext        _sharedContext;
     public           Assembly                   Entry      { get; }
     public           string                     EntryPath  { get; }
-    //public           string                     PluginPath => (Directory.GetParent(EntryPath)!.FullName);
 
-    public PluginContext(string entryPath, AssemblyLoadContext sharedContext)
+    public PluginAssemblyContext(string entryPath, AssemblyLoadContext sharedContext)
     {
         _sharedContext = sharedContext;
         EntryPath      = entryPath;

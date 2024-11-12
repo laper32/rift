@@ -1,27 +1,176 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Text.Json;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
+using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Workspace;
 using Semver;
 
-// 我感觉逃不了课的，不管怎么操作最后都要回到扫一遍你有没有这个插件包
-
 namespace Rift.Runtime.Plugin;
+
+internal record PluginSharedAssemblyInfo(string Path, FileVersionInfo Info, DateTime LastWriteDate);
 
 internal class PluginIdentity(IMaybePackage package)
 {
-    public        IMaybePackage Value { get; init; } = package;
-    public        Dictionary<string, object> Dependencies { get; init; } = [];
-    public        Dictionary<string, object> Metadata { get; init; } = [];
-    public        string Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
-    public        string LibPath => Path.Combine(Location, LibPathName);
-    public        string BinPath => Path.Combine(Location, BinPathName);
-    public        string EntryPath => GetEntryDll();
+    public IMaybePackage Value { get; init; } = package;
+    public Dictionary<string, object> Dependencies { get; init; } = [];
+    public Dictionary<string, object> Metadata { get; init; } = [];
+    public string Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
+    public string LibPath => Path.Combine(Location, LibPathName);
+    public string BinPath => Path.Combine(Location, BinPathName);
+    public string EntryPath => GetEntryDll();
+
+    // 一个插件内是不应该出现在一个包里有相同插件但有不同版本的情况的, 这个情况只会在多个插件的时候才会出现.
+    // (如: 两个不同的插件A, B, 同时依赖了插件C的不同版本. 但很明显, A或B自身是不可能出现同时引用一个插件的不同版本的情况的.)
+    // 如果你使用的插件出现了问题, 你应当考虑这个插件的作者在设计的时候出了问题/你的项目依赖结构有问题
+    public Dictionary<string, PluginSharedAssemblyInfo> PluginSharedAssemblyInfos
+    {
+        get
+        {
+            var ret       = new Dictionary<string,PluginSharedAssemblyInfo>();
+            var sharedAsm = GetPluginSharedAssembliesPath().ToArray();
+
+            if (!sharedAsm.Any())
+            {
+                return ret;
+            }
+
+            foreach (var sharedAssemblyPath in sharedAsm)
+            {
+                var name = Path.GetFileNameWithoutExtension(sharedAssemblyPath);
+                ret.Add(name,
+                    new PluginSharedAssemblyInfo(
+                        sharedAssemblyPath,
+                        FileVersionInfo.GetVersionInfo(sharedAssemblyPath),
+                        File.GetLastWriteTime(sharedAssemblyPath)
+                    )
+                );
+            }
+
+            return ret;
+        }
+    }
+    //public List<PluginSharedAssemblyInfo> PluginSharedAssemblyInfos
+    //{
+    //    get
+    //    {
+    //        var ret       = new List<PluginSharedAssemblyInfo>();
+    //        var sharedAsm = GetPluginSharedAssembliesPath().ToArray();
+    //        if (!sharedAsm.Any())
+    //        {
+    //            return ret;
+    //        }
+
+    //        ret.AddRange(
+    //            sharedAsm.Select(sharedAssemblyPath => new PluginSharedAssemblyInfo(
+    //                    sharedAssemblyPath,
+    //                    FileVersionInfo.GetVersionInfo(sharedAssemblyPath),
+    //                    File.GetLastWriteTime(sharedAssemblyPath)
+    //                )
+    //            )
+    //        );
+
+    //        return ret;
+    //    }
+    //}
+
     private const string BinPathName = "bin";
     private const string LibPathName = "lib";
     private const string PluginEntryToken = "deps.json";
+
+
+    private IEnumerable<string> GetPluginSharedAssembliesPath()
+    {
+        var dlls = Directory.GetFiles(LibPath, "*.dll");
+
+        // 为了确保插件之间的接口共享, 我们必须得想一个办法让二进制文件在插件内部共享.
+        // 我们不能把每个插件的所有依赖全部共享, 如NuGet里面的东西, 因为确实存在一种情况, 不同插件需要不同的nuget包版本
+        // 同时这两个版本互相不兼容, 且这时候两个插件互相独立, 互不干扰.
+        // 因此, 我们选择打个洞: 如果你插件需要对外的接口共享, 那么你必须给项目打上assembly级别的标签, 也就是`PluginShared`
+        // 然后我们通过读PE的方式找到这些带了这个标签的二进制文件, 把他们收集起来, 再根据一定的规则把他们都变成共享context。
+        foreach (var dll in dlls)
+        {
+            using var fs = new FileStream(dll, FileMode.Open);
+            using var pe = new PEReader(fs);
+            var reader = pe.GetMetadataReader();
+            if (!reader.IsAssembly)
+            {
+                continue;
+            }
+            // 首先找[assembly:]那一堆attributes.
+            var asmDef = reader.GetAssemblyDefinition();
+            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+            foreach (var attribute in asmDef.GetCustomAttributes())
+            {
+                var attr = reader.GetCustomAttribute(attribute);
+                if (attr.Constructor.Kind != HandleKind.MemberReference)
+                {
+                    continue;
+                }
+
+                var memberReference = reader.GetMemberReference((MemberReferenceHandle)attr.Constructor);
+                if (memberReference.Parent.Kind != HandleKind.TypeReference)
+                {
+                    continue;
+                }
+
+                var typeReference = reader.GetTypeReference((TypeReferenceHandle)memberReference.Parent);
+                if ($"{reader.GetString(typeReference.Namespace)}.{reader.GetString(typeReference.Name)}".Equals(typeof(PluginShared).FullName!))
+                {
+                    yield return dll;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// PE相关的内容看<seealso cref="GetPluginSharedAssembliesPath"/>
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerable<string> GetScriptSharedAssembliesPath()
+    {
+        var dlls = Directory.GetFiles(LibPath, "*.dll");
+
+        foreach (var dll in dlls)
+        {
+            using var fs = new FileStream(dll, FileMode.Open);
+            using var pe = new PEReader(fs);
+            var reader = pe.GetMetadataReader();
+            if (!reader.IsAssembly)
+            {
+                continue;
+            }
+            // 首先找[assembly:]那一堆attributes.
+            var asmDef = reader.GetAssemblyDefinition();
+            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
+            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+            foreach (var attribute in asmDef.GetCustomAttributes())
+            {
+                var attr = reader.GetCustomAttribute(attribute);
+                if (attr.Constructor.Kind != HandleKind.MemberReference)
+                {
+                    continue;
+                }
+
+                var memberReference = reader.GetMemberReference((MemberReferenceHandle)attr.Constructor);
+                if (memberReference.Parent.Kind != HandleKind.TypeReference)
+                {
+                    continue;
+                }
+
+                var typeReference = reader.GetTypeReference((TypeReferenceHandle)memberReference.Parent);
+                if ($"{reader.GetString(typeReference.Namespace)}.{reader.GetString(typeReference.Name)}".Equals(typeof(ScriptShared).FullName!))
+                {
+                    yield return dll;
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// 获取插件入口dll <br/>
@@ -64,21 +213,21 @@ internal class PluginIdentities
         switch (manifest.Type)
         {
             case EManifestType.Rift:
-            {
-                return manifest switch
                 {
-                    // 插件是存在一个文件夹里通过版本号作为文件夹区分方式的，所以不能直接打死！
-                    EitherManifest<RiftManifest<PluginManifest>> pluginManifest => new PluginIdentity(
-                        new MaybePackage<RiftPackage>(new RiftPackage(pluginManifest.Value, manifestPath))),
-                    _ => throw new InvalidOperationException("Only supports Rift specific manifests.")
-                };
-            }
+                    return manifest switch
+                    {
+                        // 插件是存在一个文件夹里通过版本号作为文件夹区分方式的，所以不能直接打死！
+                        EitherManifest<RiftManifest<PluginManifest>> pluginManifest => new PluginIdentity(
+                            new MaybePackage<RiftPackage>(new RiftPackage(pluginManifest.Value, manifestPath))),
+                        _ => throw new InvalidOperationException("Only supports Rift specific manifests.")
+                    };
+                }
             case EManifestType.Virtual:
             case EManifestType.Real:
             default:
-            {
-                throw new InvalidOperationException("Only supports Rift specific manifests.");
-            }
+                {
+                    throw new InvalidOperationException("Only supports Rift specific manifests.");
+                }
         }
     }
 
