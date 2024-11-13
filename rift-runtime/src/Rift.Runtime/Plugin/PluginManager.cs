@@ -139,8 +139,7 @@ internal class PluginManager : IPluginManagerInternal
     {
         foreach (var identity in _pendingLoadPlugins)
         {
-            //var context = new PluginAssemblyContext(identity.EntryPath, _sharedContext!);
-            
+            _pluginContexts.Add(new PluginAssemblyContext(identity, _sharedContext!));
         }
     }
 
