@@ -29,7 +29,8 @@ internal class PluginManager : IPluginManagerInternal
     private          PluginInstanceContext?         _sharedContext;
     private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
     private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
-    private readonly List<PluginAssemblyContext>    _pluginContexts      = [];
+    private readonly List<PluginContext>            _pluginContexts      = [];
+    private readonly List<PluginInstance>           _instances           = [];
 
     public PluginManager()
     {
@@ -64,6 +65,7 @@ internal class PluginManager : IPluginManagerInternal
         AddSharedAssemblies();
         LoadSharedContext();
         LoadPluginContext();
+        ActivateInstance();
     }
 
     private void AddSharedAssemblies()
@@ -139,7 +141,15 @@ internal class PluginManager : IPluginManagerInternal
     {
         foreach (var identity in _pendingLoadPlugins)
         {
-            _pluginContexts.Add(new PluginAssemblyContext(identity, _sharedContext!));
+            _pluginContexts.Add(new PluginContext(identity, _sharedContext!));
+        }
+    }
+
+    private void ActivateInstance()
+    {
+        foreach (var context in _pluginContexts)
+        {
+            _instances.Add(new PluginInstance(context));
         }
     }
 

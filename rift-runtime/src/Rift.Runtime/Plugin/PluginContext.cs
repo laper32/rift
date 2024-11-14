@@ -14,19 +14,24 @@ internal class PluginInstanceContext : AssemblyLoadContext
     }
 }
 
-internal class PluginAssemblyContext : PluginInstanceContext
+internal class PluginContext : PluginInstanceContext
 {
-    private readonly AssemblyDependencyResolver _resolver;
-    private readonly AssemblyLoadContext        _sharedContext;
-    public readonly  PluginIdentity             Identity;
+    private readonly AssemblyDependencyResolver? _resolver;
+    private readonly AssemblyLoadContext         _sharedContext;
+    public readonly  PluginIdentity              Identity;
 
-    public Assembly Entry { get; }
+    public Assembly? Entry { get; }
 
-    public PluginAssemblyContext(PluginIdentity identity, AssemblyLoadContext sharedContext)
+    public PluginContext(PluginIdentity identity, AssemblyLoadContext sharedContext)
     {
         _sharedContext = sharedContext;
         Identity      = identity;
         var entryPath = Identity.EntryPath;
+        if (string.IsNullOrEmpty(entryPath))
+        {
+            Entry = null;
+            return;
+        }
         _resolver      = new AssemblyDependencyResolver(entryPath);
         var asmName = AssemblyName.GetAssemblyName(entryPath);
         if (_sharedContext.Assemblies.FirstOrDefault(x => x.GetName().Name == asmName.Name) is { } asm)
@@ -48,7 +53,7 @@ internal class PluginAssemblyContext : PluginInstanceContext
             return ret;
         }
 
-        var path = _resolver.ResolveAssemblyToPath(assemblyName);
+        var path = _resolver?.ResolveAssemblyToPath(assemblyName);
         if (path == null)
         {
             return null;

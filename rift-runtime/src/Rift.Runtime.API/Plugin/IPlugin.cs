@@ -6,6 +6,8 @@
 
 namespace Rift.Runtime.API.Plugin;
 
+// TODO: 未来这部分应该是由ModuleSystem来处理会更好？
+
 // ReSharper disable UnusedMemberInSuper.Global
 
 public interface IPlugin

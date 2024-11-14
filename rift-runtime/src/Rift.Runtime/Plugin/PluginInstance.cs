@@ -1,7 +1,17 @@
-﻿namespace Rift.Runtime.Plugin;
+﻿using System.Reflection;
+using Rift.Runtime.API.Plugin;
 
-internal class PluginInstance(PluginIdentity identity)
+namespace Rift.Runtime.Plugin;
+
+internal class PluginInstance(PluginContext context)
 {
-    public PluginIdentity Identity { get; init; } = identity;
+    private readonly PluginIdentity _identity = context.Identity;
+    private readonly Assembly?      _entry    = context.Entry;
+    public           RiftPlugin?    Instance { get; private set; }
 
+    // TODO: 二进制加载逻辑挪到ModuleSystem.
+    public bool Init()
+    {
+        return true;
+    }
 }
