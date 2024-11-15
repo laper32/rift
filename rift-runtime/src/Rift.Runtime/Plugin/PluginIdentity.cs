@@ -54,34 +54,10 @@ internal class PluginIdentity(IMaybePackage package)
             return ret;
         }
     }
-    //public List<PluginSharedAssemblyInfo> PluginSharedAssemblyInfos
-    //{
-    //    get
-    //    {
-    //        var ret       = new List<PluginSharedAssemblyInfo>();
-    //        var sharedAsm = GetPluginSharedAssembliesPath().ToArray();
-    //        if (!sharedAsm.Any())
-    //        {
-    //            return ret;
-    //        }
-
-    //        ret.AddRange(
-    //            sharedAsm.Select(sharedAssemblyPath => new PluginSharedAssemblyInfo(
-    //                    sharedAssemblyPath,
-    //                    FileVersionInfo.GetVersionInfo(sharedAssemblyPath),
-    //                    File.GetLastWriteTime(sharedAssemblyPath)
-    //                )
-    //            )
-    //        );
-
-    //        return ret;
-    //    }
-    //}
 
     private const string BinPathName = "bin";
     private const string LibPathName = "lib";
     private const string PluginEntryToken = "deps.json";
-
 
     private IEnumerable<string> GetPluginSharedAssembliesPath()
     {

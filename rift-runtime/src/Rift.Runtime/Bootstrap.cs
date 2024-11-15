@@ -77,7 +77,7 @@ internal static class Bootstrap
         }
 
         var pluginManager = (IPluginManagerInternal) IPluginManager.Instance;
-        pluginManager.LoadPlugins();
+        pluginManager.NotifyLoadPlugins();
 
         return true;
     }

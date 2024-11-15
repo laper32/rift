@@ -7,6 +7,7 @@ namespace Rift.Go;
 // ReSharper disable once UnusedMember.Global
 public class Golang : RiftPlugin
 {
+
     void Call()
     {
         Example.Call1();

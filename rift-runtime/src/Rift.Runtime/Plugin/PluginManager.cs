@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
@@ -14,11 +15,12 @@ namespace Rift.Runtime.Plugin;
 
 internal interface IPluginManagerInternal : IPluginManager, IInitializable
 {
-    void LoadPlugins();
+    void NotifyLoadPlugins();
 
-    bool AddDependencyForPlugin(IPackageImportDeclarator declarator);
-    bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators);
-    bool AddMetadataForPlugin(string key, object value);
+    bool                   AddDependencyForPlugin(IPackageImportDeclarator              declarator);
+    bool                   AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators);
+    bool                   AddMetadataForPlugin(string                                  key, object value);
+    ILogger<PluginManager> Logger { get; }
 }
 
 internal class PluginManager : IPluginManagerInternal
@@ -31,10 +33,12 @@ internal class PluginManager : IPluginManagerInternal
     private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
     private readonly List<PluginContext>            _pluginContexts      = [];
     private readonly List<PluginInstance>           _instances           = [];
+    public           ILogger<PluginManager>         Logger { get; }
 
     public PluginManager()
     {
         IPluginManager.Instance = this;
+        Logger                  = IRuntime.Instance.Logger.CreateLogger<PluginManager>();
     }
 
     public bool Init()
@@ -45,14 +49,17 @@ internal class PluginManager : IPluginManagerInternal
 
     public void Shutdown()
     {
-
+        _instances.ForEach(x =>
+        {
+            x.Unload(true);
+        });
     }
 
     /// <summary>
     /// N.B. 插件系统这里和很多地方不一样的是：我们需要支持没有dll的情况（即：这个插件只有二进制文件，或者只有配置文件）<br/>
     /// 所以必须有一个中间层给插件做Identity。
     /// </summary>
-    public void LoadPlugins()
+    public void NotifyLoadPlugins()
     {
         var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
         var declarators = workspaceManager.CollectPluginsForLoad();
@@ -62,10 +69,30 @@ internal class PluginManager : IPluginManagerInternal
         }
 
         _pendingLoadPlugins.AddRange(_identities.GetSortedIdentities());
+        BootPlugins();
+        LoadPlugins();
+    }
+
+    private void BootPlugins()
+    {
         AddSharedAssemblies();
         LoadSharedContext();
         LoadPluginContext();
         ActivateInstance();
+        CleanupTemporaries();
+    }
+
+    private void LoadPlugins()
+    {
+        foreach (var instance in _instances.Where(instance => instance.Init()))
+        {
+            instance.Load();
+        }
+
+        foreach (var instance in _instances)
+        {
+            instance.AllLoad();
+        }
     }
 
     private void AddSharedAssemblies()
@@ -151,6 +178,11 @@ internal class PluginManager : IPluginManagerInternal
         {
             _instances.Add(new PluginInstance(context));
         }
+    }
+
+    private void CleanupTemporaries()
+    {
+        _pendingLoadPlugins.Clear();
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
