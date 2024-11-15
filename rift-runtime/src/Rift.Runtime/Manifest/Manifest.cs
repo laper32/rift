@@ -52,10 +52,10 @@ internal record Manifest<T> : IManifest
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
-    public string? Metadata => Value switch
+    public string? Configure => Value switch
     {
-        ProjectManifest project => project.Metadata,
-        TargetManifest target => target.Metadata,
+        ProjectManifest project => project.Configure,
+        TargetManifest target => target.Configure,
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 }

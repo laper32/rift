@@ -67,7 +67,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
 
     public string? Metadata => Value switch
     {
-        Package package        => package.Metadata,
+        Package package        => package.Configure,
         VirtualPackage package => package.Metadata,
         RiftPackage package    => package.Metadata,
         _                      => null

@@ -8,6 +8,7 @@ using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Schema;
 using Rift.Runtime.API.Scripting;
+using Rift.Runtime.API.Task;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugin;
@@ -148,6 +149,38 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 }
             }
 
+            // ReSharper disable once InvertIf
+            if (schema.Task is { } tasks)
+            {
+                var taskManifests = new List<TaskManifest>();
+                tasks.ForEach((taskName, taskToml) =>
+                {
+                    List<TaskArgManifest>? taskArgs = null;
+                    if (taskToml.Args is { } argsToml)
+                    {
+                        taskArgs = new List<TaskArgManifest>();
+                        argsToml.ForEach(x =>
+                        {
+                            taskArgs.Add(new TaskArgManifest(
+                                Name: x.Name,
+                                Short: x.Short,
+                                Description: x.Description,
+                                Default: x.Default,
+                                ConflictWith: x.ConflictWith,
+                                Heading: x.Heading));
+                        });
+                    }
+
+                    taskManifests.Add(new TaskManifest(
+                        Name: taskName,
+                        Description: taskToml.About ?? string.Empty,
+                        Parent: taskToml.Parent,
+                        Args: taskArgs)
+                    );
+                });
+                ITaskManager.Instance.RegisterTask(workspaceName, taskManifests);
+            }
+
             return new EitherManifest<VirtualManifest<WorkspaceManifest>>(
                 new VirtualManifest<WorkspaceManifest>(
                     new WorkspaceManifest(
@@ -156,7 +189,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                         Exclude: workspace.Exclude ?? [],
                         Plugins: workspace.Plugins,
                         Dependencies: workspace.Dependencies,
-                        Metadata: workspace.Metadata
+                        Configure: workspace.Configure
                     )
                 )
             );
@@ -206,7 +239,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             {
                 throw new InvalidOperationException("Workspace and Folder/Project/Plugin can't be used together.");
             }
-
+            
             // 如果此时Project和Target在同一级，此时Target的脚本文件将会被直接无视，只看project级别的脚本文件。
             var sameLayeredTarget = schema.Target;
 
@@ -227,7 +260,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s plugins script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
                 //}
 
-                //if (sameLayeredTarget.Metadata is not null)
+                //if (sameLayeredTarget.Configure is not null)
                 //{
                 //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s metadata script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
                 //}
@@ -236,7 +269,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     Name: sameLayeredTarget.Name,
                     Type: sameLayeredTarget.Type,
                     Dependencies: null,
-                    Metadata: null,
+                    Configure: null,
                     Plugins: null
                 );
 
@@ -246,12 +279,48 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     Version: project.Version,
                     Description: project.Description ?? string.Empty,
                     Dependencies: project.Dependencies,
-                    Metadata: project.Metadata,
+                    Configure: project.Configure,
                     Plugins: project.Plugins,
                     Target: targetManifest,
                     Members: null,
                     Exclude: null
                 );
+
+                // ReSharper disable once InvertIf
+                if (schema.Task is { } tasks)
+                {
+                    Console.WriteLine("has tasks");
+                    var taskManifests = new List<TaskManifest>();
+                    tasks.ForEach((taskName, taskToml) =>
+                    {
+                        List<TaskArgManifest>? taskArgs = null;
+                        if (taskToml.Args is { } argsToml)
+                        {
+                            taskArgs = new List<TaskArgManifest>();
+                            argsToml.ForEach(x =>
+                            {
+                                taskArgs.Add(new TaskArgManifest(
+                                    Name: x.Name,
+                                    Short: x.Short,
+                                    Description: x.Description,
+                                    Default: x.Default,
+                                    ConflictWith: x.ConflictWith,
+                                    Heading: x.Heading));
+                            });
+                        }
+
+                        taskManifests.Add(
+                            new TaskManifest(
+                                Name: taskName,
+                                Description: taskToml.About ?? string.Empty,
+                                Parent: taskToml.Parent,
+                                Args: taskArgs
+                            )
+                        );
+                    });
+                    ITaskManager.Instance.RegisterTask(project.Name, taskManifests);
+                }
+
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
                 var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
                 return ret;
@@ -266,12 +335,46 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     Version: project.Version,
                     Description: project.Description ?? string.Empty,
                     Dependencies: project.Dependencies,
-                    Metadata: project.Metadata,
+                    Configure: project.Configure,
                     Plugins: project.Plugins,
                     Target: null,
                     Members: projectMembers,
                     Exclude: projectExclude
                 );
+
+                // ReSharper disable once InvertIf
+                if (schema.Task is { } tasks)
+                {
+                    var taskManifests = new List<TaskManifest>();
+                    tasks.ForEach((taskName, taskToml) =>
+                    {
+                        List<TaskArgManifest>? taskArgs = null;
+                        if (taskToml.Args is { } argsToml)
+                        {
+                            taskArgs = new List<TaskArgManifest>();
+                            argsToml.ForEach(x =>
+                            {
+                                taskArgs.Add(new TaskArgManifest(
+                                    Name: x.Name,
+                                    Short: x.Short,
+                                    Description: x.Description,
+                                    Default: x.Default,
+                                    ConflictWith: x.ConflictWith,
+                                    Heading: x.Heading));
+                            });
+                        }
+                        taskManifests.Add(
+                            new TaskManifest(
+                                Name: taskName,
+                                Description: taskToml.About ?? string.Empty,
+                                Parent: taskToml.Parent,
+                                Args: taskArgs
+                            )
+                        );
+                    });
+                    ITaskManager.Instance.RegisterTask(project.Name, taskManifests);
+                }
+
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
                 var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
                 return ret;
@@ -285,6 +388,40 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 throw new InvalidOperationException("Target cannot used together with `[workspace]`, `[folder]`, or `[plugin]`");
             }
 
+            // ReSharper disable once InvertIf
+            if (schema.Task is { } tasks)
+            {
+                var taskManifests = new List<TaskManifest>();
+                tasks.ForEach((taskName, taskToml) =>
+                {
+                    List<TaskArgManifest>? taskArgs = null;
+                    if (taskToml.Args is { } argsToml)
+                    {
+                        taskArgs = new List<TaskArgManifest>();
+                        argsToml.ForEach(x =>
+                        {
+                            taskArgs.Add(new TaskArgManifest(
+                                Name: x.Name,
+                                Short: x.Short,
+                                Description: x.Description,
+                                Default: x.Default,
+                                ConflictWith: x.ConflictWith,
+                                Heading: x.Heading));
+                        });
+                    }
+
+                    taskManifests.Add(
+                        new TaskManifest(
+                            Name: taskName,
+                            Description: taskToml.About ?? string.Empty,
+                            Parent: taskToml.Parent,
+                            Args: taskArgs
+                        )
+                    );
+                });
+                ITaskManager.Instance.RegisterTask(target.Name, taskManifests);
+            }
+
             return new EitherManifest<Manifest<TargetManifest>>(
                 new Manifest<TargetManifest>(
                     new TargetManifest(
@@ -292,7 +429,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                         Type: target.Type,
                         Plugins: target.Plugins,
                         Dependencies: target.Dependencies,
-                        Metadata: target.Metadata
+                        Configure: target.Configure
                     )
                 )
             );
@@ -306,6 +443,41 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 throw new InvalidOperationException("Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
             }
 
+            // ReSharper disable once InvertIf
+            if (schema.Task is { } tasks)
+            {
+                var taskManifests = new List<TaskManifest>();
+                tasks.ForEach((taskName, taskToml) =>
+                {
+                    List<TaskArgManifest>? taskArgs = null;
+                    if (taskToml.Args is { } argsToml)
+                    {
+                        taskArgs = new List<TaskArgManifest>();
+                        argsToml.ForEach(x =>
+                        {
+                            taskArgs.Add(new TaskArgManifest(
+                                Name: x.Name,
+                                Short: x.Short,
+                                Description: x.Description,
+                                Default: x.Default,
+                                ConflictWith: x.ConflictWith,
+                                Heading: x.Heading));
+                        });
+                    }
+
+                    taskManifests.Add(
+                        new TaskManifest(
+                            Name: taskName,
+                            Description: taskToml.About ?? string.Empty,
+                            Parent: taskToml.Parent,
+                            Args: taskArgs
+                        )
+                    );
+                });
+                ITaskManager.Instance.RegisterTask(plugin.Name, taskManifests);
+            }
+
+
             return new EitherManifest<RiftManifest<PluginManifest>>(
                 new RiftManifest<PluginManifest>(
                     new PluginManifest(
@@ -313,7 +485,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                         Authors: plugin.Authors,
                         Version: plugin.Version,
                         Description: plugin.Description ?? string.Empty,
-                        Metadata: plugin.Metadata,
+                        Configure: plugin.Configure,
                         Dependency: plugin.Dependencies
                     )
                 )

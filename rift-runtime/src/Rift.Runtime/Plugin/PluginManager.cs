@@ -17,9 +17,10 @@ internal interface IPluginManagerInternal : IPluginManager, IInitializable
 {
     void NotifyLoadPlugins();
 
-    bool                   AddDependencyForPlugin(IPackageImportDeclarator              declarator);
-    bool                   AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators);
-    bool                   AddMetadataForPlugin(string                                  key, object value);
+    bool AddDependencyForPlugin(IPackageImportDeclarator              declarator);
+    bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators);
+    bool AddMetadataForPlugin(string                                  key, object value);
+
     ILogger<PluginManager> Logger { get; }
 }
 

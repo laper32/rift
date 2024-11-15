@@ -16,8 +16,8 @@ public class TomlPlugin
     [DataMember(Name = "description")]
     public string? Description { get; set; }
     
-    [DataMember(Name = "metadata")]
-    public string? Metadata { get; set; }
+    [DataMember(Name = "configure")]
+    public string? Configure { get; set; }
     
     [DataMember(Name = "dependencies")]
     public string? Dependencies { get; set; }

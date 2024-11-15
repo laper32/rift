@@ -5,6 +5,6 @@ public record PluginManifest(
     List<string> Authors,
     string       Version,
     string?      Description,
-    string?      Metadata,
+    string?      Configure,
     string?      Dependency
 );

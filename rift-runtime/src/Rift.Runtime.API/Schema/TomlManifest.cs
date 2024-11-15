@@ -26,4 +26,10 @@ public class TomlManifest
 
     [DataMember(Name = "plugin")] 
     public TomlPlugin? Plugin { get; set; }
+
+    [DataMember(Name = "task")]
+    public Dictionary<
+        string,  // 这个task的名字
+        TomlTask // 这个task的实例
+    >? Task { get; set; }
 }

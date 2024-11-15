@@ -6,13 +6,17 @@
 
 // ReSharper disable UnusedMember.Global
 
+using Rift.Runtime.API.Task;
+
 namespace Rift.Runtime.Task;
 
 public static class Tasks
 {
-    public delegate void TaskAction();
-    public static void Implement(string taskName, TaskAction action)
+    public static void Implement(string taskName, Action action)
     {
-        action();
+        if (ITaskManager.Instance.FindTask(taskName) is { } task)
+        {
+            task.RegisterAction(action);
+        }
     }
 }

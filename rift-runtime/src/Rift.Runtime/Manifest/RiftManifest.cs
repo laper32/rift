@@ -44,7 +44,7 @@ internal class RiftManifest<T> : IRiftManifest
 
     public string? Metadata => Value switch
     {
-        PluginManifest plugin => plugin.Metadata,
+        PluginManifest plugin => plugin.Configure,
         _                     => throw new ArgumentException("Invalid manifest type.")
     };
 

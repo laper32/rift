@@ -44,13 +44,13 @@ internal class Package(IManifest manifest, string manifestPath)
         }
     }
 
-    public string? Metadata
+    public string? Configure
     {
         get
         {
-            if (manifest.Metadata is { } metadata)
+            if (manifest.Configure is { } configure)
             {
-                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
+                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, configure));
             }
 
             return null;

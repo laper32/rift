@@ -20,6 +20,6 @@ public class TomlTarget
     public string? Plugins { get; set; }
     [DataMember(Name = "dependencies")]
     public string? Dependencies { get; set; }
-    [DataMember(Name = "metadata")]
-    public string? Metadata { get; set; }
+    [DataMember(Name = "configure")]
+    public string? Configure { get; set; }
 }

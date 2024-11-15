@@ -29,8 +29,8 @@ public class TomlProject
     [DataMember(Name = "dependencies")]
     public string? Dependencies { get; set; }
 
-    [DataMember(Name = "metadata")]
-    public string? Metadata { get; set; }
+    [DataMember(Name = "configure")]
+    public string? Configure { get; set; }
 
     [DataMember(Name = "members")]
     public List<string>? Members { get; set; }

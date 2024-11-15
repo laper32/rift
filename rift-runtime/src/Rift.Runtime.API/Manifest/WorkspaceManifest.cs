@@ -11,6 +11,6 @@ public record WorkspaceManifest(
     List<string> Members,
     List<string> Exclude,
     string? Plugins,
-    string? Metadata,
+    string? Configure,
     string? Dependencies
     );

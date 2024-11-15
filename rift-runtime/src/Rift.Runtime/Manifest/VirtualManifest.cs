@@ -61,7 +61,7 @@ internal record VirtualManifest<T> : IVirtualManifest
 
     public string? Metadata => Value switch
     {
-        WorkspaceManifest workspace => workspace.Metadata,
+        WorkspaceManifest workspace => workspace.Configure,
         FolderManifest => throw new ArgumentException("[folder] does not have `metadata` field."),
         _ => throw new ArgumentException("Invalid manifest type.")
     };

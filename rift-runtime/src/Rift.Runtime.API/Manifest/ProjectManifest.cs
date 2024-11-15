@@ -15,7 +15,7 @@ namespace Rift.Runtime.API.Manifest;
 /// <param name="Description">项目描述</param>
 /// <param name="Plugins">处理以来相关的脚本文件，这里为文件路径。</param>
 /// <param name="Dependencies">处理以来相关的脚本文件，这里为文件路径。</param>
-/// <param name="Metadata">处理元数据相关的脚本文件，这里为文件路径。</param>
+/// <param name="Configure">处理配置相关的脚本文件，这里为文件路径。</param>
 /// <param name="Target">
 ///     和下文的 <see cref="Members"/>, <see cref="Exclude"/> 互斥：<br/>
 ///     如果出现了该项，则下文的 <see cref="Members"/>, <see cref="Exclude"/> 会被忽略 (A.K.A. 永远为空)。<br/>
@@ -62,7 +62,7 @@ public record ProjectManifest(
     string Description,
     string? Plugins,
     string? Dependencies,
-    string? Metadata,
+    string? Configure,
 
     TargetManifest? Target,
 

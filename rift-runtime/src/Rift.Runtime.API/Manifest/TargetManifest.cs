@@ -11,5 +11,5 @@ public record TargetManifest(
     string Type,
     string? Plugins,
     string? Dependencies,
-    string? Metadata
+    string? Configure
     );

@@ -15,5 +15,5 @@ public interface IManifest
     public string? Version { get; } 
     public string? Dependencies { get; }
     public string? Plugins { get; }
-    public string? Metadata { get; }
+    public string? Configure { get; }
 }
