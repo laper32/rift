@@ -13,6 +13,15 @@ internal class Task(string packageName, TaskManifest manifest) : ITask
 
     public Action? Action { get; private set; }
 
+    public bool IsCommand { get; set; }
+
+    public List<ITask>  RunTasks { get; init; } = [];
+
+    /// <summary>
+    /// 只存名字（aka: id)
+    /// </summary>
+    public List<string> SubTasks { get; init; } = [];
+
     public void RegisterAction(Action action)
     {
         if (Action is not null)

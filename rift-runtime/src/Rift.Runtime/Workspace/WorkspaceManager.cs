@@ -152,32 +152,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             // ReSharper disable once InvertIf
             if (schema.Task is { } tasks)
             {
-                var taskManifests = new List<TaskManifest>();
-                tasks.ForEach((taskName, taskToml) =>
-                {
-                    List<TaskArgManifest>? taskArgs = null;
-                    if (taskToml.Args is { } argsToml)
-                    {
-                        taskArgs = new List<TaskArgManifest>();
-                        argsToml.ForEach(x =>
-                        {
-                            taskArgs.Add(new TaskArgManifest(
-                                Name: x.Name,
-                                Short: x.Short,
-                                Description: x.Description,
-                                Default: x.Default,
-                                ConflictWith: x.ConflictWith,
-                                Heading: x.Heading));
-                        });
-                    }
-
-                    taskManifests.Add(new TaskManifest(
-                        Name: taskName,
-                        Description: taskToml.About ?? string.Empty,
-                        Parent: taskToml.Parent,
-                        Args: taskArgs)
-                    );
-                });
+                var taskManifests = MakeTaskManifests(tasks);
                 ITaskManager.Instance.RegisterTask(workspaceName, taskManifests);
             }
 
@@ -289,34 +264,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 // ReSharper disable once InvertIf
                 if (schema.Task is { } tasks)
                 {
-                    var taskManifests = new List<TaskManifest>();
-                    tasks.ForEach((taskName, taskToml) =>
-                    {
-                        List<TaskArgManifest>? taskArgs = null;
-                        if (taskToml.Args is { } argsToml)
-                        {
-                            taskArgs = new List<TaskArgManifest>();
-                            argsToml.ForEach(x =>
-                            {
-                                taskArgs.Add(new TaskArgManifest(
-                                    Name: x.Name,
-                                    Short: x.Short,
-                                    Description: x.Description,
-                                    Default: x.Default,
-                                    ConflictWith: x.ConflictWith,
-                                    Heading: x.Heading));
-                            });
-                        }
-
-                        taskManifests.Add(
-                            new TaskManifest(
-                                Name: taskName,
-                                Description: taskToml.About ?? string.Empty,
-                                Parent: taskToml.Parent,
-                                Args: taskArgs
-                            )
-                        );
-                    });
+                    var taskManifests = MakeTaskManifests(tasks);
                     ITaskManager.Instance.RegisterTask(project.Name, taskManifests);
                 }
 
@@ -344,33 +292,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 // ReSharper disable once InvertIf
                 if (schema.Task is { } tasks)
                 {
-                    var taskManifests = new List<TaskManifest>();
-                    tasks.ForEach((taskName, taskToml) =>
-                    {
-                        List<TaskArgManifest>? taskArgs = null;
-                        if (taskToml.Args is { } argsToml)
-                        {
-                            taskArgs = new List<TaskArgManifest>();
-                            argsToml.ForEach(x =>
-                            {
-                                taskArgs.Add(new TaskArgManifest(
-                                    Name: x.Name,
-                                    Short: x.Short,
-                                    Description: x.Description,
-                                    Default: x.Default,
-                                    ConflictWith: x.ConflictWith,
-                                    Heading: x.Heading));
-                            });
-                        }
-                        taskManifests.Add(
-                            new TaskManifest(
-                                Name: taskName,
-                                Description: taskToml.About ?? string.Empty,
-                                Parent: taskToml.Parent,
-                                Args: taskArgs
-                            )
-                        );
-                    });
+                    var taskManifests = MakeTaskManifests(tasks);
                     ITaskManager.Instance.RegisterTask(project.Name, taskManifests);
                 }
 
@@ -390,34 +312,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             // ReSharper disable once InvertIf
             if (schema.Task is { } tasks)
             {
-                var taskManifests = new List<TaskManifest>();
-                tasks.ForEach((taskName, taskToml) =>
-                {
-                    List<TaskArgManifest>? taskArgs = null;
-                    if (taskToml.Args is { } argsToml)
-                    {
-                        taskArgs = new List<TaskArgManifest>();
-                        argsToml.ForEach(x =>
-                        {
-                            taskArgs.Add(new TaskArgManifest(
-                                Name: x.Name,
-                                Short: x.Short,
-                                Description: x.Description,
-                                Default: x.Default,
-                                ConflictWith: x.ConflictWith,
-                                Heading: x.Heading));
-                        });
-                    }
-
-                    taskManifests.Add(
-                        new TaskManifest(
-                            Name: taskName,
-                            Description: taskToml.About ?? string.Empty,
-                            Parent: taskToml.Parent,
-                            Args: taskArgs
-                        )
-                    );
-                });
+                var taskManifests = MakeTaskManifests(tasks);
                 ITaskManager.Instance.RegisterTask(target.Name, taskManifests);
             }
 
@@ -445,34 +340,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             // ReSharper disable once InvertIf
             if (schema.Task is { } tasks)
             {
-                var taskManifests = new List<TaskManifest>();
-                tasks.ForEach((taskName, taskToml) =>
-                {
-                    List<TaskArgManifest>? taskArgs = null;
-                    if (taskToml.Args is { } argsToml)
-                    {
-                        taskArgs = new List<TaskArgManifest>();
-                        argsToml.ForEach(x =>
-                        {
-                            taskArgs.Add(new TaskArgManifest(
-                                Name: x.Name,
-                                Short: x.Short,
-                                Description: x.Description,
-                                Default: x.Default,
-                                ConflictWith: x.ConflictWith,
-                                Heading: x.Heading));
-                        });
-                    }
-
-                    taskManifests.Add(
-                        new TaskManifest(
-                            Name: taskName,
-                            Description: taskToml.About ?? string.Empty,
-                            Parent: taskToml.Parent,
-                            Args: taskArgs
-                        )
-                    );
-                });
+                var taskManifests = MakeTaskManifests(tasks);
                 ITaskManager.Instance.RegisterTask(plugin.Name, taskManifests);
             }
 
@@ -492,6 +360,41 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         }
 
         throw new InvalidOperationException($"No any workspace schema field found, path: `{path}`");
+    }
+
+    private static List<TaskManifest> MakeTaskManifests(Dictionary<string, TomlTask> tasks)
+    {
+        var taskManifests = new List<TaskManifest>();
+        tasks.ForEach((taskName, taskToml) =>
+        {
+            List<TaskArgManifest>? taskArgs = null;
+            if (taskToml.Args is { } argsToml)
+            {
+                taskArgs = new List<TaskArgManifest>();
+                argsToml.ForEach(x =>
+                {
+                    taskArgs.Add(new TaskArgManifest(
+                        Name: x.Name,
+                        Short: x.Short,
+                        Description: x.Description,
+                        Default: x.Default,
+                        ConflictWith: x.ConflictWith,
+                        Heading: x.Heading));
+                });
+            }
+
+            taskManifests.Add(
+                new TaskManifest(
+                    Name: taskName,
+                    Description: taskToml.About ?? string.Empty,
+                    Parent: taskToml.Parent,
+                    SubTasks: taskToml.SubTasks,
+                    RunTasks: taskToml.RunTasks,
+                    Args: taskArgs
+                )
+            );
+        });
+        return taskManifests;
     }
 
     /// <summary>

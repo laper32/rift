@@ -4,6 +4,8 @@ public record TaskManifest(
     string                 Name,
     string                 Description,
     string?                Parent,
+    List<string>?          SubTasks,
+    List<string>?          RunTasks,
     List<TaskArgManifest>? Args
 );
 

@@ -4,7 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Text.Json;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Scripting;
@@ -52,6 +51,23 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
         foreach (var taskManifest in taskManifests)
         {
             RegisterTask(packageName, taskManifest);
+        }
+    }
+
+    public void AnalyzeTasks()
+    {
+        foreach (var subTaskInterface in _tasks
+                     .Where(taskInterface => taskInterface.IsCommand)
+                     .Select(taskInterface => (Task)taskInterface)
+                     .Select(task => task.SubTasks)
+                     .SelectMany(subTasks => subTasks.Select(FindTask)))
+        {
+            if (subTaskInterface is not Task subTaskImpl)
+            {
+                continue;
+            }
+
+            subTaskImpl.IsCommand = true;
         }
     }
 
