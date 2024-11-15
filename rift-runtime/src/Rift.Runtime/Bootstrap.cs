@@ -79,6 +79,8 @@ internal static class Bootstrap
         var pluginManager = (IPluginManagerInternal) IPluginManager.Instance;
         pluginManager.NotifyLoadPlugins();
 
+        var build = ITaskManager.Instance.FindTask("build");
+        build?.Action?.Invoke();
         return true;
     }
 

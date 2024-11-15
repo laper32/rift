@@ -41,7 +41,6 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
     {
         if (HasTask(taskManifest.Name))
         {
-            Console.WriteLine($"Task {taskManifest.Name} already registered.");
             return;
         }
 

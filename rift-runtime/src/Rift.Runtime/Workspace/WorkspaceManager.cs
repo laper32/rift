@@ -289,7 +289,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 // ReSharper disable once InvertIf
                 if (schema.Task is { } tasks)
                 {
-                    Console.WriteLine("has tasks");
                     var taskManifests = new List<TaskManifest>();
                     tasks.ForEach((taskName, taskToml) =>
                     {
