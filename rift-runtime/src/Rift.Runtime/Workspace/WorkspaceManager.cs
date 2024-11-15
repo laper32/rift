@@ -387,6 +387,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 new TaskManifest(
                     Name: taskName,
                     Description: taskToml.About ?? string.Empty,
+                    IsCommand: taskToml.IsCommand,
                     Parent: taskToml.Parent,
                     SubTasks: taskToml.SubTasks,
                     RunTasks: taskToml.RunTasks,

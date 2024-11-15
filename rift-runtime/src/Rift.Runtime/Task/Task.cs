@@ -13,14 +13,14 @@ internal class Task(string packageName, TaskManifest manifest) : ITask
 
     public Action? Action { get; private set; }
 
-    public bool IsCommand { get; set; }
+    public bool IsCommand => Manifest.IsCommand;
 
-    public List<ITask>  RunTasks { get; init; } = [];
+    public List<string> RunTasks { get; init; } = manifest.RunTasks ?? [];
 
     /// <summary>
     /// 只存名字（aka: id)
     /// </summary>
-    public List<string> SubTasks { get; init; } = [];
+    public List<string> SubTasks { get; init; } = manifest.SubTasks ?? [];
 
     public void RegisterAction(Action action)
     {

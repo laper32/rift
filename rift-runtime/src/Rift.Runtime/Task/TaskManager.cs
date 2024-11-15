@@ -54,23 +54,6 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
         }
     }
 
-    public void AnalyzeTasks()
-    {
-        foreach (var subTaskInterface in _tasks
-                     .Where(taskInterface => taskInterface.IsCommand)
-                     .Select(taskInterface => (Task)taskInterface)
-                     .Select(task => task.SubTasks)
-                     .SelectMany(subTasks => subTasks.Select(FindTask)))
-        {
-            if (subTaskInterface is not Task subTaskImpl)
-            {
-                continue;
-            }
-
-            subTaskImpl.IsCommand = true;
-        }
-    }
-
     public bool HasTask(string taskName)
     {
         return _tasks.Any(x => x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
@@ -79,5 +62,10 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
     public ITask? FindTask(string taskName)
     {
         return _tasks.FirstOrDefault(x => x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public string ExportMarkedAsCommandTasks()
+    {
+        return string.Empty;
     }
 }

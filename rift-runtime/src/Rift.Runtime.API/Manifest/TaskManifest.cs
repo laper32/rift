@@ -2,6 +2,7 @@
 
 public record TaskManifest(
     string                 Name,
+    bool IsCommand,
     string                 Description,
     string?                Parent,
     List<string>?          SubTasks,

@@ -25,9 +25,6 @@ public class TomlTask
     [DataMember(Name = "parent")]
     public string? Parent { get; set; }
 
-    /// <summary>
-    /// 如果标注了这个task是指令，那么底下的所有subtask都是指令，会直接覆盖掉原本的<seealso cref="IsCommand"/>
-    /// </summary>
     [DataMember(Name = "sub_tasks")]
     public List<string>? SubTasks { get; set; }
 
