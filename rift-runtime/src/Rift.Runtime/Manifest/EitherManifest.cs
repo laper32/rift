@@ -21,8 +21,6 @@ internal interface IEitherManifest
     public EManifestType Type { get; }
 }
 
-
-
 internal record EitherManifest<T> : IEitherManifest
 {
     public EitherManifest(T manifest)

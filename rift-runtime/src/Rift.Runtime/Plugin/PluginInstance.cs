@@ -1,4 +1,10 @@
-﻿using System.Diagnostics;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Plugin;

@@ -1,4 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Rift.Runtime.Plugin;
 

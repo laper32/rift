@@ -23,6 +23,7 @@ mod engine {
     pub fn shutdown() {
         unsafe { ffi::RiftEngineShutdown() }
     }
+
     pub fn get_tasks() -> String {
         unsafe {
             let c_str = ffi::RiftEngineGetTasks();
@@ -34,7 +35,7 @@ mod engine {
 
 fn main() {
     engine::init();
-    // println!("{}", engine::get_tasks());
+    println!("{}", engine::get_tasks());
 
     engine::shutdown();
 }

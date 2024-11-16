@@ -5,10 +5,9 @@
 // ===========================================================================
 
 #include "rift/bridge/InteropService.h"
+
 #include "rift/coreclr/CoreCLR.h"
-
-#include "coreclr/CoreCLRDelegates.h"
-
+#include "rift/coreclr/CoreCLRDelegates.h"
 
 namespace rift {
 
@@ -31,9 +30,9 @@ void Shutdown()
 
 const char* RuntimeGetTasks()
 {
-    using WorkspaceManagerGetTasksFn_t = const char*(CORECLR_DELEGATE_CALLTYPE*)();
+    using TaskManagerGetTasksFn_t = const char*(CORECLR_DELEGATE_CALLTYPE*)();
     const auto get_tasks =
-        coreclr::GetManagedFunction<WorkspaceManagerGetTasksFn_t>("Managers.WorkspaceManager.GetTasks");
+        coreclr::GetManagedFunction<TaskManagerGetTasksFn_t>("Task.TaskManager.GetTasks");
 
     return get_tasks();
 }

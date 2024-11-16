@@ -1,4 +1,10 @@
-﻿using System.Text.Json.Serialization;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.Text.Json.Serialization;
 using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;

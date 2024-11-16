@@ -1,4 +1,10 @@
-﻿using System.Text;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.Text;
 
 namespace Rift.Runtime.Generator;
 

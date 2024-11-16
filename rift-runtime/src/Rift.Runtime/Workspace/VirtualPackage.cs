@@ -1,4 +1,10 @@
-﻿using Rift.Runtime.API.Manifest;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Workspace;
 

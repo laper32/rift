@@ -1,4 +1,10 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis;
 
 namespace Rift.Runtime.Generator;

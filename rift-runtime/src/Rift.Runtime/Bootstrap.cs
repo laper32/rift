@@ -32,14 +32,14 @@ namespace Rift.Runtime;
 internal static class Bootstrap
 {
     [UnmanagedCallersOnly]
-    private static bool Init(nint natives)
+    public static bool Init(nint natives)
     {
         InteropService.Init(natives);
         return InitImpl();
     }
 
     [UnmanagedCallersOnly]
-    private static void Shutdown()
+    public static void Shutdown()
     {
         ShutdownImpl();
     }
@@ -58,7 +58,6 @@ internal static class Bootstrap
 
         ActivateServices(provider);
         
-        // ReSharper disable once ConvertIfStatementToReturnStatement
         if (!Boot())
         {
             return false;

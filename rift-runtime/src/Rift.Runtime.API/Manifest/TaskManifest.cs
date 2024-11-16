@@ -1,9 +1,18 @@
-﻿namespace Rift.Runtime.API.Manifest;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+namespace Rift.Runtime.API.Manifest;
 
 public record TaskManifest(
     string                 Name,
-    bool IsCommand,
-    string                 Description,
+    bool                   IsCommand,
+    string?                Heading,
+    string?                BeforeHelp,
+    string?                AfterHelp,
+    string?                Description,
     string?                Parent,
     List<string>?          SubTasks,
     List<string>?          RunTasks,
@@ -11,10 +20,10 @@ public record TaskManifest(
 );
 
 public record TaskArgManifest(
-    string        Name,
-    char?       Short,
-    string?       Description,
-    object?       Default,
+    string Name,
+    char? Short,
+    string? Description,
+    object? Default,
     List<string>? ConflictWith,
-    string?       Heading
+    string? Heading
 );
