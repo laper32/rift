@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
@@ -12,12 +13,12 @@ namespace Rift.Runtime.API.Schema;
 // ReSharper disable StringLiteralTypo
 public class TomlFolder
 {
-    [DataMember(Name = "name")]
+    [JsonPropertyName("name")]
     public string? Name { get; set; }
 
-    [DataMember(Name = "members")]
+    [JsonPropertyName("members")]
     public List<string>? Members { get; set; }
 
-    [DataMember(Name = "exclude")]
+    [JsonPropertyName("exclude")]
     public List<string>? Exclude { get; set; }
 }

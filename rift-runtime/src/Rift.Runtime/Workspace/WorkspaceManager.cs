@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Schema;
@@ -109,12 +110,12 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
     public static TomlManifest LoadManifest(string path)
     {
-        var text = File.ReadAllText(path);
-        var content = Toml.ToModel<TomlManifest>(text, options: new TomlModelOptions
-        {
-            IgnoreMissingProperties = true
-        });
-        return content;
+        var text      = File.ReadAllText(path);
+        var tomlModel = Toml.ToModel(text);
+        var ret = JsonSerializer.Deserialize<TomlManifest>(JsonSerializer.Serialize(tomlModel)) ??
+                  throw new InvalidOperationException("Failed to load manifest.");
+
+        return ret;
     }
 
     public static IEitherManifest ReadManifest(string path)
@@ -376,10 +377,10 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     taskArgs.Add(new TaskArgManifest(
                         Name: x.Name,
                         Short: x.Short,
-                        Description: x.Description,
+                        Description: x.Help,
                         Default: x.Default,
                         ConflictWith: x.ConflictWith,
-                        Heading: x.Heading));
+                        Heading: x.HelpHeading));
                 });
             }
 

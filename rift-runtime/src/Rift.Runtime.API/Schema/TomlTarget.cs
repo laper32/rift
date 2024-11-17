@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
@@ -12,14 +12,14 @@ namespace Rift.Runtime.API.Schema;
 // ReSharper disable IdentifierTypo
 public class TomlTarget
 {
-    [DataMember(Name = "name")]
+    [JsonPropertyName("name")]
     public required string Name { get; set; }
-    [DataMember(Name = "type")]
+    [JsonPropertyName("type")]
     public required string Type { get; set; }
-    [DataMember(Name = "plugins")]
+    [JsonPropertyName("plugins")]
     public string? Plugins { get; set; }
-    [DataMember(Name = "dependencies")]
+    [JsonPropertyName("dependencies")]
     public string? Dependencies { get; set; }
-    [DataMember(Name = "configure")]
+    [JsonPropertyName("configure")]
     public string? Configure { get; set; }
 }

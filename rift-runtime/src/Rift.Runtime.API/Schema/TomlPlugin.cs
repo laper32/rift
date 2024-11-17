@@ -4,27 +4,27 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
 public class TomlPlugin
 {
-    [DataMember(Name = "name")]
+    [JsonPropertyName("name")]
     public required string Name { get; set; }
 
-    [DataMember(Name = "version")]
+    [JsonPropertyName("version")]
     public required string Version { get; set; }
     
-    [DataMember(Name = "authors")]
+    [JsonPropertyName("authors")]
     public required List<string> Authors { get; set; }
     
-    [DataMember(Name = "description")]
+    [JsonPropertyName("description")]
     public string? Description { get; set; }
     
-    [DataMember(Name = "configure")]
+    [JsonPropertyName("configure")]
     public string? Configure { get; set; }
     
-    [DataMember(Name = "dependencies")]
+    [JsonPropertyName("dependencies")]
     public string? Dependencies { get; set; }
 }

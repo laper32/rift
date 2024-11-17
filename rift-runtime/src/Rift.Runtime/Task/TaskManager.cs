@@ -6,6 +6,7 @@
 
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Scripting;
@@ -45,9 +46,9 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
             return;
         }
 
-        var task         = new Task(packageName, taskManifest);
+        var task = new Task(packageName, taskManifest);
         var manifestArgs = taskManifest.Args ?? [];
-        var args         = new List<TaskArg>();
+        var args = new List<TaskArg>();
         manifestArgs.ForEach(x => args.Add(new TaskArg(x)));
         task.Args.AddRange(args);
 
@@ -74,10 +75,10 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
 
     private record CommandedTask(
         string Name,
-        string About,
-        string BeforeHelp,
-        string AfterHelp,
-        string Parent,
+        string? About,
+        string? BeforeHelp,
+        string? AfterHelp,
+        string? Parent,
         List<string> SubTasks,
         List<string> RunTasks,
         string PackageName,
@@ -85,26 +86,50 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
 
     private record CommandedTaskArg(
         string Name,
-        char Short,
-        string Description,
-        object Default,
+        char? Short,
+        string? Description,
+        object? Default,
         List<string> ConflictWith,
-        string Heading);
+        string? Heading);
+
+    private List<CommandedTask> ExportMarkedAsCommandTasks()
+    {
+        var ret = new List<CommandedTask>();
+
+        _tasks.ForEach(task =>
+        {
+            var args = new List<CommandedTaskArg>();
+            task.Args.ForEach(arg => args.Add(new CommandedTaskArg(arg.Name, arg.Short, arg.Description, arg.Default, arg.ConflictWith, arg.Heading)));
+            ret.Add(
+                new CommandedTask(
+                    Name: task.Name,
+                    About: task.Description,
+                    BeforeHelp: task.BeforeHelp,
+                    AfterHelp: task.AfterHelp,
+                    Parent: task.Parent,
+                    SubTasks: task.SubTasks,
+                    RunTasks: task.RunTasks,
+                    PackageName: task.PackageName,
+                    Args: args
+                )
+            );
+        });
+        return ret;
+    }
 
 
     [UnmanagedCallersOnly]
     public static unsafe sbyte* GetTasksExport()
     {
+        var taskManager = (TaskManager)ITaskManager.Instance;
+        var commands    = taskManager.ExportMarkedAsCommandTasks();
+        var commandsStr = JsonSerializer.Serialize(commands, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        });
 
-        const string str = """
-                               {
-                                   "Id": "123",
-                                   "DateOfRegistration": "2012-10-21T00:00:00+05:30",
-                                   "Status": 0
-                               }
-                           """;
-        var          bytes  = Encoding.UTF8.GetBytes(str);
-        var          sBytes = Array.ConvertAll(bytes, Convert.ToSByte);
+        var bytes = Encoding.UTF8.GetBytes(commandsStr);
+        var sBytes = Array.ConvertAll(bytes, Convert.ToSByte);
 
         fixed (sbyte* p = sBytes)
         {

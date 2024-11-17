@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
@@ -12,22 +12,23 @@ namespace Rift.Runtime.API.Schema;
 // ReSharper disable StringLiteralTypo
 public class TomlManifest
 {
-    [DataMember(Name = "target")]
+    //[DataMember(Name = "target")]
+    [JsonPropertyName("target")]
     public TomlTarget? Target { get; set; }
 
-    [DataMember(Name = "project")]
+    [JsonPropertyName("project")]
     public TomlProject? Project { get; set; }
 
-    [DataMember(Name = "folder")] 
+    [JsonPropertyName("folder")] 
     public TomlFolder? Folder { get; set; }
 
-    [DataMember(Name = "workspace")] 
+    [JsonPropertyName("workspace")] 
     public TomlWorkspace? Workspace { get; set; }
 
-    [DataMember(Name = "plugin")] 
+    [JsonPropertyName("plugin")] 
     public TomlPlugin? Plugin { get; set; }
 
-    [DataMember(Name = "task")]
+    [JsonPropertyName("task")]
     public Dictionary<
         string,  // 这个task的名字
         TomlTask // 这个task的实例

@@ -33,7 +33,7 @@ internal class Task(string packageName, TaskManifest manifest) : ITask
     /// </summary>
     public List<string> SubTasks { get; init; } = manifest.SubTasks ?? [];
 
-    public List<TaskArg> Args { get; init; } = [];
+    public List<ITaskArg> Args { get; init; } = [];
 
     public void RegisterAction(Action action)
     {

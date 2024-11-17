@@ -5,62 +5,63 @@
 // ===========================================================================
 
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
 public class TomlTask
 {
-    [DataMember(Name = "about")]
+    [JsonPropertyName("about")]
     public string? About { get; set; }
 
-    [DataMember(Name = "heading")]
+    [JsonPropertyName("heading")]
     public string? Heading { get; set; }
 
-    [DataMember(Name = "is_command")]
+    [JsonPropertyName("is_command")]
     public bool IsCommand { get; set; }
 
-    [DataMember(Name = "before_help")]
+    [JsonPropertyName("before_help")]
     public string? BeforeHelp { get; set; }
 
-    [DataMember(Name = "after_help")]
+    [JsonPropertyName("after_help")]
     public string? AfterHelp  { get; set; }
 
     /// <summary>
     /// 给一些极端情况用的，一般来说都是用下面的<seealso cref="SubTasks"/>
     /// </summary>
-    [DataMember(Name = "parent")]
+    [JsonPropertyName("parent")]
     public string? Parent { get; set; }
 
-    [DataMember(Name = "sub_tasks")]
+    [JsonPropertyName("sub_tasks")]
     public List<string>? SubTasks { get; set; }
 
     /// <summary>
     /// 就是Make的Task序列。
     /// </summary>
-    [DataMember(Name = "run_tasks")]
+    [JsonPropertyName("run_tasks")]
     public List<string>? RunTasks { get; set; }
 
-    [DataMember(Name = "args")]
+    [JsonPropertyName("args")]
     public List<TomlTaskArg>? Args { get; set; }
 }
 
 public class TomlTaskArg
 {
-    [DataMember(Name = "name")]
+    [JsonPropertyName("name")]
     public required string Name { get; set; }
 
-    [DataMember(Name = "short")]
+    [JsonPropertyName("short")]
     public char? Short { get; set; }
 
-    [DataMember(Name = "description")]
-    public string? Description { get; set; }
+    [JsonPropertyName("help")]
+    public string? Help { get; set; }
 
-    [DataMember(Name = "default")]
+    [JsonPropertyName("default")]
     public object? Default { get; set; }
 
-    [DataMember(Name = "conflict_with")]
+    [JsonPropertyName("conflict_with")]
     public List<string>? ConflictWith { get; set; }
 
-    [DataMember(Name = "heading")]
-    public string? Heading { get; set; }
+    [JsonPropertyName("help_heading")]
+    public string? HelpHeading { get; set; }
 }

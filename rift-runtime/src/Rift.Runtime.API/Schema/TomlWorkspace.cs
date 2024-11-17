@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
@@ -12,21 +12,21 @@ namespace Rift.Runtime.API.Schema;
 // ReSharper disable once IdentifierTypo
 public class TomlWorkspace
 {
-    [DataMember(Name = "name")]
+    [JsonPropertyName("name")]
     public string? Name { get; set; }
 
-    [DataMember(Name = "members")]
+    [JsonPropertyName("members")]
     public List<string>? Members { get; set; }
 
-    [DataMember(Name = "exclude")]
+    [JsonPropertyName("exclude")]
     public List<string>? Exclude { get; set; }
 
-    [DataMember(Name = "plugins")]
+    [JsonPropertyName("plugins")]
     public string? Plugins { get; set; }
 
-    [DataMember(Name = "configure")]
+    [JsonPropertyName("configure")]
     public string? Configure { get; set; }
 
-    [DataMember(Name = "dependencies")]
+    [JsonPropertyName("dependencies")]
     public string? Dependencies { get; set; }
 }
