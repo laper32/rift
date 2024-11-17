@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Rift.Runtime.API\Rift.Runtime.API.csproj" Private="false" ExcludeAssets="runtime"/>
+		<ProjectReference Include="..\Rift.Generate.API\Rift.Generate.API.csproj" />
+	</ItemGroup>
+
+</Project>

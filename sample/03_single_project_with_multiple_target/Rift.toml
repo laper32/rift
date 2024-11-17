@@ -1,7 +1,0 @@
-[project]
-name = "02_single_project"
-version = "0.1.0"
-authors = [""]
-description = ""
-url = ""
-members = ["target1", "target2", "target3", "target4"]

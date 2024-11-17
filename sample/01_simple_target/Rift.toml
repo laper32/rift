@@ -1,6 +1,0 @@
-[target]
-name = "sample_cxx"
-type = "bin"
-plugins = "rift/01_simple_target/plugins.ts"
-dependencies = "rift/01_simple_target/dependencies.ts"
-build = "rift/01_simple_target/build.ts"
