@@ -245,7 +245,7 @@ void* GetDotnetFunctionPointer(const char* type_name, const char* method)
                                                  typeName, method,
 #endif
                                                  UNMANAGEDCALLERSONLY_METHOD, nullptr, &ret);
-    assert(rc == 0 && pFunc != nullptr && "Failure: load_assembly_and_get_function_pointer()");
+    assert(rc == 0 && ret != nullptr && "Failure: load_assembly_and_get_function_pointer()");
     return ret;
 }
 
@@ -294,9 +294,16 @@ bool Init()
 #endif
 
     g_LoadAssemblyAndGetFunctionPointer = GetDotnetLoadAssembly(runtime_config_path.c_str());
-    assert(load_assembly_and_get_function_pointer != nullptr && "Failure: get_dotnet_load_assembly()");
+    assert(g_LoadAssemblyAndGetFunctionPointer != nullptr && "Failure: get_dotnet_load_assembly()");
 
     return true;
+}
+
+void Load()
+{
+    using RiftRuntimeLoadFn_t = void(CORECLR_DELEGATE_CALLTYPE*)();
+    const auto load = GetDotnetFunctionPointer<RiftRuntimeLoadFn_t>("Rift.Runtime.Bootstrap, Rift.Runtime", "Load");
+    load();
 }
 
 void Shutdown()

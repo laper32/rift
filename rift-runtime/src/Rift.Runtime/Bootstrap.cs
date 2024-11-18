@@ -44,25 +44,9 @@ internal static class Bootstrap
         ShutdownImpl();
     }
 
-    private static bool InitImpl()
+    [UnmanagedCallersOnly]
+    public static void Load()
     {
-        var services = new ServiceCollection();
-        ConfigureLogging(services);
-        ConfigureServices(services);
-
-        var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateOnBuild = true,
-            ValidateScopes = true
-        });
-
-        ActivateServices(provider);
-        
-        if (!Boot())
-        {
-            return false;
-        }
-
         // TODO: 要配合命令行的行为。
         // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
         var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
@@ -82,8 +66,23 @@ internal static class Bootstrap
 
         var args = Environment.GetCommandLineArgs();
         Console.WriteLine($"{string.Join(", ", args)}");
+    }
 
-        return true;
+    private static bool InitImpl()
+    {
+        var services = new ServiceCollection();
+        ConfigureLogging(services);
+        ConfigureServices(services);
+
+        var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateOnBuild = true,
+            ValidateScopes = true
+        });
+
+        ActivateServices(provider);
+        
+        return Boot();
     }
 
     private static void ShutdownImpl()

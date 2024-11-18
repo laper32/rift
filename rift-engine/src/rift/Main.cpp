@@ -37,4 +37,8 @@ const char* RuntimeGetTasks()
     return get_tasks();
 }
 
+void Load()
+{
+}
+
 } // namespace rift
