@@ -4,12 +4,13 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-internal record VirtualManifest<T> : IVirtualManifest
+internal class VirtualManifest<T> : IVirtualManifest
 {
     public VirtualManifest(T manifest)
     {
@@ -18,8 +19,17 @@ internal record VirtualManifest<T> : IVirtualManifest
             throw new ArgumentException("Manifest must be of type WorkspaceManifest or FolderManifest");
         }
 
+        Type = manifest switch
+        {
+            FolderManifest => EVirtualManifest.Folder,
+            WorkspaceManifest => EVirtualManifest.Workspace,
+            _ => throw new ArgumentException("Manifest must be of type WorkspaceManifest or FolderManifest")
+        };
+
         Value = manifest;
     }
+
+    public EVirtualManifest Type { get; init; }
 
     [JsonIgnore]
     public T Value { get; init; }
@@ -59,10 +69,17 @@ internal record VirtualManifest<T> : IVirtualManifest
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
-    public string? Metadata => Value switch
+    public string? Configure => Value switch
     {
         WorkspaceManifest workspace => workspace.Configure,
         FolderManifest => throw new ArgumentException("[folder] does not have `metadata` field."),
+        _ => throw new ArgumentException("Invalid manifest type.")
+    };
+
+    public Dictionary<string, JsonElement> Others => Value switch
+    {
+        WorkspaceManifest workspace => workspace.Others,
+        FolderManifest => throw new ArgumentException("`[folder]` does not support extension field currently."),
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 }

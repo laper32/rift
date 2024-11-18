@@ -4,6 +4,8 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
+
 namespace Rift.Runtime.API.Manifest;
 
 public record PluginManifest(
@@ -12,5 +14,5 @@ public record PluginManifest(
     string       Version,
     string?      Description,
     string?      Configure,
-    string?      Dependency
-);
+    string?      Dependency,
+    Dictionary<string, JsonElement> Others);

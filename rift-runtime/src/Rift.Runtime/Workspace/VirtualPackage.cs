@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Workspace;
@@ -41,11 +42,11 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         }
     }
 
-    public string? Metadata
+    public string? Configure
     {
         get
         {
-            if (virtualManifest.Metadata is { } metadata)
+            if (virtualManifest.Configure is { } metadata)
             {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
             }
@@ -53,4 +54,6 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
             return null;
         }
     }
+
+    public Dictionary<string, JsonElement> Others => virtualManifest.Others;
 }

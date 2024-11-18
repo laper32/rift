@@ -4,14 +4,24 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
+
 namespace Rift.Runtime.API.Manifest;
+
+public enum ERiftManifest
+{
+    Plugin
+}
+
 
 public interface IRiftManifest
 {
-    string       Name        { get; }
-    List<string> Authors     { get; }
-    string       Version     { get; }
-    string?      Description { get; }
-    string?      Metadata    { get; }
-    string?      Dependencies  { get; }
+    public ERiftManifest            Type         { get; }
+    string                          Name         { get; }
+    List<string>                    Authors      { get; }
+    string                          Version      { get; }
+    string?                         Description  { get; }
+    string?                         Configure    { get; }
+    string?                         Dependencies { get; }
+    Dictionary<string, JsonElement> Others       { get; }
 }

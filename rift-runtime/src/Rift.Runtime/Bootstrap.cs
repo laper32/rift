@@ -63,6 +63,8 @@ internal static class Bootstrap
             return false;
         }
 
+        // TODO: 要配合命令行的行为。
+        // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
         var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
         workspaceManager.SetRootPath(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
 
@@ -77,6 +79,9 @@ internal static class Bootstrap
 
         var pluginManager = (IPluginManagerInternal) IPluginManager.Instance;
         pluginManager.NotifyLoadPlugins();
+
+        var args = Environment.GetCommandLineArgs();
+        Console.WriteLine($"{string.Join(", ", args)}");
 
         return true;
     }

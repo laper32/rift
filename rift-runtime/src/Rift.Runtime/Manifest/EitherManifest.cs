@@ -8,7 +8,7 @@ using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-internal enum EManifestType
+internal enum EEitherManifest
 {
     Virtual,
     Real,
@@ -18,7 +18,7 @@ internal enum EManifestType
 internal interface IEitherManifest
 {
     public string Name { get; }
-    public EManifestType Type { get; }
+    public EEitherManifest Type { get; }
 }
 
 internal record EitherManifest<T> : IEitherManifest
@@ -32,9 +32,9 @@ internal record EitherManifest<T> : IEitherManifest
 
         Type = manifest switch
         {
-            IVirtualManifest => EManifestType.Virtual,
-            IManifest        => EManifestType.Real,
-            IRiftManifest    => EManifestType.Rift,
+            IVirtualManifest => EEitherManifest.Virtual,
+            IManifest        => EEitherManifest.Real,
+            IRiftManifest    => EEitherManifest.Rift,
             _ => throw new ArgumentOutOfRangeException(nameof(manifest), manifest,
                 "Only accepts `VirtualManifest`, `Manifest`, or `RiftManifest`")
         };
@@ -45,7 +45,7 @@ internal record EitherManifest<T> : IEitherManifest
     //[JsonIgnore]
     public T Value { get; init; }
 
-    public EManifestType Type { get; init; }
+    public EEitherManifest Type { get; init; }
 
     public string Name => Value switch
     {

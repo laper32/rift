@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rift.Runtime.API.Manifest;
 
@@ -18,8 +19,16 @@ internal class RiftManifest<T> : IRiftManifest
             throw new ArgumentException("Manifest must be of type RiftManifest");
         }
 
+        Type = manifest switch
+        {
+            PluginManifest => ERiftManifest.Plugin,
+            _              => throw new ArgumentException("Manifest must be of type RiftManifest")
+        };
+
         Value = manifest;
     }
+
+    public ERiftManifest Type { get; init; }
 
     [JsonIgnore]
     public T Value { get; init; }
@@ -48,7 +57,7 @@ internal class RiftManifest<T> : IRiftManifest
         _                     => throw new ArgumentException("Invalid manifest type.")
     };
 
-    public string? Metadata => Value switch
+    public string? Configure => Value switch
     {
         PluginManifest plugin => plugin.Configure,
         _                     => throw new ArgumentException("Invalid manifest type.")
@@ -57,6 +66,12 @@ internal class RiftManifest<T> : IRiftManifest
     public string? Dependencies => Value switch
     {
         PluginManifest plugin => plugin.Dependency,
+        _                     => throw new ArgumentException("Invalid manifest type.")
+    };
+
+    public Dictionary<string, JsonElement> Others => Value switch
+    {
+        PluginManifest plugin => plugin.Others,
         _                     => throw new ArgumentException("Invalid manifest type.")
     };
 }

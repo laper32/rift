@@ -4,12 +4,13 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
-internal record Manifest<T> : IManifest
+internal class Manifest<T> : IManifest
 {
     public Manifest(T manifest)
     {
@@ -18,8 +19,17 @@ internal record Manifest<T> : IManifest
             throw new ArgumentException("Manifest must be of type TargetManifest or ProjectManifest");
         }
 
+        Type = manifest switch
+        {
+            TargetManifest => EManifest.Target,
+            ProjectManifest => EManifest.Project,
+            _ => throw new ArgumentException("Manifest must be of type TargetManifest or ProjectManifest")
+        };
+
         Value = manifest;
     }
+
+    public EManifest Type { get; init; }
 
     [JsonIgnore]
     public T Value { get; init; }
@@ -56,6 +66,13 @@ internal record Manifest<T> : IManifest
     {
         ProjectManifest project => project.Configure,
         TargetManifest target => target.Configure,
+        _ => throw new ArgumentException("Invalid manifest type.")
+    };
+
+    public Dictionary<string, JsonElement> Others => Value switch
+    {
+        ProjectManifest project => project.Others,
+        TargetManifest target => target.Others,
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 }

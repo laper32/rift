@@ -194,7 +194,7 @@ internal class PluginIdentities
         var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
-            case EManifestType.Rift:
+            case EEitherManifest.Rift:
                 {
                     return manifest switch
                     {
@@ -204,8 +204,8 @@ internal class PluginIdentities
                         _ => throw new InvalidOperationException("Only supports Rift specific manifests.")
                     };
                 }
-            case EManifestType.Virtual:
-            case EManifestType.Real:
+            case EEitherManifest.Virtual:
+            case EEitherManifest.Real:
             default:
                 {
                     throw new InvalidOperationException("Only supports Rift specific manifests.");
@@ -393,7 +393,7 @@ internal class PluginIdentities
 
     private void RetrievePluginMetadata(PluginIdentity identity)
     {
-        var scriptPath = identity.Value.Metadata;
+        var scriptPath = identity.Value.Configure;
         if (scriptPath is null)
         {
             return;

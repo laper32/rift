@@ -56,6 +56,8 @@ internal class Package(IManifest manifest, string manifestPath)
             return null;
         }
     }
+
+    public Dictionary<string, JsonElement> Others => manifest.Others;
 }
 
 internal class Packages
@@ -67,7 +69,7 @@ internal class Packages
         var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
-            case EManifestType.Real:
+            case EEitherManifest.Real:
             {
                 switch (manifest)
                 {
@@ -105,7 +107,7 @@ internal class Packages
                 }
                 break;
             }
-            case EManifestType.Virtual:
+            case EEitherManifest.Virtual:
             {
                 switch (manifest)
                 {
@@ -138,7 +140,7 @@ internal class Packages
                 }
                 break;
             }
-            case EManifestType.Rift:
+            case EEitherManifest.Rift:
             {
                 throw new InvalidOperationException("`Unable to parse Rift-specific manifests.");
             }
@@ -154,7 +156,7 @@ internal class Packages
         var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
-            case EManifestType.Real:
+            case EEitherManifest.Real:
             {
                 switch (manifest)
                 {
@@ -193,7 +195,7 @@ internal class Packages
                 break;
             }
 
-            case EManifestType.Virtual:
+            case EEitherManifest.Virtual:
             {
                 switch (manifest)
                 {
@@ -243,7 +245,7 @@ internal class Packages
                 }
                 break;
             }
-            case EManifestType.Rift:
+            case EEitherManifest.Rift:
             {
                 throw new InvalidOperationException("Unable to parse Rift specific manifests.");
             }

@@ -14,4 +14,7 @@ public interface IWorkspaceManager
     /// 项目根目录
     /// </summary>
     public string Root { get; }
+
+    public IPackageInstance? FindPackage(string name);
+    public IEnumerable<IPackageInstance> GetAllPackages();
 }
