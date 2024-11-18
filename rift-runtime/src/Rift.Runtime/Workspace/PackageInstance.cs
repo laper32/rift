@@ -6,17 +6,31 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Plugin;
 
 namespace Rift.Runtime.Workspace;
 
-internal class PackageInstance(IMaybePackage package)
+internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {
     public IMaybePackage Value { get; init; } = package;
 
-    public Dictionary<string, object> Metadata { get; init; } = [];
-    public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, Scripting.Plugin> Plugins { get; init; } = [];
+    public Dictionary<string, object>           Metadata     { get; init; } = [];
+    public Dictionary<string, object>           Dependencies { get; init; } = [];
+    public Dictionary<string, Scripting.Plugin> Plugins      { get; init; } = [];
+
+    public string        Name         => Value.Name;
+    public string        ManifestPath => Value.ManifestPath;
+
+    public JsonElement? GetExtensionField(string name)
+    {
+        if (Value.Others.TryGetValue(name, out var value))
+        {
+            return value;
+        }
+
+        return null;
+    }
 }
 
 internal class PackageInstances
@@ -31,16 +45,14 @@ internal class PackageInstances
         _value.Add(packageName, instance);
     }
 
-    public bool TryGetValue(string packageName, [MaybeNullWhen(false)] out PackageInstance ret)
+    public IEnumerable<PackageInstance> GetAllInstances()
     {
-        if (!_value.TryGetValue(packageName, out var instance))
-        {
-            ret = null;
-            return false;
-        }
+        return _value.Values;
+    }
 
-        ret = instance;
-        return true;
+    public PackageInstance? FindInstance(string packageName)
+    {
+        return _value.GetValueOrDefault(packageName);
     }
 
     public PackageInstance? FindPackageFromManifestPath(string manifestPath)
@@ -61,8 +73,8 @@ internal class PackageInstances
             var canonicalizedPath = Path.GetFullPath(scriptPath);
             var isPlugin = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
             var isDependency = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isMetadata = x.Value.Metadata?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            return isPlugin || isDependency || isMetadata;
+            var isConfigure = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            return isPlugin || isDependency || isConfigure;
         });
         return packageInstance;
     }

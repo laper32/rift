@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
@@ -29,4 +30,7 @@ public class TomlWorkspace
 
     [JsonPropertyName("dependencies")]
     public string? Dependencies { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> Others { get; set; } = [];
 }

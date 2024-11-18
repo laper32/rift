@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
@@ -38,4 +38,7 @@ public class TomlProject
 
     [JsonPropertyName("exclude")]
     public List<string>? Exclude { get; set; }
+
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> Others { get; set; } = [];
 }

@@ -38,7 +38,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 {
 
     private readonly Packages _packages = new();
-    internal readonly PackageInstances PackageInstances = new();
+    private readonly PackageInstances _packageInstances = new();
 
     private EWorkspaceStatus _status;
     public string           Root { get; internal set; }
@@ -84,7 +84,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         _packages.LoadRecursively(manifestPath);
         ValidateWorkspace();
         ActivatePackage();
-        //PackageInstances.DumpInstancesMetadata();
+        //_packageInstances.DumpInstancesMetadata();
         _status = EWorkspaceStatus.Ready;
     }
 
@@ -100,10 +100,20 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
     {
         foreach (var (packageName, maybePackage) in _packages.Value)
         {
-            PackageInstances.Add(packageName, new PackageInstance(maybePackage));
+            _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
 
         EvaluateManifestScripts();
+    }
+
+    public IPackageInstance? FindPackage(string name)
+    {
+        return _packageInstances.FindInstance(name);
+    }
+
+    public IEnumerable<IPackageInstance> GetAllPackages()
+    {
+        return _packageInstances.GetAllInstances();
     }
 
     #region Manifest operations
@@ -165,7 +175,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                         Exclude: workspace.Exclude ?? [],
                         Plugins: workspace.Plugins,
                         Dependencies: workspace.Dependencies,
-                        Configure: workspace.Configure
+                        Configure: workspace.Configure,
+                        Others: workspace.Others
                     )
                 )
             );
@@ -246,7 +257,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     Type: sameLayeredTarget.Type,
                     Dependencies: null,
                     Configure: null,
-                    Plugins: null
+                    Plugins: null,
+                    Others: sameLayeredTarget.Others
                 );
 
                 var projectManifest = new ProjectManifest(
@@ -259,7 +271,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     Plugins: project.Plugins,
                     Target: targetManifest,
                     Members: null,
-                    Exclude: null
+                    Exclude: null,
+                    Others: project.Others
                 );
 
                 // ReSharper disable once InvertIf
@@ -287,7 +300,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                     Plugins: project.Plugins,
                     Target: null,
                     Members: projectMembers,
-                    Exclude: projectExclude
+                    Exclude: projectExclude,
+                    Others:project.Others
                 );
 
                 // ReSharper disable once InvertIf
@@ -324,7 +338,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                         Type: target.Type,
                         Plugins: target.Plugins,
                         Dependencies: target.Dependencies,
-                        Configure: target.Configure
+                        Configure: target.Configure,
+                        Others: target.Others
                     )
                 )
             );
@@ -354,7 +369,8 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                         Version: plugin.Version,
                         Description: plugin.Description ?? string.Empty,
                         Configure: plugin.Configure,
-                        Dependency: plugin.Dependencies
+                        Dependency: plugin.Dependencies,
+                        Others: plugin.Others
                     )
                 )
             );
@@ -494,7 +510,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
     {
         foreach (var package in _packages.Value)
         {
-            if (package.Value.Metadata is not { } metadata)
+            if (package.Value.Configure is not { } metadata)
             {
                 continue;
             }
@@ -587,7 +603,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
         }
 
-        return PackageInstances.FindPackageFromScriptPath(scriptContext.Path);
+        return _packageInstances.FindPackageFromScriptPath(scriptContext.Path);
     }
 
     #endregion
@@ -595,7 +611,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
     public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
     {
         CheckAvailable();
-        return PackageInstances.CollectPluginsForLoad();
+        return _packageInstances.CollectPluginsForLoad();
     }
 
     private void CheckAvailable()

@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
 using Rift.Runtime.API.Manifest;
 
 namespace Rift.Runtime.Workspace;
@@ -27,11 +28,11 @@ public class RiftPackage(IRiftManifest riftManifest, string manifestPath)
         }
     }
 
-    public string? Metadata
+    public string? Configure
     {
         get
         {
-            if (riftManifest.Metadata is { } metadata)
+            if (riftManifest.Configure is { } metadata)
             {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
             }
@@ -39,4 +40,6 @@ public class RiftPackage(IRiftManifest riftManifest, string manifestPath)
             return null;
         }
     }
+
+    public Dictionary<string, JsonElement> Others => riftManifest.Others;
 }

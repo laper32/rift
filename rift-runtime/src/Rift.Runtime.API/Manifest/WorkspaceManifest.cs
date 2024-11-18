@@ -4,6 +4,8 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
+
 namespace Rift.Runtime.API.Manifest;
 
 public record WorkspaceManifest(
@@ -12,5 +14,6 @@ public record WorkspaceManifest(
     List<string> Exclude,
     string? Plugins,
     string? Configure,
-    string? Dependencies
+    string? Dependencies,
+    Dictionary<string, JsonElement> Others
     );

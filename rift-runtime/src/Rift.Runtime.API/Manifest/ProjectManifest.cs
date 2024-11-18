@@ -4,6 +4,8 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
+
 namespace Rift.Runtime.API.Manifest;
 
 /// <summary>
@@ -67,5 +69,6 @@ public record ProjectManifest(
     TargetManifest? Target,
 
     List<string>? Members,
-    List<string>? Exclude
-    );
+    List<string>? Exclude,
+
+    Dictionary<string, JsonElement> Others);

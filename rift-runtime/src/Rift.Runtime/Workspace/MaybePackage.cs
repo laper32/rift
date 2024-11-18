@@ -4,6 +4,8 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
+
 namespace Rift.Runtime.Workspace;
 
 internal enum EMaybePackage
@@ -15,11 +17,13 @@ internal enum EMaybePackage
 
 internal interface IMaybePackage
 {
-    public string  Name         { get; }
-    public string? Dependencies { get; }
-    public string? Plugins      { get; }
-    public string? Metadata     { get; }
-    public string  ManifestPath { get; }
+    public EMaybePackage                   Type         { get; }
+    public string                          Name         { get; }
+    public string?                         Dependencies { get; }
+    public string?                         Plugins      { get; }
+    public string?                         Configure    { get; }
+    public string                          ManifestPath { get; }
+    public Dictionary<string, JsonElement> Others       { get; }
 }
 
 internal class MaybePackage<T>(T value) : IMaybePackage
@@ -65,11 +69,19 @@ internal class MaybePackage<T>(T value) : IMaybePackage
         _                      => null
     };
 
-    public string? Metadata => Value switch
+    public string? Configure => Value switch
     {
         Package package        => package.Configure,
-        VirtualPackage package => package.Metadata,
-        RiftPackage package    => package.Metadata,
+        VirtualPackage package => package.Configure,
+        RiftPackage package    => package.Configure,
         _                      => null
+    };
+
+    public Dictionary<string, JsonElement> Others => Value switch
+    {
+        Package package        => package.Others,
+        VirtualPackage package => package.Others,
+        RiftPackage package    => package.Others,
+        _                      => []
     };
 }

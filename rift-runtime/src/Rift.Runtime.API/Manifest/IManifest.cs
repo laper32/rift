@@ -4,11 +4,20 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Text.Json;
+
 namespace Rift.Runtime.API.Manifest;
+
+public enum EManifest
+{
+    Target,
+    Project
+}
 
 public interface IManifest
 {
-    public string  Name    { get; }
+    public EManifest Type { get; }
+    public string    Name { get; }
     /// <summary>
     /// Target不需要版本号，其一定是latest
     /// </summary>
@@ -16,4 +25,6 @@ public interface IManifest
     public string? Dependencies { get; }
     public string? Plugins { get; }
     public string? Configure { get; }
+
+    public Dictionary<string, JsonElement> Others { get; }
 }
