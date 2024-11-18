@@ -10,13 +10,14 @@
 namespace rift::coreclr {
 int  Bootstrap(void* natives);
 void Shutdown();
+void Load();
 bool Init();
-// bool  CreateNativeInternal(const char* fn_name, void* func);
-void* GetManagedFunction(const char* fn_name);
+
+void* GetRuntimeFunction(const char* fn_name);
 template <typename T>
-T GetManagedFunction(const char* name)
+T GetRuntimeFunction(const char* name)
 {
-    return reinterpret_cast<T>(GetManagedFunction(name));
+    return reinterpret_cast<T>(GetRuntimeFunction(name));
 }
 
 } // namespace rift

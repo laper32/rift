@@ -14,12 +14,17 @@ mod engine {
 
         extern "C" {
             pub fn RiftEngineInit() -> bool;
+            pub fn RiftEngineLoad();
             pub fn RiftEngineShutdown();
             pub fn RiftEngineGetTasks() -> *const c_char;
         }
     }
     pub fn init() -> bool {
         unsafe { ffi::RiftEngineInit() }
+    }
+
+    pub fn load() {
+        unsafe { ffi::RiftEngineLoad() }
     }
 
     pub fn shutdown() {
@@ -58,7 +63,7 @@ struct CommandedTaskArg {
     heading: Option<String>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 struct CommandInstance {
     name: String,
     about: Option<String>,
@@ -70,7 +75,7 @@ struct CommandInstance {
     args: Vec<CommandArgInstance>,
 }
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 struct CommandArgInstance {
     name: String,
     short: Option<char>,
@@ -239,6 +244,16 @@ fn main() {
         .version("0.1.0")
         .subcommands(commands)
         .get_matches();
+    engine::load();
+    // match matches.subcommand() {
+    //     Some((name, _)) => {
+    //         let command = CommandManager::instance().find_command(name).unwrap();
+    //         println!("{:?}", command);
+    //     }
+    //     None => {
+    //         println!("wait what?");
+    //     }
+    // }
 
     engine::shutdown();
 }

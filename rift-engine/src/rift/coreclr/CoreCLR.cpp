@@ -255,7 +255,7 @@ T GetDotnetFunctionPointer(const char* type_name, const char* method)
     return reinterpret_cast<T>(GetDotnetFunctionPointer(type_name, method));
 }
 
-void* GetManagedFunction(const char* fn_name)
+void* GetRuntimeFunction(const char* fn_name)
 {
     const std::string name(fn_name);
     const auto method_pos = name.find_last_of('.');
