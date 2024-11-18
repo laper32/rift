@@ -235,6 +235,7 @@ impl CommandManager {
 
 fn main() {
     engine::init();
+    engine::load();
     CommandManager::instance().collect_commanded_tasks();
     CommandManager::instance().make_command_instance();
     CommandManager::instance().link_command_tree();
@@ -244,7 +245,6 @@ fn main() {
         .version("0.1.0")
         .subcommands(commands)
         .get_matches();
-    engine::load();
     // match matches.subcommand() {
     //     Some((name, _)) => {
     //         let command = CommandManager::instance().find_command(name).unwrap();
