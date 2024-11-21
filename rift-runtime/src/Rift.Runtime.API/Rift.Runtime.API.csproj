@@ -19,10 +19,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Task\" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<AssemblyAttribute Include="Rift.Runtime.API.Scripting.ScriptShared" />
 	</ItemGroup>
 </Project>

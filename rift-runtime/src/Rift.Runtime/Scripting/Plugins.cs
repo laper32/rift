@@ -70,14 +70,12 @@ public static class Plugins
 {
     public static void Add(Plugin plugin)
     {
-        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
         Console.WriteLine($"{plugin.Name}, {plugin.Version}");
-        workspaceManager.AddPluginForPackage(plugin);
+        WorkspaceManagerInternal.Instance.AddPluginForPackage(plugin);
     }
 
     public static void Add(IEnumerable<Plugin> plugins)
     {
-        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
-        workspaceManager.AddPluginForPackage(plugins);
+        WorkspaceManagerInternal.Instance.AddPluginForPackage(plugins);
     }
 }

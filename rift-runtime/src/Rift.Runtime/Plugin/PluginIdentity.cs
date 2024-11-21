@@ -12,7 +12,9 @@ using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
+using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 using Semver;
 
@@ -185,13 +187,13 @@ internal class PluginIdentities
 
     private readonly List<string> _pluginSearchPaths =
     [
-        Path.Combine(IRuntime.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
-        Path.Combine(IRuntime.Instance.UserPath, PluginDirectoryName), // 用户目录。
+        Path.Combine(RuntimeInternal.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
+        Path.Combine(RuntimeInternal.Instance.UserPath, PluginDirectoryName), // 用户目录。
     ];
 
     private PluginIdentity CreatePluginIdentity(string manifestPath)
     {
-        var manifest = WorkspaceManager.ReadManifest(manifestPath);
+        var manifest = WorkspaceManagerInternal.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
             case EEitherManifest.Rift:
@@ -388,7 +390,7 @@ internal class PluginIdentities
         {
             return;
         }
-        IScriptManager.Instance.EvaluateScript(scriptPath);
+        ScriptManagerInternal.Instance.EvaluateScript(scriptPath);
     }
 
     private void RetrievePluginMetadata(PluginIdentity identity)
@@ -398,7 +400,7 @@ internal class PluginIdentities
         {
             return;
         }
-        IScriptManager.Instance.EvaluateScript(scriptPath);
+        ScriptManagerInternal.Instance.EvaluateScript(scriptPath);
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)

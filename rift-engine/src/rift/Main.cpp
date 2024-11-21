@@ -32,7 +32,7 @@ const char* RuntimeGetTasks()
 {
     using TaskManagerGetTasksFn_t = const char*(CORECLR_DELEGATE_CALLTYPE*)();
     const auto get_tasks =
-        coreclr::GetRuntimeFunction<TaskManagerGetTasksFn_t>("Task.TaskManager.GetTasks");
+        coreclr::GetRuntimeFunction<TaskManagerGetTasksFn_t>("Task.TaskManagerInternal.GetTasks");
 
     return get_tasks();
 }

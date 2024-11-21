@@ -15,14 +15,14 @@ using Rift.Runtime.API.Scripting;
 
 namespace Rift.Runtime.Scripting;
 
-internal interface IScriptManagerInternal : IScriptManager
-{
-    public ScriptContext? ScriptContext { get; }
-}
+//internal interface IScriptManagerInternal : IScriptManager
+//{
+//    public ScriptContext? ScriptContext { get; }
+//}
 
-internal class ScriptManager : IScriptManagerInternal, IInitializable
+internal class ScriptManagerInternal : ScriptManager, IInitializable
 {
-    enum Status
+    private enum Status
     {
         Unknown,
         Init,
@@ -30,11 +30,13 @@ internal class ScriptManager : IScriptManagerInternal, IInitializable
         Shutdown
     }
 
-    public ScriptManager()
+    public ScriptManagerInternal()
     {
-        IScriptManager.Instance = this;
+        Instance      = this;
         ScriptContext = null;
     }
+
+    public new static ScriptManagerInternal Instance { get; private set; } = null!;
 
     public  ScriptContext? ScriptContext { get; private set; }
     private Status         _status       { get; set; } = Status.Unknown;
@@ -106,7 +108,7 @@ internal class ScriptManager : IScriptManagerInternal, IInitializable
         _status = Status.Shutdown;
     }
 
-    public void AddLibrary(string library)
+    public override void AddLibrary(string library)
     {
         CheckAvailable();
 
@@ -115,21 +117,21 @@ internal class ScriptManager : IScriptManagerInternal, IInitializable
 
     // 估计这里还要做额外处理。。因为还涉及到版本号的问题。
     // 先不管他，之后再说
-    public void AddLibrary(IEnumerable<string> libraries)
+    public override void AddLibrary(IEnumerable<string> libraries)
     {
         CheckAvailable();
 
         _importLibraries.AddRange(libraries);
     }
 
-    public void RemoveLibrary(string library)
+    public override void RemoveLibrary(string library)
     {
         CheckAvailable();
 
         _importLibraries.Remove(library);
     }
 
-    public void RemoveLibrary(IEnumerable<string> libraries)
+    public override void RemoveLibrary(IEnumerable<string> libraries)
     {
         CheckAvailable();
 
@@ -139,28 +141,28 @@ internal class ScriptManager : IScriptManagerInternal, IInitializable
         }
     }
 
-    public void AddNamespace(string @namespace)
+    public override void AddNamespace(string @namespace)
     {
         CheckAvailable();
 
         _importNamespaces.Add(@namespace);
     }
 
-    public void AddNamespace(IEnumerable<string> namespaces)
+    public override void AddNamespace(IEnumerable<string> namespaces)
     {
         CheckAvailable();
 
         _importNamespaces.AddRange(namespaces);
     }
 
-    public void RemoveNamespace(string @namespace)
+    public override void RemoveNamespace(string @namespace)
     {
         CheckAvailable();
 
         _importNamespaces.Remove(@namespace);
     }
 
-    public void RemoveNamespace(IEnumerable<string> namespaces)
+    public override void RemoveNamespace(IEnumerable<string> namespaces)
     {
         CheckAvailable();
 
@@ -170,7 +172,7 @@ internal class ScriptManager : IScriptManagerInternal, IInitializable
         }
     }
 
-    public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
+    public override void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
     {
         CheckAvailable();
 

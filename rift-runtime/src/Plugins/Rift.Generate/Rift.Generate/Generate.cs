@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Rift.Runtime.API.Plugin;
+﻿using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Task;
 using Rift.Runtime.API.Workspace;
 
@@ -10,16 +9,20 @@ public class Generate : RiftPlugin
 {
     public override bool OnLoad()
     {
-        if (ITaskManager.Instance.FindTask("generate") is not { } command)
+        if (TaskManager.Instance.FindTask("generate") is not { } command)
         {
             Console.WriteLine("Failed to find `generate` command.");
             return false;
         }
+        
         command.RegisterAction(() =>
         {
             Console.WriteLine("aksdjjaklshdjklahsdjklhasjkdghajksdgjkladsg");
         });
-        var instances = IWorkspaceManager.Instance.GetAllPackages();
+
+        command.Action?.Invoke();
+        
+        var instances = WorkspaceManager.Instance.GetAllPackages();
 
         foreach (var instance in instances)
         {
@@ -34,6 +37,8 @@ public class Generate : RiftPlugin
             }
             Console.WriteLine($"name: {instance.Name} => {fieldStr}");
         }
+
+        Console.WriteLine($"Workspace root: {WorkspaceManager.Instance.Root}");
 
         return base.OnLoad();
     }

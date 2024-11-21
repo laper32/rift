@@ -10,46 +10,45 @@ using Rift.Runtime.API.Plugin;
 
 namespace Rift.Runtime.Fundamental;
 
-internal interface IShareSystemInternal : IShareSystem;
 
-internal class ShareSystem : IShareSystemInternal, IInitializable
+internal class ShareSystemInternal : ShareSystem, IInitializable
 {
-    private readonly ILogger<ShareSystem> _logger;
-    public ShareSystem()
+    public new static ShareSystemInternal          Instance { get; private set; } = null!;
+
+    private readonly  ILogger<ShareSystemInternal> _logger;
+    public ShareSystemInternal()
     {
-        IShareSystem.Instance = this;
-        _logger = IRuntime.Instance.Logger.CreateLogger<ShareSystem>();
+        Instance = this;
+        _logger = RuntimeInternal.Instance.Logger.CreateLogger<ShareSystemInternal>();
     }
 
-
-    public void AddInterface(ISharable @interface, IPlugin plugin)
-    {
-        throw new NotImplementedException();
-    }
-
-    public T? GetInterface<T>(uint version) where T : class, ISharable
+    public override void AddInterface(ISharable @interface, IPlugin plugin)
     {
         throw new NotImplementedException();
     }
 
-    public bool HasInterface<T>() where T : class, ISharable
+    public override T? GetInterface<T>(uint version) where T : class
     {
         throw new NotImplementedException();
     }
 
-    public T GetRequiredInterface<T>(uint version) where T : class, ISharable
+    public override bool HasInterface<T>() 
     {
         throw new NotImplementedException();
     }
 
-    public bool TryGetInterface<T>(string name, uint version, out T ret) where T : class, ISharable
+    public override T GetRequiredInterface<T>(uint version)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override bool TryGetInterface<T>(string name, uint version, out T ret)
     {
         throw new NotImplementedException();
     }
 
     public bool Init()
     {
-
         return true;
     }
 

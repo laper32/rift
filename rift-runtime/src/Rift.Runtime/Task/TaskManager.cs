@@ -9,37 +9,34 @@ using System.Text;
 using System.Text.Json;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
-using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Task;
+using Rift.Runtime.Commands;
+using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Task;
 
-internal interface ITaskManagerInternal : ITaskManager
+internal class TaskManagerInternal : TaskManager, IInitializable
 {
-
-}
-
-internal class TaskManager : ITaskManagerInternal, IInitializable
-{
-    public TaskManager()
+    public new static TaskManagerInternal Instance { get; private set; } = null!;
+    public TaskManagerInternal()
     {
-        ITaskManager.Instance = this;
+        Instance = this;
     }
 
     public bool Init()
     {
-        IScriptManager.Instance.AddNamespace("Rift.Runtime.Task");
+        ScriptManagerInternal.Instance.AddNamespace("Rift.Runtime.Task");
         return true;
     }
 
     public void Shutdown()
     {
-        IScriptManager.Instance.RemoveNamespace("Rift.Runtime.Task");
+        ScriptManagerInternal.Instance.RemoveNamespace("Rift.Runtime.Task");
     }
 
     private readonly List<ITask> _tasks = [];
 
-    public void RegisterTask(string packageName, TaskManifest taskManifest)
+    public override void RegisterTask(string packageName, TaskManifest taskManifest)
     {
         if (HasTask(taskManifest.Name))
         {
@@ -55,7 +52,7 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
         _tasks.Add(task);
     }
 
-    public void RegisterTask(string packageName, IEnumerable<TaskManifest> taskManifests)
+    public override void RegisterTask(string packageName, IEnumerable<TaskManifest> taskManifests)
     {
         foreach (var taskManifest in taskManifests)
         {
@@ -63,12 +60,12 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
         }
     }
 
-    public bool HasTask(string taskName)
+    public override bool HasTask(string taskName)
     {
         return _tasks.Any(x => x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
     }
 
-    public ITask? FindTask(string taskName)
+    public override ITask? FindTask(string taskName)
     {
         return _tasks.FirstOrDefault(x => x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
     }
@@ -91,6 +88,59 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
         object? Default,
         List<string> ConflictWith,
         string? Heading);
+
+    public List<UserDefinedCommand> GetUserDefinedCommands()
+    {
+        var ret = new List<UserDefinedCommand>();
+        _tasks.ForEach(task =>
+        {
+            if (!task.IsCommand)
+            {
+                return;
+            }
+
+            var args = new List<UserDefinedCommandArg>();
+            task.Args.ForEach(arg => args.Add(new UserDefinedCommandArg(
+                arg.Name,
+                arg.Short,
+                arg.Description,
+                arg.Default,
+                arg.ConflictWith,
+                arg.Heading
+            )));
+            
+            var subCommands = new List<string>();
+            task.SubTasks.ForEach(taskName =>
+            {
+                if (FindTask(taskName) is not { } taskInstance)
+                {
+                    return;
+                }
+
+                if (!taskInstance.IsCommand)
+                {
+                    return;
+                }
+
+                subCommands.Add(taskName);
+            });
+
+            var command = new UserDefinedCommand(
+                Name: task.Name,
+                About: task.Description,
+                BeforeHelp: task.BeforeHelp,
+                AfterHelp: task.AfterHelp,
+                Parent: task.Parent,
+                Subcommands: subCommands,
+                PackageName: task.PackageName,
+                Args: args
+            );
+
+            ret.Add(command);
+        });
+
+        return ret;
+    }
 
     private List<CommandedTask> ExportMarkedAsCommandTasks()
     {
@@ -121,8 +171,7 @@ internal class TaskManager : ITaskManagerInternal, IInitializable
     [UnmanagedCallersOnly]
     public static unsafe sbyte* GetTasksExport()
     {
-        var taskManager = (TaskManager)ITaskManager.Instance;
-        var commands    = taskManager.ExportMarkedAsCommandTasks();
+        var commands    = Instance.ExportMarkedAsCommandTasks();
         var commandsStr = JsonSerializer.Serialize(commands, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower

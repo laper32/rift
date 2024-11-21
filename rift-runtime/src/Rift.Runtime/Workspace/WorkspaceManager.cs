@@ -18,36 +18,22 @@ using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
-internal interface IWorkspaceManagerInternal : IWorkspaceManager
-{
-    void LoadWorkspace();
 
-    void SetRootPath(string path);
-
-    bool AddMetadataForPackage(string key, object value);
-    bool AddDependencyForPackage(IPackageImportDeclarator declarator);
-    bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators);
-
-    bool AddPluginForPackage(Scripting.Plugin plugin);
-    bool AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins);
-
-    IEnumerable<PluginDescriptor> CollectPluginsForLoad();
-}
-
-internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
+internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
 {
 
     private readonly Packages _packages = new();
     private readonly PackageInstances _packageInstances = new();
 
-    private EWorkspaceStatus _status;
-    public string           Root { get; internal set; }
+    private                EWorkspaceStatus         _status;
+    public sealed override string                   Root     { get; protected set; }
+    public new static      WorkspaceManagerInternal Instance { get; private set; } = null!;
 
-    public WorkspaceManager()
+    public WorkspaceManagerInternal()
     {
-        Root = "__Unknown__";
-        _status = EWorkspaceStatus.Unknown;
-        IWorkspaceManager.Instance = this;
+        Root     = "__Unknown__";
+        _status  = EWorkspaceStatus.Unknown;
+        Instance = this;
     }
 
     public bool Init()
@@ -106,12 +92,12 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
         EvaluateManifestScripts();
     }
 
-    public IPackageInstance? FindPackage(string name)
+    public override IPackageInstance? FindPackage(string name)
     {
         return _packageInstances.FindInstance(name);
     }
 
-    public IEnumerable<IPackageInstance> GetAllPackages()
+    public override IEnumerable<IPackageInstance> GetAllPackages()
     {
         return _packageInstances.GetAllInstances();
     }
@@ -153,7 +139,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             else
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
-                var workspaceRoot = IWorkspaceManager.Instance.Root;
+                var workspaceRoot = Instance.Root;
                 if (workspaceRoot.Equals(manifestLocation))
                 {
                     workspaceName = Path.GetFileName(manifestLocation);
@@ -164,7 +150,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             if (schema.Task is { } tasks)
             {
                 var taskManifests = MakeTaskManifests(tasks);
-                ITaskManager.Instance.RegisterTask(workspaceName, taskManifests);
+                TaskManager.Instance.RegisterTask(workspaceName, taskManifests);
             }
 
             return new EitherManifest<VirtualManifest<WorkspaceManifest>>(
@@ -201,7 +187,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
 
-                var workspaceRoot = IWorkspaceManager.Instance.Root;
+                var workspaceRoot = Instance.Root;
                 if (workspaceRoot.Equals(manifestLocation))
                 {
                     folderName = Path.GetFileName(manifestLocation);
@@ -279,7 +265,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 if (schema.Task is { } tasks)
                 {
                     var taskManifests = MakeTaskManifests(tasks);
-                    ITaskManager.Instance.RegisterTask(project.Name, taskManifests);
+                    TaskManager.Instance.RegisterTask(project.Name, taskManifests);
                 }
 
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
@@ -308,7 +294,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 if (schema.Task is { } tasks)
                 {
                     var taskManifests = MakeTaskManifests(tasks);
-                    ITaskManager.Instance.RegisterTask(project.Name, taskManifests);
+                    TaskManager.Instance.RegisterTask(project.Name, taskManifests);
                 }
 
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
@@ -328,7 +314,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             if (schema.Task is { } tasks)
             {
                 var taskManifests = MakeTaskManifests(tasks);
-                ITaskManager.Instance.RegisterTask(target.Name, taskManifests);
+                TaskManager.Instance.RegisterTask(target.Name, taskManifests);
             }
 
             return new EitherManifest<Manifest<TargetManifest>>(
@@ -357,7 +343,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             if (schema.Task is { } tasks)
             {
                 var taskManifests = MakeTaskManifests(tasks);
-                ITaskManager.Instance.RegisterTask(plugin.Name, taskManifests);
+                TaskManager.Instance.RegisterTask(plugin.Name, taskManifests);
             }
 
 
@@ -502,7 +488,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
             {
                 continue;
             }
-            IScriptManager.Instance.EvaluateScript(dependencies);
+            ScriptManagerInternal.Instance.EvaluateScript(dependencies);
         }
     }
 
@@ -515,7 +501,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 continue;
             }
 
-            IScriptManager.Instance.EvaluateScript(metadata);
+            ScriptManagerInternal.Instance.EvaluateScript(metadata);
         }
     }
 
@@ -528,7 +514,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
                 continue;
             }
 
-            IScriptManager.Instance.EvaluateScript(plugins);
+            ScriptManagerInternal.Instance.EvaluateScript(plugins);
         }
     }
 
@@ -597,8 +583,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal, IInitializable
 
     private PackageInstance? GetPackageInstance()
     {
-        var scriptSystem = (IScriptManagerInternal)IScriptManager.Instance;
-        if (scriptSystem.ScriptContext is not { } scriptContext)
+        if (ScriptManagerInternal.Instance.ScriptContext is not { } scriptContext)
         {
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
         }

@@ -22,27 +22,22 @@ public class Dependencies
 {
     public static void Add<T>(T dependency) where T: class, IPackageImportDeclarator
     {
-        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
-        var pluginManager = (IPluginManagerInternal)IPluginManager.Instance;
 
         // 如果是false的话，就会去尝试插件那找
-        if (!workspaceManager.AddDependencyForPackage(dependency))
+        if (!WorkspaceManagerInternal.Instance.AddDependencyForPackage(dependency))
         {
             Console.WriteLine($"Adding dependency => {JsonSerializer.Serialize(dependency)}");
-            pluginManager.AddDependencyForPlugin(dependency);
+            PluginManagerInternal.Instance.AddDependencyForPlugin(dependency);
         }
 
     }
 
     public static void Add<T>(IEnumerable<T> dependencies) where T : class, IPackageImportDeclarator
     {
-        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
-        var pluginManager = (IPluginManagerInternal)IPluginManager.Instance;
-
         var packageImportDeclarators = dependencies as T[] ?? dependencies.ToArray();
-        if (!workspaceManager.AddDependencyForPackage(packageImportDeclarators))
+        if (!WorkspaceManagerInternal.Instance.AddDependencyForPackage(packageImportDeclarators))
         {
-            pluginManager.AddDependencyForPlugin(packageImportDeclarators);
+            PluginManagerInternal.Instance.AddDependencyForPlugin(packageImportDeclarators);
         }
     }
 }

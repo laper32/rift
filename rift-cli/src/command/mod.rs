@@ -12,7 +12,6 @@ struct CommandedTask {
     after_help: Option<String>,
     parent: Option<String>,
     sub_tasks: Vec<String>,
-    run_tasks: Vec<String>,
     package_name: String,
     args: Vec<CommandedTaskArg>,
 }
@@ -33,8 +32,7 @@ pub struct CommandInstance {
     pub about: Option<String>,
     pub before_help: Option<String>,
     pub after_help: Option<String>,
-    pub subcommands: Vec<String>,
-    pub run_tasks: Vec<String>,
+    pub subcommands: Vec<CommandInstance>,
     pub package_name: String,
     pub args: Vec<CommandArgInstance>,
 }
@@ -93,8 +91,7 @@ impl CommandManager {
                 about: task.about.clone(),
                 before_help: task.before_help.clone(),
                 after_help: task.after_help.clone(),
-                subcommands: task.sub_tasks.clone(),
-                run_tasks: task.run_tasks.clone(),
+                subcommands: Vec::new(),
                 package_name: task.package_name.clone(),
                 args: Vec::new(),
             };
@@ -129,7 +126,16 @@ impl CommandManager {
             }
             match CommandManager::instance().find_command_mut(task.parent.as_ref().unwrap()) {
                 Some(parent_cmd) => {
-                    parent_cmd.subcommands.push(task.name.clone());
+                    parent_cmd.subcommands.push(CommandInstance {
+                        name: task.name.clone(),
+                        about: task.about.clone(),
+                        before_help: task.before_help.clone(),
+                        after_help: task.after_help.clone(),
+                        subcommands: Vec::new(),
+                        package_name: task.package_name.clone(),
+                        args: Vec::new(),
+                    });
+                    // parent_cmd.subcommands.push(task.name.clone());
                 }
                 None => { /* Do nothing */ }
             }

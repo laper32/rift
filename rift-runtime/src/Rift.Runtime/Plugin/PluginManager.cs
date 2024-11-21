@@ -8,23 +8,12 @@ using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
-using Rift.Runtime.API.Workspace;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Plugin;
 
-internal interface IPluginManagerInternal : IPluginManager, IInitializable
-{
-    void NotifyLoadPlugins();
-
-    bool AddDependencyForPlugin(IPackageImportDeclarator              declarator);
-    bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators);
-    bool AddMetadataForPlugin(string                                  key, object value);
-
-    ILogger<PluginManager> Logger { get; }
-}
-
-internal class PluginManager : IPluginManagerInternal
+internal class PluginManagerInternal : PluginManager, IInitializable
 {
     // TODO: 未来的插件系统需要想办法处理没有插件入口的情况。
 
@@ -36,10 +25,12 @@ internal class PluginManager : IPluginManagerInternal
     private readonly List<PluginInstance>           _instances           = [];
     public           ILogger<PluginManager>         Logger { get; }
 
-    public PluginManager()
+    public new static PluginManagerInternal Instance { get; private set; } = null!;
+
+    public PluginManagerInternal()
     {
-        IPluginManager.Instance = this;
-        Logger                  = IRuntime.Instance.Logger.CreateLogger<PluginManager>();
+        Instance = this;
+        Logger   = RuntimeInternal.Instance.Logger.CreateLogger<PluginManager>();
     }
 
     public bool Init()
@@ -62,8 +53,7 @@ internal class PluginManager : IPluginManagerInternal
     /// </summary>
     public void NotifyLoadPlugins()
     {
-        var workspaceManager = (IWorkspaceManagerInternal)IWorkspaceManager.Instance;
-        var declarators = workspaceManager.CollectPluginsForLoad();
+        var declarators = WorkspaceManagerInternal.Instance.CollectPluginsForLoad();
         foreach (var declarator in declarators)
         {
             _identities.Add(declarator);

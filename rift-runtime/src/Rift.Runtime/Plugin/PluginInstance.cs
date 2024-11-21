@@ -114,7 +114,6 @@ internal class PluginInstance(PluginContext context)
     {
         Error = e;
 
-        var pluginManager = (IPluginManagerInternal)IPluginManager.Instance;
-        pluginManager.Logger.LogError(Error, message);
+        PluginManagerInternal.Instance.Logger.LogError(Error, message);
     }
 }

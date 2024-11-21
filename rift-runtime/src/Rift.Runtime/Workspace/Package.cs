@@ -24,7 +24,7 @@ internal class Package(IManifest manifest, string manifestPath)
         {
             if (manifest.Dependencies is { } dependencies)
             {
-                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies));
+                return Path.GetFullPath(WorkspaceManagerInternal.GetActualScriptPath(ManifestPath, dependencies));
             }
 
             return null;
@@ -37,7 +37,7 @@ internal class Package(IManifest manifest, string manifestPath)
         {
             if (manifest.Plugins is { } plugins)
             {
-                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, plugins));
+                return Path.GetFullPath(WorkspaceManagerInternal.GetActualScriptPath(ManifestPath, plugins));
             }
 
             return null;
@@ -50,7 +50,7 @@ internal class Package(IManifest manifest, string manifestPath)
         {
             if (manifest.Configure is { } configure)
             {
-                return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, configure));
+                return Path.GetFullPath(WorkspaceManagerInternal.GetActualScriptPath(ManifestPath, configure));
             }
 
             return null;
@@ -66,7 +66,7 @@ internal class Packages
 
     public void Load(string manifestPath)
     {
-        var manifest = WorkspaceManager.ReadManifest(manifestPath);
+        var manifest = WorkspaceManagerInternal.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
             case EEitherManifest.Real:
@@ -153,7 +153,7 @@ internal class Packages
 
     public void LoadRecursively(string manifestPath)
     {
-        var manifest = WorkspaceManager.ReadManifest(manifestPath);
+        var manifest = WorkspaceManagerInternal.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
             case EEitherManifest.Real:
