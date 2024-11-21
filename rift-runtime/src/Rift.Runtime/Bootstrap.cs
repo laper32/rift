@@ -63,7 +63,7 @@ internal static class Bootstrap
         var args = Environment.GetCommandLineArgs();
         Console.WriteLine($"{string.Join(", ", args)}");
 
-        CommandManagerInternal.Instance.ToUserCommands();
+        CommandManagerInternal.Instance.GetUserCommands();
     }
 
     private static bool InitImpl()
