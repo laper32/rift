@@ -19,3 +19,8 @@ pub fn get_user_commands() -> String {
         c_str.to_str().unwrap().to_string()
     }
 }
+
+pub fn process_user_command(command: &str) {
+    let c_str = std::ffi::CString::new(command).unwrap();
+    unsafe { ffi::RiftEngineProcessUserCommand(c_str.as_ptr()) }
+}

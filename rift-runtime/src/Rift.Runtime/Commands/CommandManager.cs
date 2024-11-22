@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rift.Runtime.API.Commands;
 using Rift.Runtime.API.Fundamental;
+using Rift.Runtime.API.Fundamental.Interop;
 using Rift.Runtime.Task;
 
 namespace Rift.Runtime.Commands;
@@ -256,5 +257,12 @@ internal class CommandManagerInternal : CommandManager, IInitializable
         {
             return p;
         }
+    }
+
+    [UnmanagedCallersOnly]
+    public static unsafe void ProcessUserCommandExport(sbyte* commands)
+    {
+        var str = NativeString.ReadFromPointer(commands);
+        Console.WriteLine(str);
     }
 }

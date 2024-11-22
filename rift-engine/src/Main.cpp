@@ -10,6 +10,7 @@ namespace rift {
 extern bool Init();
 extern void Load();
 extern void Shutdown();
+extern void RuntimeProcessUserCommand(const char*);
 extern const char* RuntimeGetUserCommands();
 } // namespace rift
 
@@ -20,6 +21,11 @@ RIFT_API bool RiftEngineInit() { return rift::Init(); }
 RIFT_API void RiftEngineShutdown() { return rift::Shutdown(); }
 
 RIFT_API void RiftEngineLoad() { return rift::Load(); }
+
+RIFT_API void RiftEngineProcessUserCommand(const char* serializedStr)
+{
+    return rift::RuntimeProcessUserCommand(serializedStr);
+}
 
 RIFT_API const char* RiftEngineGetUserCommands() { return rift::RuntimeGetUserCommands(); }
 }

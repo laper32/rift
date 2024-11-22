@@ -26,6 +26,13 @@ pub struct UserCommandArg {
     action: Option<ClapArgAction>,
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
+struct UserProcessedCommand {
+    command: String,
+    sub_command: Option<String>,
+    args: Vec<(String, serde_json::Value)>,
+}
+
 #[derive(PartialEq)]
 enum CommandManagerStatus {
     Unknown,
@@ -177,6 +184,44 @@ impl CommandManager {
                 return Ok(());
             }
         };
+        println!("matches: {:#?}", matches);
+
+        if self.find_command(cmd).is_none() {
+            return Ok(());
+        }
+
+        let mut user_processed_command = UserProcessedCommand {
+            command: cmd.to_string(),
+            sub_command: None,
+            args: Vec::new(),
+        };
+
+        let user_command = self.find_command(cmd).unwrap();
+        if user_command.args.is_some() {
+            let args = user_command.args.as_ref().unwrap();
+            args.iter().for_each(|arg| {
+                // let val = subcommand_args.get_one::<String>(&arg.name);
+                // let val = {
+                //     if val.is_none() {
+                //         serde_json::Value::Null
+                //     } else {
+                //         serde_json::from_str::<serde_json::Value>(&val.unwrap()).unwrap()
+                //     }
+                // };
+                let val = {
+                    let val = subcommand_args.get_one::<String>(&arg.name);
+                    if val.is_none() {
+                        serde_json::Value::Null
+                    } else {
+                        let val = val.unwrap();
+                        serde_json::from_str::<serde_json::Value>(val).unwrap()
+                    }
+                };
+
+                user_processed_command.args.push((arg.name.clone(), val));
+            });
+        }
+        engine::process_user_command(&serde_json::to_string(&user_processed_command).unwrap());
         return Ok(());
     }
 
