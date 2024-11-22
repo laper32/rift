@@ -14,11 +14,21 @@ using Rift.Runtime.Task;
 
 namespace Rift.Runtime.Commands;
 
+internal enum ECommandManagerStatus
+{
+    Unknown,
+    Init,
+    Ready,
+    Shutdown,
+    Failed
+}
+
 internal class CommandManagerInternal : CommandManager, IInitializable
 {
-    private readonly List<UserCommand> _commands = [];
-    private readonly List<UserCommand> _pendingLoadCommands = [];
-    private readonly List<UserCommand> _pendingRemoveChildCommands = [];
+    private readonly List<UserCommand>     _commands                   = [];
+    private readonly List<UserCommand>     _pendingLoadCommands        = [];
+    private readonly List<UserCommand>     _pendingRemoveChildCommands = [];
+    public           ECommandManagerStatus Status { get; private set; }
 
     public new static CommandManagerInternal Instance { get; private set; } = null!;
 
@@ -29,16 +39,19 @@ internal class CommandManagerInternal : CommandManager, IInitializable
 
     public CommandManagerInternal()
     {
+        Status   = ECommandManagerStatus.Unknown;
         Instance = this;
     }
 
     public bool Init()
     {
+        Status = ECommandManagerStatus.Init;
         return true;
     }
 
     public void Shutdown()
     {
+        Status = ECommandManagerStatus.Shutdown;
     }
 
     public List<UserCommand> GetUserCommands()
@@ -55,13 +68,20 @@ internal class CommandManagerInternal : CommandManager, IInitializable
         });
 
         MoveToCommands();
+
         return _commands;
     }
 
     private void TransformToUserCommands(List<UserDefinedCommand> userDefinedCommands)
     {
+        if (Status is ECommandManagerStatus.Ready)
+        {
+            return;
+        }
+
         userDefinedCommands.ForEach(udc =>
         {
+            
             var command = new UserCommand(udc.Name, udc.PackageName)
             {
                 About      = udc.About,
@@ -92,10 +112,16 @@ internal class CommandManagerInternal : CommandManager, IInitializable
 
             _pendingLoadCommands.Add(command);
         });
+
     }
 
     private void AddSubcommands(List<UserDefinedCommand> userDefinedCommands)
     {
+        if (Status is ECommandManagerStatus.Ready)
+        {
+            return;
+        }
+
         var pendingRemoveCommands = new List<UserCommand>();
         userDefinedCommands.ForEach(udc =>
         {
@@ -131,6 +157,11 @@ internal class CommandManagerInternal : CommandManager, IInitializable
 
     private void LinkParentCommands(IEnumerable<UserDefinedCommand> userDefinedCommands)
     {
+        if (Status is ECommandManagerStatus.Ready)
+        {
+            return;
+        }
+
         var allParentCommands = userDefinedCommands.Where(x => x.Parent is not null).ToArray();
 
         foreach (var userDefinedCommand in allParentCommands)
@@ -139,7 +170,7 @@ internal class CommandManagerInternal : CommandManager, IInitializable
 
             var selectedCommand = _pendingLoadCommands.Find(x =>
                 x.Name.Equals(userDefinedCommand.Name, StringComparison.OrdinalIgnoreCase));
-
+            
             SetChildCommandToParent(parentCommand, selectedCommand);
         }
     }
@@ -154,10 +185,18 @@ internal class CommandManagerInternal : CommandManager, IInitializable
         if (_pendingLoadCommands.Find(x => x.Name.Equals(parentCommandStr, StringComparison.OrdinalIgnoreCase)) is
             { } parentCommand)
         {
-            parentCommand.Subcommands ??=
-            [
-                selectedCommand
-            ];
+            if (parentCommand.Subcommands is null)
+            {
+                parentCommand.Subcommands =
+                [
+                    selectedCommand
+                ];
+            }
+            else
+            {
+                parentCommand.Subcommands.Add(selectedCommand);
+            }
+
             _pendingRemoveChildCommands.Add(selectedCommand);
         }
         else
@@ -188,7 +227,12 @@ internal class CommandManagerInternal : CommandManager, IInitializable
 
     private void MoveToCommands()
     {
+        if (Status is ECommandManagerStatus.Ready)
+        {
+            return;
+        }
         _commands.AddRange(_pendingLoadCommands);
+        Status = ECommandManagerStatus.Ready;
     }
 
     [UnmanagedCallersOnly]
@@ -203,6 +247,7 @@ internal class CommandManagerInternal : CommandManager, IInitializable
                 new JsonStringEnumConverter<ArgAction>(JsonNamingPolicy.SnakeCaseLower)
             }
         });
+
 
         var bytes = Encoding.UTF8.GetBytes(commandsStr);
         var sBytes = Array.ConvertAll(bytes, Convert.ToSByte);

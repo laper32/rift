@@ -25,4 +25,5 @@ internal class UserCommandArg(string name)
     public object?      Default      { get; set; }
     public List<string> ConflictWith { get; init; } = [];
     public string?      Heading      {get;  set; }
+    public ArgAction?    Action       { get; set; }
 }

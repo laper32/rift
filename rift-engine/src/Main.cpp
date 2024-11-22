@@ -10,7 +10,7 @@ namespace rift {
 extern bool Init();
 extern void Load();
 extern void Shutdown();
-extern const char* RuntimeGetTasks();
+extern const char* RuntimeGetUserCommands();
 } // namespace rift
 
 extern "C" {
@@ -19,7 +19,7 @@ RIFT_API bool RiftEngineInit() { return rift::Init(); }
 
 RIFT_API void RiftEngineShutdown() { return rift::Shutdown(); }
 
-RIFT_API void RiftEngineLoad() {return rift::Load();}
+RIFT_API void RiftEngineLoad() { return rift::Load(); }
 
-RIFT_API const char* RiftEngineGetTasks() { return rift::RuntimeGetTasks(); }
+RIFT_API const char* RiftEngineGetUserCommands() { return rift::RuntimeGetUserCommands(); }
 }

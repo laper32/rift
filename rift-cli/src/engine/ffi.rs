@@ -4,5 +4,5 @@ extern "C" {
     pub fn RiftEngineInit() -> bool;
     pub fn RiftEngineLoad();
     pub fn RiftEngineShutdown();
-    pub fn RiftEngineGetTasks() -> *const c_char;
+    pub fn RiftEngineGetUserCommands() -> *const c_char;
 }

@@ -4,9 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.Json;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Task;
@@ -70,25 +67,6 @@ internal class TaskManagerInternal : TaskManager, IInitializable
         return _tasks.FirstOrDefault(x => x.Name.Equals(taskName, StringComparison.OrdinalIgnoreCase));
     }
 
-    private record CommandedTask(
-        string Name,
-        string? About,
-        string? BeforeHelp,
-        string? AfterHelp,
-        string? Parent,
-        List<string> SubTasks,
-        List<string> RunTasks,
-        string PackageName,
-        List<CommandedTaskArg> Args);
-
-    private record CommandedTaskArg(
-        string Name,
-        char? Short,
-        string? Description,
-        object? Default,
-        List<string> ConflictWith,
-        string? Heading);
-
     public List<UserDefinedCommand> GetUserDefinedCommands()
     {
         var ret = new List<UserDefinedCommand>();
@@ -140,49 +118,5 @@ internal class TaskManagerInternal : TaskManager, IInitializable
         });
 
         return ret;
-    }
-
-    private List<CommandedTask> ExportMarkedAsCommandTasks()
-    {
-        var ret = new List<CommandedTask>();
-
-        _tasks.ForEach(task =>
-        {
-            var args = new List<CommandedTaskArg>();
-            task.Args.ForEach(arg => args.Add(new CommandedTaskArg(arg.Name, arg.Short, arg.Description, arg.Default, arg.ConflictWith, arg.Heading)));
-            ret.Add(
-                new CommandedTask(
-                    Name: task.Name,
-                    About: task.Description,
-                    BeforeHelp: task.BeforeHelp,
-                    AfterHelp: task.AfterHelp,
-                    Parent: task.Parent,
-                    SubTasks: task.SubTasks,
-                    RunTasks: task.RunTasks,
-                    PackageName: task.PackageName,
-                    Args: args
-                )
-            );
-        });
-        return ret;
-    }
-
-
-    [UnmanagedCallersOnly]
-    public static unsafe sbyte* GetTasksExport()
-    {
-        var commands    = Instance.ExportMarkedAsCommandTasks();
-        var commandsStr = JsonSerializer.Serialize(commands, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        });
-
-        var bytes = Encoding.UTF8.GetBytes(commandsStr);
-        var sBytes = Array.ConvertAll(bytes, Convert.ToSByte);
-
-        fixed (sbyte* p = sBytes)
-        {
-            return p;
-        }
     }
 }

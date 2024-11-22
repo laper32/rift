@@ -23,23 +23,16 @@ bool Init()
     return clr;
 }
 
-void Shutdown()
+void Shutdown() { coreclr::Shutdown(); }
+
+const char* RuntimeGetUserCommands()
 {
-    coreclr::Shutdown();
+    using CommandManagerGetUserCommandsFn_t = const char*(CORECLR_DELEGATE_CALLTYPE*)();
+    const auto get_user_commands =
+        coreclr::GetRuntimeFunction<CommandManagerGetUserCommandsFn_t>("Commands.CommandManagerInternal.GetUserCommands");
+    return get_user_commands();
 }
 
-const char* RuntimeGetTasks()
-{
-    using TaskManagerGetTasksFn_t = const char*(CORECLR_DELEGATE_CALLTYPE*)();
-    const auto get_tasks =
-        coreclr::GetRuntimeFunction<TaskManagerGetTasksFn_t>("Task.TaskManagerInternal.GetTasks");
-
-    return get_tasks();
-}
-
-void Load()
-{
-    coreclr::Load();
-}
+void Load() { coreclr::Load(); }
 
 } // namespace rift

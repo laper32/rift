@@ -5,6 +5,7 @@
 // ===========================================================================
 
 mod command;
+mod de;
 mod engine;
 mod errors;
 
@@ -18,9 +19,9 @@ fn main() -> RiftResult<()> {
     而clap的问题是，不支持conditional command。。。
      */
     engine::load();
-    CommandManager::instance().collect_commanded_tasks();
-    CommandManager::instance().make_command_instance();
-    CommandManager::instance().link_command_tree();
+    CommandManager::instance().get_user_commands();
+    // CommandManager::instance().dump_user_commands();
+
     let _ = CommandManager::instance().exec_command();
 
     engine::shutdown();
