@@ -65,7 +65,9 @@ impl CommandManager {
         }
 
         self.status = CommandManagerStatus::Init;
-        let result = serde_json::from_str::<Vec<UserCommand>>(&engine::get_user_commands());
+        let user_commands = engine::get_user_commands();
+        println!("user_commands: {}", user_commands);
+        let result = serde_json::from_str::<Vec<UserCommand>>(&user_commands);
         match result {
             Ok(commands) => {
                 self.commands = commands;
@@ -177,6 +179,7 @@ impl CommandManager {
 
     pub fn exec_command(&self) -> RiftResult<()> {
         let matches = cli().get_matches();
+        println!("matches: {:#?}", matches);
         let (cmd, subcommand_args) = match matches.subcommand() {
             Some((name, args)) => (name, args),
             _ => {
@@ -184,7 +187,6 @@ impl CommandManager {
                 return Ok(());
             }
         };
-        println!("matches: {:#?}", matches);
 
         if self.find_command(cmd).is_none() {
             return Ok(());
@@ -230,27 +232,3 @@ impl CommandManager {
         println!("{}", serde_json::to_string_pretty(&self.commands).unwrap());
     }
 }
-
-//     pub fn exec_command(&self) -> RiftResult<()> {
-//         let matches = cli::cli().get_matches();
-//         let (cmd, subcommand_args) = match matches.subcommand() {
-//             Some((name, args)) => (name, args),
-//             _ => {
-//                 cli::cli().print_help()?;
-//                 return Ok(());
-//             }
-//         };
-//         println!("command: {cmd}");
-//         println!("args:");
-//         CommandManager::instance()
-//             .find_command(cmd)
-//             .unwrap()
-//             .args
-//             .iter()
-//             .for_each(|arg| {
-//                 let arg = subcommand_args.get_one::<String>(&arg.name);
-//                 println!("{:?}", arg);
-//             });
-//         return Ok(());
-//     }
-// }
