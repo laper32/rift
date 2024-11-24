@@ -196,4 +196,9 @@ internal class PluginManager : IPluginManagerInternal
     {
         return _identities.AddMetadataForPlugin(key, value);
     }
+
+    public void DumpPluginIdentities()
+    {
+        _identities.Dump();
+    }
 }

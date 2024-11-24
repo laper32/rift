@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Plugin;
@@ -21,7 +22,10 @@ namespace Rift.Runtime.Plugin;
 
 internal record PluginSharedAssemblyInfo(string Path, FileVersionInfo Info, DateTime LastWriteDate);
 
-internal class PluginIdentity(IMaybePackage package)
+
+internal class PluginIdentity(
+    // 如果你需要类型转换, 用 EitherManifest<RiftManifest<PluginManifest>>
+    IMaybePackage package)
 {
     public IMaybePackage Value { get; init; } = package;
     public Dictionary<string, object> Dependencies { get; init; } = [];
@@ -277,6 +281,20 @@ internal class PluginIdentities(InterfaceBridge bridge)
             return;
         }
         var possiblePlugin = possiblePlugins.First();
+
+        // 去除重复插件
+        // TODO: 未来如果需要同时加载多个版本的话, 应该考虑Package-based Isolated Scope
+        // 目前只能是全局
+        if (_identities.Exists(x =>
+            {
+                var nameEquals = x.Value.Name.Equals(possiblePlugin.Value.Name, StringComparison.OrdinalIgnoreCase);
+                
+                return nameEquals;
+            }))
+        {
+            return;
+        }
+
         _currentEvaluatingIdentity = possiblePlugin;
         RetrievePluginDependencies(possiblePlugin);
         RetrievePluginMetadata(possiblePlugin);
@@ -300,7 +318,11 @@ internal class PluginIdentities(InterfaceBridge bridge)
         Console.WriteLine(JsonSerializer.Serialize(_identities, new JsonSerializerOptions
         {
             WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+            Converters =
+            {
+                new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)
+            }
         }));
     }
 

@@ -49,6 +49,7 @@ public static class Bootstrap
 
         var args = Environment.GetCommandLineArgs();
         Console.WriteLine($"Args: {string.Join(", ", args)}");
+        PluginManager.Instance.DumpPluginIdentities();
     }
 
     private static bool InitImpl()

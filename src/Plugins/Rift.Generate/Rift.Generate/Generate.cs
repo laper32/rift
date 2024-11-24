@@ -8,25 +8,26 @@ public class Generate : RiftPlugin
 {
     public override bool OnLoad()
     {
-        if (TaskManager.Instance.FindTask("generate") is not { } command)
-        {
-            Console.WriteLine("Failed to find `generate` command.");
-            return false;
-        }
-        
-        command.RegisterAction(() =>
-        {
-            Console.WriteLine("aksdjjaklshdjklahsdjklhasjkdghajksdgjkladsg");
-        });
+        //if (TaskManager.Instance.FindTask("generate") is not { } command)
+        //{
+        //    Console.WriteLine("Failed to find `generate` command.");
+        //    return false;
+        //}
 
-        command.Action?.Invoke();
-        
-        var instances = WorkspaceManager.GetAllPackages();
+        //command.RegisterAction(() =>
+        //{
+        //    Console.WriteLine("aksdjjaklshdjklahsdjklhasjkdghajksdgjkladsg");
+        //});
 
+        //command.Action?.Invoke();
+
+        var instances = WorkspaceManager.GetAllPackages().ToArray();
+        Console.WriteLine($"Packages count: {instances.Length}");
         foreach (var instance in instances)
         {
             if (instance.GetExtensionField("build") is not { } field)
             {
+                Console.WriteLine("Well, not found");
                 continue;
             }
 
@@ -37,8 +38,8 @@ public class Generate : RiftPlugin
             Console.WriteLine($"name: {instance.Name} => {fieldStr}");
         }
 
+        Console.WriteLine("Rift.Generate.OnLoad OK");
         Console.WriteLine($"Workspace root: {WorkspaceManager.Root}");
-
         return base.OnLoad();
     }
 
