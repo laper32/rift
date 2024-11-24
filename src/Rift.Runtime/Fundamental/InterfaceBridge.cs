@@ -9,6 +9,7 @@ namespace Rift.Runtime.Fundamental;
 internal class InterfaceBridge(IServiceProvider provider)
 {
     public IServiceProvider          Provider         => provider;
+    public IShareSystemInternal      ShareSystem      => provider.GetRequiredService<IShareSystemInternal>();
     public IRuntimeInternal          Runtime          => provider.GetRequiredService<IRuntimeInternal>();
     public IWorkspaceManagerInternal WorkspaceManager => provider.GetRequiredService<IWorkspaceManagerInternal>();
     public IPluginManagerInternal    PluginManager    => provider.GetRequiredService<IPluginManagerInternal>();

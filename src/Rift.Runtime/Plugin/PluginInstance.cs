@@ -6,6 +6,8 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
+using Rift.Runtime.API.Fundamental.Extensions;
 using Rift.Runtime.API.Plugin;
 using Rift.Runtime.Fundamental;
 
@@ -52,6 +54,16 @@ internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
             Status = PluginStatus.Failed;
             return false;
         }
+
+        type.BaseType!.SetReadOnlyField("_bridge", instance,
+            new RiftPlugin.PluginInterfaceBridge(
+                Runtime: bridge.Runtime,
+                ShareSystem: bridge.ShareSystem,
+                PluginManager: bridge.PluginManager,
+                ScriptManager: bridge.ScriptManager,
+                WorkspaceManager: bridge.WorkspaceManager
+            )
+        );
 
         Instance = instance;
         Status   = PluginStatus.Checked;
@@ -113,7 +125,6 @@ internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
     private void MakeError(string message, Exception e)
     {
         Error = e;
-
-        //PluginManagerInternal.Instance.Logger.LogError(Error, message);
+        bridge.PluginManager.Logger.LogError(Error, message);
     }
 }

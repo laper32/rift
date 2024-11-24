@@ -14,7 +14,6 @@ using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
-using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 using Semver;
 

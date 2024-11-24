@@ -1,6 +1,5 @@
 ﻿using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Task;
-using Rift.Runtime.API.Workspace;
 
 namespace Rift.Generate;
 
@@ -22,7 +21,7 @@ public class Generate : RiftPlugin
 
         command.Action?.Invoke();
         
-        var instances = WorkspaceManager.Instance.GetAllPackages();
+        var instances = WorkspaceManager.GetAllPackages();
 
         foreach (var instance in instances)
         {
@@ -38,7 +37,7 @@ public class Generate : RiftPlugin
             Console.WriteLine($"name: {instance.Name} => {fieldStr}");
         }
 
-        Console.WriteLine($"Workspace root: {WorkspaceManager.Instance.Root}");
+        Console.WriteLine($"Workspace root: {WorkspaceManager.Root}");
 
         return base.OnLoad();
     }

@@ -42,7 +42,7 @@ internal class ScriptManager : IScriptManagerInternal
     private readonly InterfaceBridge _bridge;
 
     public  ScriptContext? ScriptContext { get; private set; }
-    private Status         _status       { get; set; } = Status.Unknown;
+    private Status         _status = Status.Unknown;
 
     /// <summary>
     /// Check <seealso cref="ScriptOptions"/> for more details. 
