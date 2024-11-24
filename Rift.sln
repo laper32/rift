@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.Generator", "src\Rift.Runtime.Generator\Rift.Runtime.Generator.csproj", "{DB9FBECC-BE04-4022-AC7F-10316157A0D7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.API", "src\Rift.Runtime.API\Rift.Runtime.API.csproj", "{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime", "src\Rift.Runtime\Rift.Runtime.csproj", "{A8C695AA-742C-4E74-BD71-3764C795F24E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB9FBECC-BE04-4022-AC7F-10316157A0D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB9FBECC-BE04-4022-AC7F-10316157A0D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB9FBECC-BE04-4022-AC7F-10316157A0D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB9FBECC-BE04-4022-AC7F-10316157A0D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DB9FBECC-BE04-4022-AC7F-10316157A0D7} = {129943C6-64F9-4304-B125-9FA6594DB839}
+		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451} = {129943C6-64F9-4304-B125-9FA6594DB839}
+		{A8C695AA-742C-4E74-BD71-3764C795F24E} = {129943C6-64F9-4304-B125-9FA6594DB839}
+	EndGlobalSection
+EndGlobal
