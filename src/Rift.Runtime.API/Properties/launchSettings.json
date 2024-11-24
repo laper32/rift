@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Rift.Runtime.API": {
+      "commandName": "Project",
+      "workingDirectory": "D:\\workshop\\projects\\common_usage\\.py\\generic\\rift-workspace"
+    }
+  }
+}

@@ -261,9 +261,16 @@ internal class PluginIdentities(InterfaceBridge bridge)
         var possiblePlugins = new List<PluginIdentity>();
         uniqueSearchPaths.ForEach(x =>
         {
-            if (FindFromSearchPath(x, descriptor) is { } identity)
+            try
             {
-                possiblePlugins.Add(identity);
+                if (FindFromSearchPath(x, descriptor) is { } identity)
+                {
+                    possiblePlugins.Add(identity);
+                }
+            }
+            catch (Exception)
+            {
+                // ignored
             }
         });
         if (possiblePlugins.Count == 0)

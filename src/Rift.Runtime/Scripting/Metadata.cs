@@ -19,6 +19,6 @@ public class Metadata
 {
     public static void Add(string key, object value)
     {
-        //WorkspaceManagerInternal.Instance.AddMetadataForPackage(key, value);
+        WorkspaceManager.Instance.AddMetadataForPackage(key, value);
     }
 }

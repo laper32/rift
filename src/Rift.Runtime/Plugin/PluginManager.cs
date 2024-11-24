@@ -9,7 +9,6 @@ using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Plugin;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.Fundamental;
-using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Plugin;
 
@@ -18,17 +17,27 @@ internal interface IPluginManagerInternal : IPluginManager, IInitializable
     public ILogger<PluginManager> Logger { get; }
 }
 
-internal class PluginManager(InterfaceBridge bridge) : IPluginManagerInternal
+internal class PluginManager : IPluginManagerInternal
 {
     // TODO: 未来的插件系统需要想办法处理没有插件入口的情况。
 
-    private readonly PluginIdentities               _identities = new(bridge);
+    private readonly PluginIdentities               _identities;
     private          PluginInstanceContext?         _sharedContext;
     private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
     private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
     private readonly List<PluginContext>            _pluginContexts      = [];
     private readonly List<PluginInstance>           _instances           = [];
-    public           ILogger<PluginManager>         Logger { get; init; } = bridge.Runtime.Logger.CreateLogger<PluginManager>();
+    public           ILogger<PluginManager>         Logger { get; }
+    private readonly InterfaceBridge                _bridge;
+    internal static  PluginManager                  Instance = null!;
+
+    public PluginManager(InterfaceBridge bridge)
+    {
+        _identities = new PluginIdentities(bridge);
+        _bridge     = bridge;
+        Logger      = _bridge.Runtime.Logger.CreateLogger<PluginManager>();
+        Instance    = this;
+    }
 
     public bool Init()
     {
@@ -50,7 +59,7 @@ internal class PluginManager(InterfaceBridge bridge) : IPluginManagerInternal
     /// </summary>
     public void NotifyLoadPlugins()
     {
-        var declarators = bridge.WorkspaceManager.CollectPluginsForLoad();
+        var declarators = _bridge.WorkspaceManager.CollectPluginsForLoad();
         foreach (var declarator in declarators)
         {
             _identities.Add(declarator);
@@ -164,7 +173,7 @@ internal class PluginManager(InterfaceBridge bridge) : IPluginManagerInternal
     {
         foreach (var context in _pluginContexts)
         {
-            _instances.Add(new PluginInstance(bridge, context));
+            _instances.Add(new PluginInstance(_bridge, context));
         }
     }
 

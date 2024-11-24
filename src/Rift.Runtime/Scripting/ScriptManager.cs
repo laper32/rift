@@ -21,7 +21,7 @@ internal interface IScriptManagerInternal : IScriptManager, IInitializable
     ScriptContext? ScriptContext { get; }
 }
 
-internal class ScriptManager : IScriptManager
+internal class ScriptManager : IScriptManagerInternal
 {
     private enum Status
     {
@@ -38,7 +38,7 @@ internal class ScriptManager : IScriptManager
         ScriptContext = null;
     }
 
-    private static   ScriptManager   Instance { get; set; } = null!;
+    internal static  ScriptManager   Instance { get; set; } = null!;
     private readonly InterfaceBridge _bridge;
 
     public  ScriptContext? ScriptContext { get; private set; }

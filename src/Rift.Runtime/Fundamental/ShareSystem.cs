@@ -12,10 +12,18 @@ namespace Rift.Runtime.Fundamental;
 
 internal interface IShareSystemInternal : IShareSystem, IInitializable;
 
-internal class ShareSystem(InterfaceBridge bridge) : IShareSystemInternal
+internal class ShareSystem: IShareSystemInternal
 {
+    public ShareSystem(InterfaceBridge bridge)
+    {
+        _bridge  = bridge;
+        _logger  = bridge.Runtime.Logger.CreateLogger<ShareSystem>();
+        Instance = this;
+    }
 
-    private readonly ILogger<ShareSystem> _logger = bridge.Runtime.Logger.CreateLogger<ShareSystem>();
+    private readonly InterfaceBridge      _bridge;
+    private readonly ILogger<ShareSystem> _logger;
+    internal static  ShareSystem          Instance = null!;
 
     public void AddInterface(ISharable @interface, IPlugin plugin)
     {

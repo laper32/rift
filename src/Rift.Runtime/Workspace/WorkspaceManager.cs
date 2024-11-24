@@ -29,7 +29,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
     private readonly Packages         _packages;
     private readonly PackageInstances _packageInstances;
     private          EWorkspaceStatus _status;
-    private static   WorkspaceManager _instance = null!;
+    internal static   WorkspaceManager Instance = null!;
 
     public WorkspaceManager(InterfaceBridge bridge)
     {
@@ -37,7 +37,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
         _packages         = new Packages();
         _packageInstances = new PackageInstances();
         _bridge           = bridge;
-        _instance         = this;
+        Instance         = this;
     }
 
     public string           Root     { get; protected set; } = "__Unknown__";
@@ -145,18 +145,11 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             else
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
-                var workspaceRoot = _instance.Root;
+                var workspaceRoot = Instance.Root;
                 if (workspaceRoot.Equals(manifestLocation))
                 {
                     workspaceName = Path.GetFileName(manifestLocation);
                 }
-            }
-
-            // ReSharper disable once InvertIf
-            if (schema.Task is { } tasks)
-            {
-                var taskManifests = MakeTaskManifests(tasks);
-                TaskManager.Instance.RegisterTask(workspaceName, taskManifests);
             }
 
             return new EitherManifest<VirtualManifest<WorkspaceManifest>>(
@@ -193,7 +186,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
 
-                var workspaceRoot = _instance.Root;
+                var workspaceRoot = Instance.Root;
                 if (workspaceRoot.Equals(manifestLocation))
                 {
                     folderName = Path.GetFileName(manifestLocation);
@@ -267,13 +260,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                     Others: project.Others
                 );
 
-                // ReSharper disable once InvertIf
-                if (schema.Task is { } tasks)
-                {
-                    var taskManifests = MakeTaskManifests(tasks);
-                    TaskManager.Instance.RegisterTask(project.Name, taskManifests);
-                }
-
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
                 var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
                 return ret;
@@ -296,13 +282,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                     Others:project.Others
                 );
 
-                // ReSharper disable once InvertIf
-                if (schema.Task is { } tasks)
-                {
-                    var taskManifests = MakeTaskManifests(tasks);
-                    TaskManager.Instance.RegisterTask(project.Name, taskManifests);
-                }
-
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
                 var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
                 return ret;
@@ -314,13 +293,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
             {
                 throw new InvalidOperationException("Target cannot used together with `[workspace]`, `[folder]`, or `[plugin]`");
-            }
-
-            // ReSharper disable once InvertIf
-            if (schema.Task is { } tasks)
-            {
-                var taskManifests = MakeTaskManifests(tasks);
-                TaskManager.Instance.RegisterTask(target.Name, taskManifests);
             }
 
             return new EitherManifest<Manifest<TargetManifest>>(
@@ -345,14 +317,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                 throw new InvalidOperationException("Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
             }
 
-            // ReSharper disable once InvertIf
-            if (schema.Task is { } tasks)
-            {
-                var taskManifests = MakeTaskManifests(tasks);
-                TaskManager.Instance.RegisterTask(plugin.Name, taskManifests);
-            }
-
-
             return new EitherManifest<RiftManifest<PluginManifest>>(
                 new RiftManifest<PluginManifest>(
                     new PluginManifest(
@@ -369,45 +333,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
         }
 
         throw new InvalidOperationException($"No any workspace schema field found, path: `{path}`");
-    }
-
-    private static List<TaskManifest> MakeTaskManifests(Dictionary<string, TomlTask> tasks)
-    {
-        var taskManifests = new List<TaskManifest>();
-        tasks.ForEach((taskName, taskToml) =>
-        {
-            List<TaskArgManifest>? taskArgs = null;
-            if (taskToml.Args is { } argsToml)
-            {
-                taskArgs = new List<TaskArgManifest>();
-                argsToml.ForEach(x =>
-                {
-                    taskArgs.Add(new TaskArgManifest(
-                        Name: x.Name,
-                        Short: x.Short,
-                        Description: x.Help,
-                        Default: x.Default,
-                        ConflictWith: x.ConflictWith,
-                        Heading: x.HelpHeading));
-                });
-            }
-
-            taskManifests.Add(
-                new TaskManifest(
-                    Name: taskName,
-                    IsCommand: taskToml.IsCommand,
-                    Heading: taskToml.Heading,
-                    BeforeHelp: taskToml.BeforeHelp,
-                    AfterHelp: taskToml.AfterHelp,
-                    Description: taskToml.About,
-                    Parent: taskToml.Parent,
-                    SubTasks: taskToml.SubTasks,
-                    RunTasks: taskToml.RunTasks,
-                    Args: taskArgs
-                )
-            );
-        });
-        return taskManifests;
     }
 
     /// <summary>

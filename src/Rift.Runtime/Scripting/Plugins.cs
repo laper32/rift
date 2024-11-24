@@ -9,6 +9,7 @@
 
 using System.Text.Json.Serialization;
 using Rift.Runtime.API.Scripting;
+using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
@@ -71,11 +72,11 @@ public class Plugins
     public static void Add(Plugin plugin)
     {
         //Console.WriteLine($"{plugin.Name}, {plugin.Version}");
-        //WorkspaceManagerInternal.Instance.AddPluginForPackage(plugin);
+        WorkspaceManager.Instance.AddPluginForPackage(plugin);
     }
 
     public static void Add(IEnumerable<Plugin> plugins)
     {
-        //WorkspaceManagerInternal.Instance.AddPluginForPackage(plugins);
+        WorkspaceManager.Instance.AddPluginForPackage(plugins);
     }
 }
