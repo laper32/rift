@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "Rift": {
-      "commandName": "Project",
-      "workingDirectory": "D:\\workshop\\projects\\common_usage\\.py\\generic\\rift-workspace"
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
     }
   }
 }
