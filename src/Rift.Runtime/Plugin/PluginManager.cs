@@ -13,25 +13,22 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Plugin;
 
-internal class PluginManagerInternal : PluginManager, IInitializable
+internal interface IPluginManagerInternal : IPluginManager, IInitializable
+{ 
+    public ILogger<PluginManager> Logger { get; }
+}
+
+internal class PluginManager(InterfaceBridge bridge) : IPluginManagerInternal
 {
     // TODO: 未来的插件系统需要想办法处理没有插件入口的情况。
 
-    private readonly PluginIdentities               _identities = new();
+    private readonly PluginIdentities               _identities = new(bridge);
     private          PluginInstanceContext?         _sharedContext;
     private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
     private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
     private readonly List<PluginContext>            _pluginContexts      = [];
     private readonly List<PluginInstance>           _instances           = [];
-    public           ILogger<PluginManager>         Logger { get; }
-
-    public new static PluginManagerInternal Instance { get; private set; } = null!;
-
-    public PluginManagerInternal()
-    {
-        Instance = this;
-        Logger   = RuntimeInternal.Instance.Logger.CreateLogger<PluginManager>();
-    }
+    public           ILogger<PluginManager>         Logger { get; init; } = bridge.Runtime.Logger.CreateLogger<PluginManager>();
 
     public bool Init()
     {
@@ -53,7 +50,7 @@ internal class PluginManagerInternal : PluginManager, IInitializable
     /// </summary>
     public void NotifyLoadPlugins()
     {
-        var declarators = WorkspaceManagerInternal.Instance.CollectPluginsForLoad();
+        var declarators = bridge.WorkspaceManager.CollectPluginsForLoad();
         foreach (var declarator in declarators)
         {
             _identities.Add(declarator);
@@ -167,7 +164,7 @@ internal class PluginManagerInternal : PluginManager, IInitializable
     {
         foreach (var context in _pluginContexts)
         {
-            _instances.Add(new PluginInstance(context));
+            _instances.Add(new PluginInstance(bridge, context));
         }
     }
 

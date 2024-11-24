@@ -10,39 +10,34 @@ using Rift.Runtime.API.Plugin;
 
 namespace Rift.Runtime.Fundamental;
 
+internal interface IShareSystemInternal : IShareSystem, IInitializable;
 
-internal class ShareSystemInternal : ShareSystem, IInitializable
+internal class ShareSystem(InterfaceBridge bridge) : IShareSystemInternal
 {
-    public new static ShareSystemInternal          Instance { get; private set; } = null!;
 
-    private readonly  ILogger<ShareSystemInternal> _logger;
-    public ShareSystemInternal()
-    {
-        Instance = this;
-        _logger = RuntimeInternal.Instance.Logger.CreateLogger<ShareSystemInternal>();
-    }
+    private readonly ILogger<ShareSystem> _logger = bridge.Runtime.Logger.CreateLogger<ShareSystem>();
 
-    public override void AddInterface(ISharable @interface, IPlugin plugin)
+    public void AddInterface(ISharable @interface, IPlugin plugin)
     {
         throw new NotImplementedException();
     }
 
-    public override T? GetInterface<T>(uint version) where T : class
+    public T? GetInterface<T>(uint version) where T : class, ISharable
     {
         throw new NotImplementedException();
     }
 
-    public override bool HasInterface<T>() 
+    public bool HasInterface<T>() where T : class, ISharable
     {
         throw new NotImplementedException();
     }
 
-    public override T GetRequiredInterface<T>(uint version)
+    public T GetRequiredInterface<T>(uint version) where T : class, ISharable
     {
         throw new NotImplementedException();
     }
 
-    public override bool TryGetInterface<T>(string name, uint version, out T ret)
+    public bool TryGetInterface<T>(string name, uint version, out T ret) where T : class, ISharable
     {
         throw new NotImplementedException();
     }

@@ -6,6 +6,15 @@
 
 namespace Rift.Runtime.API.Workspace;
 
+public interface IWorkspaceManager
+{
+    string Root { get; }
+
+    IPackageInstance? FindPackage(string name);
+
+    IEnumerable<IPackageInstance> GetAllPackages();
+}
+
 public abstract class WorkspaceManager
 {
     protected WorkspaceManager()

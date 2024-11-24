@@ -9,8 +9,6 @@
 
 using System.Text.Json.Serialization;
 using Rift.Runtime.API.Scripting;
-using Rift.Runtime.API.Workspace;
-using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
@@ -66,16 +64,18 @@ public class Plugin : IPackageImportDeclarator
 
 // ReSharper disable UnusedMember.Global
 
-public static class Plugins
+// TODO: IScriptContext
+// TODO: CommandLine Remake
+public class Plugins
 {
     public static void Add(Plugin plugin)
     {
-        Console.WriteLine($"{plugin.Name}, {plugin.Version}");
-        WorkspaceManagerInternal.Instance.AddPluginForPackage(plugin);
+        //Console.WriteLine($"{plugin.Name}, {plugin.Version}");
+        //WorkspaceManagerInternal.Instance.AddPluginForPackage(plugin);
     }
 
     public static void Add(IEnumerable<Plugin> plugins)
     {
-        WorkspaceManagerInternal.Instance.AddPluginForPackage(plugins);
+        //WorkspaceManagerInternal.Instance.AddPluginForPackage(plugins);
     }
 }

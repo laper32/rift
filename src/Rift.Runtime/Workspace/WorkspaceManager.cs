@@ -11,30 +11,36 @@ using Rift.Runtime.API.Schema;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.API.Task;
 using Rift.Runtime.API.Workspace;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugin;
-using Rift.Runtime.Scripting;
 using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
-
-internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
+internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
 {
+    IEnumerable<PluginDescriptor> CollectPluginsForLoad();
+}
 
-    private readonly Packages _packages = new();
-    private readonly PackageInstances _packageInstances = new();
+internal class WorkspaceManager : IWorkspaceManagerInternal
+{
+    private readonly InterfaceBridge  _bridge;
+    private readonly Packages         _packages;
+    private readonly PackageInstances _packageInstances;
+    private          EWorkspaceStatus _status;
+    private static   WorkspaceManager _instance = null!;
 
-    private                EWorkspaceStatus         _status;
-    public sealed override string                   Root     { get; protected set; }
-    public new static      WorkspaceManagerInternal Instance { get; private set; } = null!;
-
-    public WorkspaceManagerInternal()
+    public WorkspaceManager(InterfaceBridge bridge)
     {
-        Root     = "__Unknown__";
-        _status  = EWorkspaceStatus.Unknown;
-        Instance = this;
+        _status           = EWorkspaceStatus.Unknown;
+        _packages         = new Packages();
+        _packageInstances = new PackageInstances();
+        _bridge           = bridge;
+        _instance         = this;
     }
+
+    public string           Root     { get; protected set; } = "__Unknown__";
 
     public bool Init()
     {
@@ -92,12 +98,12 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
         EvaluateManifestScripts();
     }
 
-    public override IPackageInstance? FindPackage(string name)
+    public IPackageInstance? FindPackage(string name)
     {
         return _packageInstances.FindInstance(name);
     }
 
-    public override IEnumerable<IPackageInstance> GetAllPackages()
+    public IEnumerable<IPackageInstance> GetAllPackages()
     {
         return _packageInstances.GetAllInstances();
     }
@@ -139,7 +145,7 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
             else
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
-                var workspaceRoot = Instance.Root;
+                var workspaceRoot = _instance.Root;
                 if (workspaceRoot.Equals(manifestLocation))
                 {
                     workspaceName = Path.GetFileName(manifestLocation);
@@ -187,7 +193,7 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
 
-                var workspaceRoot = Instance.Root;
+                var workspaceRoot = _instance.Root;
                 if (workspaceRoot.Equals(manifestLocation))
                 {
                     folderName = Path.GetFileName(manifestLocation);
@@ -488,7 +494,7 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
             {
                 continue;
             }
-            ScriptManagerInternal.Instance.EvaluateScript(dependencies);
+            _bridge.ScriptManager.EvaluateScript(dependencies);
         }
     }
 
@@ -501,7 +507,7 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
                 continue;
             }
 
-            ScriptManagerInternal.Instance.EvaluateScript(metadata);
+            _bridge.ScriptManager.EvaluateScript(metadata);
         }
     }
 
@@ -514,7 +520,7 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
                 continue;
             }
 
-            ScriptManagerInternal.Instance.EvaluateScript(plugins);
+            _bridge.ScriptManager.EvaluateScript(plugins);
         }
     }
 
@@ -583,7 +589,7 @@ internal class WorkspaceManagerInternal : WorkspaceManager, IInitializable
 
     private PackageInstance? GetPackageInstance()
     {
-        if (ScriptManagerInternal.Instance.ScriptContext is not { } scriptContext)
+        if (_bridge.ScriptManager.ScriptContext is not { } scriptContext)
         {
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
         }

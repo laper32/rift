@@ -4,35 +4,19 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.API.Fundamental.Interop;
-using Rift.Runtime.Fundamental.Interop.Natives;
+using Rift.Runtime.API.Fundamental;
 
 namespace Rift.Runtime.Fundamental;
 
-internal class RuntimeInternal : API.Fundamental.Runtime
+internal interface IRuntimeInternal : IRuntime;
+
+internal class Runtime(InterfaceBridge bridge) : IRuntimeInternal
 {
-    public RuntimeInternal(IServiceProvider provider)
-    {
-        Logger   = provider.GetRequiredService<ILoggerFactory>();
-        Instance = this;
-    }
-
-    public new static RuntimeInternal Instance { get; private set; } = null!;
-
-    public override ILoggerFactory Logger { get; }
-    public override string ExecutablePath
-    {
-        get
-        {
-            unsafe
-            {
-                return NativeString.ReadFromPointer(Core.GetExecutablePath());
-            }
-        }
-    }
-
-    public override string InstallationPath => Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
-    public override string UserPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".rift");
+    public ILoggerFactory Logger         => bridge.Provider.GetRequiredService<ILoggerFactory>();
+    public string         ExecutablePath => Process.GetCurrentProcess().MainModule!.FileName;
+    public string InstallationPath => Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
+    public string UserPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".rift");
 }

@@ -13,10 +13,12 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
+// TODO: IScriptContext
+// TODO: CommandLine Remake
 public class Metadata
 {
     public static void Add(string key, object value)
     {
-        WorkspaceManagerInternal.Instance.AddMetadataForPackage(key, value);
+        //WorkspaceManagerInternal.Instance.AddMetadataForPackage(key, value);
     }
 }

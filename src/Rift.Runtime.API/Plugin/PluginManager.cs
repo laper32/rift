@@ -6,12 +6,7 @@
 
 namespace Rift.Runtime.API.Plugin;
 
-public abstract class PluginManager
+public interface IPluginManager
 {
-    public static PluginManager Instance { get; protected set; } = null!;
 
-    protected PluginManager()
-    {
-        Instance = this;
-    }
 }

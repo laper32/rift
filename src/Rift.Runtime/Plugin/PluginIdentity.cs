@@ -177,7 +177,7 @@ internal class PluginIdentity(IMaybePackage package)
     }
 }
 
-internal class PluginIdentities
+internal class PluginIdentities(InterfaceBridge bridge)
 {
     private const string PluginDirectoryName = "plugins";
 
@@ -187,31 +187,35 @@ internal class PluginIdentities
 
     private readonly List<string> _pluginSearchPaths =
     [
-        Path.Combine(RuntimeInternal.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
-        Path.Combine(RuntimeInternal.Instance.UserPath, PluginDirectoryName), // 用户目录。
+        Path.Combine(bridge.Runtime.InstallationPath, PluginDirectoryName), // Rift安装路径
+        Path.Combine(bridge.Runtime.UserPath, PluginDirectoryName)          // 用户目录
     ];
 
     private PluginIdentity CreatePluginIdentity(string manifestPath)
     {
-        var manifest = WorkspaceManagerInternal.ReadManifest(manifestPath);
+        var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
         {
             case EEitherManifest.Rift:
+            {
+                return manifest switch
                 {
-                    return manifest switch
-                    {
-                        // 插件是存在一个文件夹里通过版本号作为文件夹区分方式的，所以不能直接打死！
-                        EitherManifest<RiftManifest<PluginManifest>> pluginManifest => new PluginIdentity(
-                            new MaybePackage<RiftPackage>(new RiftPackage(pluginManifest.Value, manifestPath))),
-                        _ => throw new InvalidOperationException("Only supports Rift specific manifests.")
-                    };
-                }
+                    // 插件是存在一个文件夹里通过版本号作为文件夹区分方式的，所以不能直接打死！
+                    EitherManifest<RiftManifest<PluginManifest>> pluginManifest =>
+                        new PluginIdentity(
+                            new MaybePackage<RiftPackage>(
+                                new RiftPackage(pluginManifest.Value, manifestPath)
+                            )
+                        ),
+                    _ => throw new InvalidOperationException("Only supports Rift specific manifests.")
+                };
+            }
             case EEitherManifest.Virtual:
             case EEitherManifest.Real:
             default:
-                {
-                    throw new InvalidOperationException("Only supports Rift specific manifests.");
-                }
+            {
+                throw new InvalidOperationException("Only supports Rift specific manifests.");
+            }
         }
     }
 
@@ -390,7 +394,7 @@ internal class PluginIdentities
         {
             return;
         }
-        ScriptManagerInternal.Instance.EvaluateScript(scriptPath);
+        bridge.ScriptManager.EvaluateScript(scriptPath);
     }
 
     private void RetrievePluginMetadata(PluginIdentity identity)
@@ -400,7 +404,7 @@ internal class PluginIdentities
         {
             return;
         }
-        ScriptManagerInternal.Instance.EvaluateScript(scriptPath);
+        bridge.ScriptManager.EvaluateScript(scriptPath);
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)

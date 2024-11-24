@@ -9,28 +9,14 @@ using Rift.Runtime.API.Plugin;
 
 namespace Rift.Runtime.API.Fundamental;
 
-public abstract class ShareSystem
+public interface IShareSystem
 {
     /// <summary>
-    /// 考虑到这些API也会同时暴露给脚本系统，DI的方式不再适合。<br/>
-    ///
-    /// 所以，所有需要对外的System/Manager等，都会提供一个Instance实例。
-    /// </summary>
-    public static ShareSystem Instance { get; protected set; } = null!;
-
-    protected ShareSystem()
-    {
-        Instance = this;
-    }
-
-    /// <summary>
-    /// 添加接口 <br/>
-    ///
-    /// 脚本就别干这事了，添加接口只能是插件层以上才能做！
+    /// 添加接口
     /// </summary>
     /// <param name="interface">接口类</param>
     /// <param name="plugin">插件实例</param>
-    public abstract void AddInterface(ISharable @interface, IPlugin plugin);
+    void AddInterface(ISharable @interface, IPlugin plugin);
 
     /// <summary>
     /// 获取接口
@@ -38,7 +24,7 @@ public abstract class ShareSystem
     /// <typeparam name="T">接口类</typeparam>
     /// <param name="version">版本号</param>
     /// <returns>期望的接口, 为空说明没有</returns>
-    public abstract T? GetInterface<T>(uint version) where T : class, ISharable;
+    T? GetInterface<T>(uint version) where T : class, ISharable;
 
     /// <summary>
     /// 查询是否有接口 <br />
@@ -51,7 +37,7 @@ public abstract class ShareSystem
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public abstract bool HasInterface<T>() where T : class, ISharable;
+    bool HasInterface<T>() where T : class, ISharable;
 
     /// <summary>
     /// 获取必须的接口, 如果不存在则抛出异常.
@@ -64,7 +50,7 @@ public abstract class ShareSystem
     ///     无论你怎么操作, 此时均有可能会直接崩溃服务器. <br />
     ///     使用该函数之前请确保你的运行环境确实存在该接口!
     /// </exception>
-    public abstract T GetRequiredInterface<T>(uint version) where T : class, ISharable;
+    T GetRequiredInterface<T>(uint version) where T : class, ISharable;
 
     /// <summary>
     /// 根据接口名和版本号, 尝试获取某个接口
@@ -74,6 +60,6 @@ public abstract class ShareSystem
     /// <param name="version">接口版本号</param>
     /// <param name="ret">返回值</param>
     /// <returns>True说明有, 否则没有</returns>
-    public abstract bool TryGetInterface<T>(string name, uint version, [MaybeNullWhen(returnValue: false)] out T ret)
+    public bool TryGetInterface<T>(string name, uint version, [MaybeNullWhen(returnValue: false)] out T ret)
         where T : class, ISharable;
 }

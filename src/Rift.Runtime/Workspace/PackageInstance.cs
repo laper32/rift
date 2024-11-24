@@ -4,7 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Plugin;

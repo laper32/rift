@@ -6,12 +6,12 @@
 
 using System.Diagnostics;
 using System.Reflection;
-using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Plugin;
+using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Plugin;
 
-internal class PluginInstance(PluginContext context)
+internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
 {
     private readonly PluginIdentity _identity = context.Identity;
     private readonly Assembly? _entry = context.Entry;
@@ -114,6 +114,6 @@ internal class PluginInstance(PluginContext context)
     {
         Error = e;
 
-        PluginManagerInternal.Instance.Logger.LogError(Error, message);
+        //PluginManagerInternal.Instance.Logger.LogError(Error, message);
     }
 }
