@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
+using Microsoft.Extensions.DependencyInjection;
 using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Scripting;
 using Rift.Runtime.Fundamental;

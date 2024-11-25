@@ -10,7 +10,7 @@ namespace Rift.Runtime.API.Schema;
 
 // ReSharper disable IdentifierTypo
 // ReSharper disable StringLiteralTypo
-public class TomlManifest
+public sealed class TomlManifest
 {
     //[DataMember(Name = "target")]
     [JsonPropertyName("target")]

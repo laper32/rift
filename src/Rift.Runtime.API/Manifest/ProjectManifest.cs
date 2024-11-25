@@ -57,7 +57,7 @@ namespace Rift.Runtime.API.Manifest;
 ///     <br/>
 ///     和<seealso cref="Members"/>成对出现。
 /// </param>
-public record ProjectManifest(
+public sealed record ProjectManifest(
     string Name,
     List<string> Authors,
     string Version,

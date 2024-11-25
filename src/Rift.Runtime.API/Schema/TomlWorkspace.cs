@@ -11,7 +11,7 @@ namespace Rift.Runtime.API.Schema;
 
 
 // ReSharper disable once IdentifierTypo
-public class TomlWorkspace
+public sealed class TomlWorkspace
 {
     [JsonPropertyName("name")]
     public string? Name { get; set; }

@@ -4,7 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;

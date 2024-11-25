@@ -11,7 +11,7 @@ namespace Rift.Runtime.API.Schema;
 
 
 // ReSharper disable IdentifierTypo
-public class TomlTarget
+public sealed class TomlTarget
 {
     [JsonPropertyName("name")]
     public required string Name { get; set; }

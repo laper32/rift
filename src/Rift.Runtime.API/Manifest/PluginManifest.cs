@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Rift.Runtime.API.Manifest;
 
-public record PluginManifest(
+public sealed record PluginManifest(
     string       Name,
     List<string> Authors,
     string       Version,

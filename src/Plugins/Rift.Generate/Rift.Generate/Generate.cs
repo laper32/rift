@@ -27,7 +27,6 @@ public class Generate : RiftPlugin
         {
             if (instance.GetExtensionField("build") is not { } field)
             {
-                Console.WriteLine("Well, not found");
                 continue;
             }
 

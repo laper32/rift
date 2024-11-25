@@ -4,12 +4,11 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.API.Schema;
 
-public class TomlTask
+public sealed class TomlTask
 {
     [JsonPropertyName("about")]
     public string? About { get; set; }
