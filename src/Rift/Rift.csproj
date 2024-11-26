@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Rift.Runtime.API\Rift.Runtime.Abstractions.csproj" />
+    <ProjectReference Include="..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" />
     <ProjectReference Include="..\Rift.Runtime\Rift.Runtime.csproj" />
   </ItemGroup>
 
