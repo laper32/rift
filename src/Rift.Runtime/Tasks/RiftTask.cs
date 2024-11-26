@@ -12,7 +12,20 @@ internal class RiftTask(string name) : IRiftTask
     public List<Func<ITaskContext, Task>>      Actions        { get; init; } = [];
     public Queue<Action<ITaskContext>>         DelayedActions { get; init; } = [];
     public Func<Exception, ITaskContext, Task> ErrorHandler   { get; }
-    public bool DeferExceptions { get; private set; }
+    public bool DeferExceptions { get; set; }
+    public ITaskConfiguration? Configuration { get; private set; }
+
+    public void AddConfiguration(ITaskConfiguration configuration)
+    {
+        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+
+        if (Configuration is not null)
+        {
+            return;
+        }
+
+        Configuration = configuration;
+    }
 
     /// <summary>
     /// Executes the task using the specified context.
@@ -48,10 +61,5 @@ internal class RiftTask(string name) : IRiftTask
             }
             throw new AggregateException("Task failed with following exceptions", exceptions);
         }
-    }
-
-    public void SetDeferredExceptions(bool value)
-    {
-        DeferExceptions = value;
     }
 }

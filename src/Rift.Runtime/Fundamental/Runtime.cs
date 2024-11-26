@@ -13,10 +13,23 @@ namespace Rift.Runtime.Fundamental;
 
 internal interface IRuntimeInternal : IRuntime;
 
-internal class Runtime(InterfaceBridge bridge) : IRuntimeInternal
+internal class Runtime : IRuntimeInternal
 {
-    public ILoggerFactory Logger         => bridge.Provider.GetRequiredService<ILoggerFactory>();
-    public string         ExecutablePath => Process.GetCurrentProcess().MainModule!.FileName;
-    public string InstallationPath => Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
-    public string UserPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".rift");
+    public Runtime(InterfaceBridge bridge)
+    {
+        Logger           = bridge.Provider.GetRequiredService<ILoggerFactory>();
+        ExecutablePath   = Process.GetCurrentProcess().MainModule!.FileName;
+        InstallationPath = Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
+        UserPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            Definitions.DirectoryIdentifier
+        );
+        Instance = this;
+    }
+
+    internal static Runtime        Instance         { get; private set; } = null!;
+    public          ILoggerFactory Logger           { get; }
+    public          string         ExecutablePath   { get; }
+    public          string         InstallationPath { get; }
+    public          string         UserPath         { get; }
 }

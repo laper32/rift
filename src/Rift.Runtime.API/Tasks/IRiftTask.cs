@@ -38,6 +38,4 @@ public interface IRiftTask
     Queue<Action<ITaskContext>> DelayedActions { get; }
 
     Func<Exception, ITaskContext, Task> ErrorHandler { get; }
-
-    void SetDeferredExceptions(bool value);
 }

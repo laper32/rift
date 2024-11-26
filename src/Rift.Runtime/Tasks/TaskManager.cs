@@ -17,10 +17,11 @@ internal class TaskManager : ITaskManagerInternal
 {
     private readonly List<IRiftTask> _tasks;
     internal static  TaskManager     Instance { get; private set; } = null!;
-
+    private readonly InterfaceBridge _bridge;
     public TaskManager(InterfaceBridge bridge)
     {
         _tasks   = [];
+        _bridge  = bridge;
         Instance = this;
     }
 
@@ -40,10 +41,12 @@ internal class TaskManager : ITaskManagerInternal
 
     public bool Init()
     {
+        _bridge.ScriptManager.AddNamespace("Rift.Runtime.Tasks");
         return true;
     }
 
     public void Shutdown()
     {
+        _bridge.ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
     }
 }

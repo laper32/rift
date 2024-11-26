@@ -10,4 +10,6 @@ public static class Definitions
 {
     // ReSharper disable once StringLiteralTypo
     public static string ManifestIdentifier = "Rift.toml";
+
+    public static string DirectoryIdentifier = ".rift";
 }
