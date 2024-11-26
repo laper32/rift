@@ -1,4 +1,4 @@
-﻿using Rift.Runtime.API.Plugin;
+﻿using Rift.Runtime.Abstractions.Plugin;
 
 namespace Rift.Generate;
 

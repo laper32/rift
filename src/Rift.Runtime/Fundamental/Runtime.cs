@@ -7,7 +7,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.API.Fundamental;
+using Rift.Runtime.Abstractions.Fundamental;
 
 namespace Rift.Runtime.Fundamental;
 

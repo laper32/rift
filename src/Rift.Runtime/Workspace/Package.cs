@@ -4,10 +4,10 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Manifest;
 using Rift.Runtime.Manifest;
 using System.Text.Json;
+using Rift.Runtime.Abstractions.Fundamental;
+using Rift.Runtime.Abstractions.Manifest;
 
 namespace Rift.Runtime.Workspace;
 

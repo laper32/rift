@@ -9,9 +9,9 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\Rift.Runtime.API\Rift.Runtime.API.csproj" Private="false" ExcludeAssets="runtime" />
-		<ProjectReference Include="..\..\Rift.Generate\Rift.Generate.API\Rift.Generate.API.csproj"/>
-		<ProjectReference Include="..\Rift.Go.API\Rift.Go.API.csproj" />
+		<ProjectReference Include="..\..\..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" Private="false" ExcludeAssets="runtime" />
+		<ProjectReference Include="..\..\Rift.Generate\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
+		<ProjectReference Include="..\Rift.Go.Abstractions\Rift.Go.Abstractions.csproj" />
 	</ItemGroup>
 
 </Project>

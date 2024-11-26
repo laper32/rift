@@ -7,8 +7,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.API.Fundamental.Extensions;
-using Rift.Runtime.API.Plugin;
+using Rift.Runtime.Abstractions.Fundamental.Extensions;
+using Rift.Runtime.Abstractions.Plugin;
 using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Plugin;

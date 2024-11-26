@@ -24,11 +24,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Rift.Runtime.API\Rift.Runtime.API.csproj" />
+	  <ProjectReference Include="..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<AssemblyAttribute Include="Rift.Runtime.API.Scripting.ScriptShared" />
+		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Scripting.ScriptShared" />
 	</ItemGroup>
 
 </Project>

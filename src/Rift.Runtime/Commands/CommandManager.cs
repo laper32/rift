@@ -1,5 +1,5 @@
-﻿using Rift.Runtime.API.Commands;
-using Rift.Runtime.API.Fundamental;
+﻿using Rift.Runtime.Abstractions.Commands;
+using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Commands;

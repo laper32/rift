@@ -1,4 +1,4 @@
-﻿using Rift.Runtime.API.Scripting;
+﻿using Rift.Runtime.Abstractions.Scripting;
 
 namespace Rift.Runtime.Scripting;
 

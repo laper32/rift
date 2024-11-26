@@ -5,8 +5,8 @@
 // ===========================================================================
 
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Plugin;
+using Rift.Runtime.Abstractions.Fundamental;
+using Rift.Runtime.Abstractions.Plugin;
 
 namespace Rift.Runtime.Fundamental;
 

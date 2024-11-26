@@ -4,9 +4,9 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Scripting;
-using Rift.Runtime.API.Workspace;
+using Rift.Runtime.Abstractions.Fundamental;
+using Rift.Runtime.Abstractions.Scripting;
+using Rift.Runtime.Abstractions.Workspace;
 using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Scripting;

@@ -10,8 +10,8 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
-using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Scripting;
+using Rift.Runtime.Abstractions.Fundamental;
+using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Scripting;

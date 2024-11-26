@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.API.Manifest;
+using Rift.Runtime.Abstractions.Manifest;
 
 namespace Rift.Runtime.Manifest;
 

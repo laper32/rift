@@ -1,6 +1,6 @@
 ﻿using Rift.Generate.API;
 using Rift.Go.API;
-using Rift.Runtime.API.Plugin;
+using Rift.Runtime.Abstractions.Plugin;
 
 namespace Rift.Go;
 

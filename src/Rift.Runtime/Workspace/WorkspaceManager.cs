@@ -5,11 +5,11 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.API.Fundamental;
-using Rift.Runtime.API.Manifest;
-using Rift.Runtime.API.Schema;
-using Rift.Runtime.API.Scripting;
-using Rift.Runtime.API.Workspace;
+using Rift.Runtime.Abstractions.Fundamental;
+using Rift.Runtime.Abstractions.Manifest;
+using Rift.Runtime.Abstractions.Schema;
+using Rift.Runtime.Abstractions.Scripting;
+using Rift.Runtime.Abstractions.Workspace;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugin;

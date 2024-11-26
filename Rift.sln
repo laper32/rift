@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.API", "src\Rift.Runtime.API\Rift.Runtime.API.csproj", "{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.Abstractions", "src\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj", "{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime", "src\Rift.Runtime\Rift.Runtime.csproj", "{A8C695AA-742C-4E74-BD71-3764C795F24E}"
 EndProject
@@ -15,13 +15,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rift.Generate", "Rift.Gener
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Generate", "src\Plugins\Rift.Generate\Rift.Generate\Rift.Generate.csproj", "{2F54EBFB-786E-4557-A4D7-E09CAB2223CB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Generate.API", "src\Plugins\Rift.Generate\Rift.Generate.API\Rift.Generate.API.csproj", "{764DA912-4C3B-4378-B5EE-2164736D3BD4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Generate.Abstractions", "src\Plugins\Rift.Generate\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj", "{764DA912-4C3B-4378-B5EE-2164736D3BD4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rift.Go", "Rift.Go", "{991CECD8-7E1C-48AF-A4DE-757FA72964E6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Go", "src\Plugins\Rift.Go\Rift.Go\Rift.Go.csproj", "{C498C1EA-DFB7-49D4-A98C-F9C9B940F490}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Go.API", "src\Plugins\Rift.Go\Rift.Go.API\Rift.Go.API.csproj", "{94065CEE-9D22-4389-8D7E-0599669AFF32}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Go.Abstractions", "src\Plugins\Rift.Go\Rift.Go.Abstractions\Rift.Go.Abstractions.csproj", "{94065CEE-9D22-4389-8D7E-0599669AFF32}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

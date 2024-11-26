@@ -1,4 +1,4 @@
-﻿using Rift.Runtime.API.Tasks;
+﻿using Rift.Runtime.Abstractions.Tasks;
 
 namespace Rift.Runtime.Tasks;
 

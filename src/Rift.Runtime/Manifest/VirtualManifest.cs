@@ -6,7 +6,7 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Rift.Runtime.API.Manifest;
+using Rift.Runtime.Abstractions.Manifest;
 
 namespace Rift.Runtime.Manifest;
 
