@@ -13,10 +13,10 @@ namespace Rift.Runtime.Workspace;
 
 internal class Package(IManifest manifest, string manifestPath)
 {
-    public string Name => manifest.Name;
-    public string ManifestPath => manifestPath;
-    public string Root => Directory.GetParent(ManifestPath)!.FullName;
-    public IManifest Value => manifest;
+    public string    Name         => manifest.Name;
+    public string    ManifestPath => manifestPath;
+    public string    Root         => Directory.GetParent(ManifestPath)!.FullName;
+    public IManifest Value        => manifest;
 
     public string? Dependencies
     {

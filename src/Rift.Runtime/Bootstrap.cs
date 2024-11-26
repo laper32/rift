@@ -8,9 +8,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.API.Fundamental;
+using Rift.Runtime.Commands;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Plugin;
 using Rift.Runtime.Scripting;
+using Rift.Runtime.Tasks;
 using Rift.Runtime.Workspace;
 using Serilog;
 using Serilog.Events;
@@ -117,9 +119,9 @@ public static class Bootstrap
         services.AddSingleton<IShareSystemInternal, ShareSystem>();
         services.AddSingleton<IScriptManagerInternal, ScriptManager>();
         services.AddSingleton<IPluginManagerInternal, PluginManager>();
-        //services.AddSingleton<CommandManagerInternal>();
         services.AddSingleton<IWorkspaceManagerInternal, WorkspaceManager>();
-        //services.AddSingleton<ITaskM>();
+        services.AddSingleton<ITaskManagerInternal, TaskManager>();
+        services.AddSingleton<ICommandManagerInternal, CommandManager>();
     }
 
     private static void ActivateServices(IServiceProvider provider)
@@ -128,9 +130,9 @@ public static class Bootstrap
         provider.GetRequiredService<IShareSystemInternal>();
         provider.GetRequiredService<IScriptManagerInternal>();
         provider.GetRequiredService<IPluginManagerInternal>();
-        //provider.GetRequiredService<CommandManagerInternal>();
         provider.GetRequiredService<IWorkspaceManagerInternal>();
-        //provider.GetRequiredService<TaskManagerInternal>();
+        provider.GetRequiredService<ITaskManagerInternal>();
+        provider.GetRequiredService<ICommandManagerInternal>();
     }
 
     private static void InitComponents()
@@ -155,22 +157,21 @@ public static class Bootstrap
             throw new InvalidOperationException("Failed to init WorkspaceManager.");
         }
 
-        //if (!TaskManagerInternal.Instance.Init())
-        //{
-        //    throw new InvalidOperationException("Failed to init TaskManager.");
-        //}
+        if (!TaskManager.Instance.Init())
+        {
+            throw new InvalidOperationException("Failed to init TaskManager");
+        }
 
-        //if (!CommandManagerInternal.Instance.Init())
-        //{
-        //    throw new InvalidOperationException("Failed to init CommandManager.");
-        //}
-
+        if (!CommandManager.Instance.Init())
+        {
+            throw new InvalidOperationException("Failed to init C");
+        }
     }
 
     private static void ShutdownComponents()
     {
-        //CommandManagerInternal.Instance.Shutdown();
-        //TaskManagerInternal.Instance.Shutdown();
+        CommandManager.Instance.Shutdown();
+        TaskManager.Instance.Shutdown();
         WorkspaceManager.Instance.Shutdown();
         PluginManager.Instance.Shutdown();
         ScriptManager.Instance.Shutdown();

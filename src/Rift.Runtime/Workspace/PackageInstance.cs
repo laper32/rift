@@ -17,9 +17,8 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
     public Dictionary<string, object>           Metadata     { get; init; } = [];
     public Dictionary<string, object>           Dependencies { get; init; } = [];
     public Dictionary<string, Scripting.Plugin> Plugins      { get; init; } = [];
-
-    public string        Name         => Value.Name;
-    public string        ManifestPath => Value.ManifestPath;
+    public string                               Name         => Value.Name;
+    public string                               ManifestPath => Value.ManifestPath;
 
     public JsonElement? GetExtensionField(string name)
     {

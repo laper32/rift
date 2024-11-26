@@ -17,7 +17,7 @@ internal enum EEitherManifest
 
 internal interface IEitherManifest
 {
-    public string Name { get; }
+    public string          Name { get; }
     public EEitherManifest Type { get; }
 }
 

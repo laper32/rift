@@ -9,7 +9,6 @@ using Rift.Runtime.API.Fundamental;
 using Rift.Runtime.API.Manifest;
 using Rift.Runtime.API.Schema;
 using Rift.Runtime.API.Scripting;
-using Rift.Runtime.API.Task;
 using Rift.Runtime.API.Workspace;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
@@ -29,7 +28,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
     private readonly Packages         _packages;
     private readonly PackageInstances _packageInstances;
     private          EWorkspaceStatus _status;
-    internal static   WorkspaceManager Instance = null!;
+    internal static  WorkspaceManager Instance = null!;
 
     public WorkspaceManager(InterfaceBridge bridge)
     {
