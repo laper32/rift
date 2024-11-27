@@ -2,12 +2,12 @@
 
 namespace Rift.Runtime.Tasks;
 
-internal class RiftDependentTask : IRiftDependentTask
+internal class DependentTask : IDependentTask
 {
     public string Name       { get; }
     public bool   IsRequired { get; }
 
-    public RiftDependentTask(string name, bool required)
+    public DependentTask(string name, bool required)
     {
         ArgumentNullException.ThrowIfNull(name, nameof(name));
         Name       = name;

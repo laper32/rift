@@ -1,6 +1,6 @@
 ﻿namespace Rift.Runtime.Abstractions.Tasks;
 
-public interface IRiftDependentTask
+public interface IDependentTask
 {
     string Name       { get; }
     bool   IsRequired { get; }

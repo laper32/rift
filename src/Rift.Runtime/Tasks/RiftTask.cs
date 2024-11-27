@@ -9,8 +9,8 @@ internal class RiftTask(string name) : IRiftTask
     public string                            Name          { get; }      = name ?? throw new ArgumentNullException(name, nameof(name));
     public string                            Description   { get; set; } = string.Empty;
     public bool                              IsCommand     { get; set; }
-    public IReadOnlyList<IRiftDependentTask> Dependencies  => _dependencies;
-    public IReadOnlyList<IRiftDependentTask> Dependents    => _dependents;
+    public IReadOnlyList<IDependentTask> Dependencies  => _dependencies;
+    public IReadOnlyList<IDependentTask> Dependents    => _dependents;
 
     [JsonIgnore]
     public List<Func<ITaskContext, Task>>      Actions        { get; init; } = [];
@@ -24,10 +24,10 @@ internal class RiftTask(string name) : IRiftTask
     public bool DeferExceptions { get; set; }
 
     [JsonIgnore]
-    private readonly List<IRiftDependentTask> _dependencies = [];
+    private readonly List<IDependentTask> _dependencies = [];
 
     [JsonIgnore]
-    private readonly List<IRiftDependentTask> _dependents   = [];
+    private readonly List<IDependentTask> _dependents   = [];
 
     public void SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
     {

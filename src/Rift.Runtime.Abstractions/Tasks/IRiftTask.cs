@@ -21,10 +21,10 @@ public interface IRiftTask
     /// <summary>
     /// 如果需要执行这个task，需要哪些task提前执行？
     /// </summary>
-    IReadOnlyList<IRiftDependentTask> Dependencies { get; }
+    IReadOnlyList<IDependentTask> Dependencies { get; }
 
     /// <summary>
     /// 这个task会被哪些task依赖？
     /// </summary>
-    IReadOnlyList<IRiftDependentTask> Dependents { get; }
+    IReadOnlyList<IDependentTask> Dependents { get; }
 }
