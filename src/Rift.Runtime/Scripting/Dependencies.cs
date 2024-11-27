@@ -17,7 +17,6 @@ using Rift.Runtime.Workspace;
 namespace Rift.Runtime.Scripting;
 
 // TODO: CommandLine Remake
-// TODO: IScriptContext
 public class Dependencies
 {
     public static void Add<T>(T dependency) where T: class, IPackageImportDeclarator

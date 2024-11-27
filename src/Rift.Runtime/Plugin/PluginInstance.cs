@@ -61,7 +61,9 @@ internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
                 ShareSystem: bridge.ShareSystem,
                 PluginManager: bridge.PluginManager,
                 ScriptManager: bridge.ScriptManager,
-                WorkspaceManager: bridge.WorkspaceManager
+                WorkspaceManager: bridge.WorkspaceManager,
+                TaskManager: bridge.TaskManager,
+                CommandManager: bridge.CommandManager
             )
         );
 

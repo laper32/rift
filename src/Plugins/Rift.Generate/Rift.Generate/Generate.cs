@@ -1,43 +1,52 @@
-﻿using Rift.Runtime.Abstractions.Plugin;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Rift.Runtime.Abstractions.Plugin;
+using Rift.Runtime.Abstractions.Tasks;
 
 namespace Rift.Generate;
 
+public interface ISampleService
+{
+    void Call();
+}
+
+internal class SampleService : ISampleService
+{
+    public void Call()
+    {
+        Console.WriteLine("SampleService.Call");
+    }
+}
+
 // ReSharper disable once UnusedMember.Global
-public class Generate : RiftPlugin
+internal class Generate : RiftPlugin
 {
     public override bool OnLoad()
     {
-        //if (TaskManager.Instance.FindTask("generate") is not { } command)
-        //{
-        //    Console.WriteLine("Failed to find `generate` command.");
-        //    return false;
-        //}
-
-        //command.RegisterAction(() =>
-        //{
-        //    Console.WriteLine("aksdjjaklshdjklahsdjklhasjkdghajksdgjkladsg");
-        //});
-
-        //command.Action?.Invoke();
-
-        var instances = WorkspaceManager.GetAllPackages().ToArray();
-        Console.WriteLine($"Packages count: {instances.Length}");
-        foreach (var instance in instances)
+        var task = TaskManager.RegisterTask("generate", config =>
         {
-            if (instance.GetExtensionField("build") is not { } field)
-            {
-                continue;
-            }
+            config
+                .SetIsCommand(true)
+                .SetDeferException(true)
+                .SetErrorHandler((exception, context) =>
+                {
+                    Console.WriteLine("ErrorHandler");
+                    return Task.CompletedTask;
+                })
+                .AddAction(() =>
+                {
+                    _sampleService.Call();
+                })
+                ;
+        });
+        var services = new ServiceCollection();
+        services.AddSingleton<ISampleService, SampleService>();
+        var provider = services.BuildServiceProvider();
+        _sampleService = provider.GetRequiredService<ISampleService>();
 
-            if (field.GetString() is not { } fieldStr)
-            {
-                continue;
-            }
-            Console.WriteLine($"name: {instance.Name} => {fieldStr}");
-        }
+        Console.WriteLine(task);
 
         Console.WriteLine("Rift.Generate.OnLoad OK");
-        Console.WriteLine($"Workspace root: {WorkspaceManager.Root}");
+
         return base.OnLoad();
     }
 
@@ -52,4 +61,6 @@ public class Generate : RiftPlugin
         Console.WriteLine("Rift.Generate.OnUnload OK.");
         base.OnUnload();
     }
+
+    private ISampleService _sampleService = null!;
 }

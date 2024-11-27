@@ -19,23 +19,12 @@ public interface IRiftTask
     string Description { get; }
 
     /// <summary>
-    /// 是否为命令行命令
-    /// </summary>
-    bool IsCommand { get; }
-
-    /// <summary>
     /// 如果需要执行这个task，需要哪些task提前执行？
     /// </summary>
-    List<IRiftDependentTask> Dependencies { get; }
+    IReadOnlyList<IRiftDependentTask> Dependencies { get; }
 
     /// <summary>
     /// 这个task会被哪些task依赖？
     /// </summary>
-    List<IRiftDependentTask> Dependents { get; }
-
-    List<Func<ITaskContext, Task>> Actions { get; }
-
-    Queue<Action<ITaskContext>> DelayedActions { get; }
-
-    Func<Exception, ITaskContext, Task> ErrorHandler { get; }
+    IReadOnlyList<IRiftDependentTask> Dependents { get; }
 }

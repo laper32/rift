@@ -65,7 +65,6 @@ public class Plugin : IPackageImportDeclarator
 
 // ReSharper disable UnusedMember.Global
 
-// TODO: IScriptContext
 // TODO: CommandLine Remake
 public class Plugins
 {

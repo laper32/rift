@@ -25,15 +25,22 @@ internal class TaskManager : ITaskManagerInternal
         Instance = this;
     }
 
-    public IRiftTask RegisterTask(string name)
+    public IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
     {
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } task)
+        TaskConfiguration cfg;
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is {} task)
         {
+            cfg = new TaskConfiguration((RiftTask)task);
+            predicate(cfg);
+
             return task;
         }
 
         var ret = new RiftTask(name);
+        cfg = new TaskConfiguration(ret);
+        predicate(cfg);
         _tasks.Add(ret);
+
         return ret;
     }
 

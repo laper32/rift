@@ -1,30 +1,39 @@
-﻿using Rift.Runtime.Abstractions.Tasks;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Rift.Runtime.Abstractions.Tasks;
 
 namespace Rift.Runtime.Tasks;
 
 internal class RiftTask(string name) : IRiftTask
 {
-    public string Name { get; } = name ?? throw new ArgumentNullException(name, nameof(name));
-    public string Description { get; set; } = string.Empty;
-    public bool                                IsCommand      { get; set; }
-    public List<IRiftDependentTask>            Dependencies   { get; init; } = [];
-    public List<IRiftDependentTask>            Dependents     { get; init; } = [];
+    public string                            Name          { get; }      = name ?? throw new ArgumentNullException(name, nameof(name));
+    public string                            Description   { get; set; } = string.Empty;
+    public bool                              IsCommand     { get; set; }
+    public IReadOnlyList<IRiftDependentTask> Dependencies  => _dependencies;
+    public IReadOnlyList<IRiftDependentTask> Dependents    => _dependents;
+
+    [JsonIgnore]
     public List<Func<ITaskContext, Task>>      Actions        { get; init; } = [];
+
+    [JsonIgnore]
     public Queue<Action<ITaskContext>>         DelayedActions { get; init; } = [];
-    public Func<Exception, ITaskContext, Task> ErrorHandler   { get; }
+
+    [JsonIgnore]
+    public Func<Exception, ITaskContext, Task>? ErrorHandler   { get; private set; }
+
     public bool DeferExceptions { get; set; }
-    public ITaskConfiguration? Configuration { get; private set; }
 
-    public void AddConfiguration(ITaskConfiguration configuration)
+    [JsonIgnore]
+    private readonly List<IRiftDependentTask> _dependencies = [];
+
+    [JsonIgnore]
+    private readonly List<IRiftDependentTask> _dependents   = [];
+
+    public void SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
     {
-        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+        ArgumentNullException.ThrowIfNull(predicate, nameof(predicate));
 
-        if (Configuration is not null)
-        {
-            return;
-        }
-
-        Configuration = configuration;
+        ErrorHandler = predicate;
     }
 
     /// <summary>
@@ -61,5 +70,13 @@ internal class RiftTask(string name) : IRiftTask
             }
             throw new AggregateException("Task failed with following exceptions", exceptions);
         }
+    }
+
+    public override string ToString()
+    {
+        return JsonSerializer.Serialize(this, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
     }
 }

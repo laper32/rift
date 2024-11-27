@@ -4,8 +4,10 @@
 // All Rights Reserved
 // ===========================================================================
 
+using Rift.Runtime.Abstractions.Commands;
 using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Abstractions.Scripting;
+using Rift.Runtime.Abstractions.Tasks;
 using Rift.Runtime.Abstractions.Workspace;
 
 namespace Rift.Runtime.Abstractions.Plugin;
@@ -30,7 +32,9 @@ public abstract class RiftPlugin : IPlugin
         IShareSystem      ShareSystem,
         IPluginManager    PluginManager,
         IScriptManager    ScriptManager,
-        IWorkspaceManager WorkspaceManager
+        IWorkspaceManager WorkspaceManager,
+        ITaskManager      TaskManager,
+        ICommandManager   CommandManager
     );
 
     private readonly PluginInterfaceBridge _bridge = null!;
@@ -41,6 +45,8 @@ public abstract class RiftPlugin : IPlugin
     public IPluginManager    PluginManager    => _bridge.PluginManager;
     public IScriptManager    ScriptManager    => _bridge.ScriptManager;
     public IWorkspaceManager WorkspaceManager => _bridge.WorkspaceManager;
+    public ITaskManager      TaskManager      => _bridge.TaskManager;
+    public ICommandManager   CommandManager   => _bridge.CommandManager;
 
     public virtual bool OnLoad() => true;
 

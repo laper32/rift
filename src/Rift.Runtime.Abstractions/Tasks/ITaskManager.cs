@@ -15,8 +15,9 @@ public interface ITaskManager
     /// </remarks>
     /// </summary>
     /// <param name="name">任务名</param>
+    /// <param name="predicate">任务配置</param>">
     /// <returns>想获取的任务</returns>
-    IRiftTask RegisterTask(string name);
+    IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate);
 
     /// <summary>
     /// 判断该任务是否存在

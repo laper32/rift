@@ -180,7 +180,7 @@ internal class ScriptManager : IScriptManagerInternal
         CheckAvailable();
 
         // make sure script context path passed in is canonicalized.
-        ScriptContext = new ScriptContext(_bridge, Path.GetFullPath(scriptPath));
+        ScriptContext = new ScriptContext(Path.GetFullPath(scriptPath));
 
         using var loader = new InteractiveAssemblyLoader();
         var loadedAssemblies = CreateLoadedAssembliesMap();
@@ -245,8 +245,21 @@ internal class ScriptManager : IScriptManagerInternal
     {
         // Build up a map of loaded assemblies that picks runtime assembly with the highest version.
         // This aligns with the CoreCLR that uses the highest version strategy.
-        return AppDomain.CurrentDomain.GetAssemblies().Distinct().GroupBy(a => a.GetName().Name, a => a)
-            .Select(gr => new { Name = gr.Key, ResolvedRuntimeAssembly = gr.OrderBy(a => a.GetName().Version).Last() })
-            .ToDictionary(f => f.Name ?? throw new InvalidOperationException("Why your assembly is empty?"), f => f.ResolvedRuntimeAssembly, StringComparer.OrdinalIgnoreCase);
+        return AppDomain
+            .CurrentDomain
+            .GetAssemblies()
+            .Distinct()
+            .GroupBy(a => a.GetName().Name, a => a)
+            .Select(gr => new
+            {
+                Name = gr.Key,
+                ResolvedRuntimeAssembly = gr
+                    .OrderBy(a => a.GetName().Version)
+                    .Last()
+            })
+            .ToDictionary(
+                f => f.Name ?? throw new InvalidOperationException("Why your assembly name is empty?"),
+                f => f.ResolvedRuntimeAssembly, StringComparer.OrdinalIgnoreCase
+            );
     }
 }
