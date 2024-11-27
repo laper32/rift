@@ -1,6 +1,6 @@
 ﻿namespace Rift.Runtime.Abstractions.Tasks;
 
-public interface ITaskReport
+public interface ITaskReportRecipe
 {
     string                  TaskName        { get; }
     string                  SkippedMessage  { get; }
@@ -8,7 +8,7 @@ public interface ITaskReport
     RiftTaskExecutionStatus ExecutionStatus { get; }
 }
 
-public interface ITaskReportRecipe
+public interface ITaskReport
 {
-    void Add(ITaskReport report);
+    void Add(ITaskReportRecipe recipe);
 }
