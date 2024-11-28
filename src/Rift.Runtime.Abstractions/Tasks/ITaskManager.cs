@@ -25,4 +25,6 @@ public interface ITaskManager
     /// <param name="name">任务名</param>
     /// <returns>想获取的任务</returns>
     bool HasTask(string name);
+
+    void RunTask(string name);
 }

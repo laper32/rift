@@ -11,6 +11,7 @@ public interface ITaskConfiguration
 
     ITaskConfiguration SetIsCommand(bool value);
     ITaskConfiguration AddAction(Action<ITaskContext> action);
+    ITaskConfiguration SetDescription(string description);
 }
 
 public static class TaskConfigurationExtensions

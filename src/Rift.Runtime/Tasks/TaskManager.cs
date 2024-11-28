@@ -46,6 +46,34 @@ internal class TaskManager : ITaskManagerInternal
 
     public bool HasTask(string name) => _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    public void RunTask(string name)
+    {
+        ExecuteTask(name).GetAwaiter().GetResult();
+    }
+
+    private async Task ExecuteTask(string name)
+    {
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task)
+        {
+            return;
+        }
+
+        var context = new TaskContext(_bridge);
+
+        await task.Invoke(context);
+        //var task = _tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        //if (task is null)
+        //{
+        //    throw new ArgumentException($"Task \"{name}\" not found");
+        //}
+        ////await task.Execute(context);
+    }
+
+    internal List<string> GetMarkedAsCommandTasks()
+    {
+        return (from RiftTask task in _tasks where task.IsCommand select task.Name).ToList();
+    }
+
     public bool Init()
     {
         _bridge.ScriptManager.AddNamespace("Rift.Runtime.Tasks");

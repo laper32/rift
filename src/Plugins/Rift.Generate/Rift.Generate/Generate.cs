@@ -13,7 +13,7 @@ internal class SampleService : ISampleService
 {
     public void Call()
     {
-        Console.WriteLine("SampleService.Call");
+        throw new AccessViolationException("This is completely on purpose");
     }
 }
 
@@ -46,6 +46,7 @@ internal class Generate : RiftPlugin
         Console.WriteLine(task);
 
         Console.WriteLine("Rift.Generate.OnLoad OK");
+        TaskManager.RunTask("generate");
 
         return base.OnLoad();
     }

@@ -8,7 +8,8 @@ internal interface ICommandManagerInternal : ICommandManager, IInitializable;
 
 internal sealed class CommandManager : ICommandManagerInternal
 {
-    internal static CommandManager Instance { get; private set; } = null!;
+    private readonly List<UserCommand> _commands = [];
+    internal static  CommandManager    Instance { get; private set; } = null!;
 
     public CommandManager(InterfaceBridge bridge)
     {
@@ -27,5 +28,10 @@ internal sealed class CommandManager : ICommandManagerInternal
 
     public void Shutdown()
     {
+    }
+
+    public void Something()
+    {
+        
     }
 }

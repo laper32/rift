@@ -31,4 +31,10 @@ internal class TaskConfiguration(RiftTask task) : ITaskConfiguration
         }));
         return this;
     }
+
+    public ITaskConfiguration SetDescription(string description)
+    {
+        task.Description = description;
+        return this;
+    }
 }
