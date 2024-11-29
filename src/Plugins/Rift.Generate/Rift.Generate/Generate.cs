@@ -22,31 +22,40 @@ internal class Generate : RiftPlugin
 {
     public override bool OnLoad()
     {
-        var task = TaskManager.RegisterTask("generate", config =>
+        TaskManager.RegisterTask("rift.basic", config =>
         {
-            config
-                .SetIsCommand(true)
-                .SetDeferException(true)
-                .SetErrorHandler((exception, context) =>
-                {
-                    Console.WriteLine("ErrorHandler");
-                    return Task.CompletedTask;
-                })
-                .AddAction(() =>
-                {
-                    _sampleService.Call();
-                })
-                ;
+            config.SetIsCommand(true);
         });
-        var services = new ServiceCollection();
-        services.AddSingleton<ISampleService, SampleService>();
-        var provider = services.BuildServiceProvider();
-        _sampleService = provider.GetRequiredService<ISampleService>();
 
-        Console.WriteLine(task);
+        TaskManager.RegisterTask("rift.basic.second", config =>
+        {
+            config.SetIsCommand(true);
+        });
+        //var task = TaskManager.RegisterTask("generate", config =>
+        //{
+        //    config
+        //        .SetIsCommand(true)
+        //        .SetDeferException(true)
+        //        .SetErrorHandler((exception, context) =>
+        //        {
+        //            Console.WriteLine("ErrorHandler");
+        //            return Task.CompletedTask;
+        //        })
+        //        .AddAction(() =>
+        //        {
+        //            _sampleService.Call();
+        //        })
+        //        ;
+        //});
+        //var services = new ServiceCollection();
+        //services.AddSingleton<ISampleService, SampleService>();
+        //var provider = services.BuildServiceProvider();
+        //_sampleService = provider.GetRequiredService<ISampleService>();
 
-        Console.WriteLine("Rift.Generate.OnLoad OK");
-        TaskManager.RunTask("generate");
+        //Console.WriteLine(task);
+
+        //Console.WriteLine("Rift.Generate.OnLoad OK");
+        //TaskManager.RunTask("generate");
 
         return base.OnLoad();
     }

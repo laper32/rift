@@ -5,6 +5,7 @@
 // ===========================================================================
 
 
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.Abstractions.Fundamental;
@@ -18,7 +19,10 @@ using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
+[assembly: InternalsVisibleTo("Rift.Runtime.Tests", AllInternalsVisible = true)]
+
 namespace Rift.Runtime;
+
 
 public static class Bootstrap
 {
