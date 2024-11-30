@@ -15,6 +15,9 @@ out
 # Visual Studio CMake settings
 CMakeSettings.json
 
+# Visual Studio Launch Settings
+launchSettings.json
+
 # for myself.
 build
 install
