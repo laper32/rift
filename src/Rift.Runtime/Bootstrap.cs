@@ -5,6 +5,7 @@
 // ===========================================================================
 
 
+using System.CommandLine;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -56,6 +57,14 @@ public static class Bootstrap
         var args = Environment.GetCommandLineArgs();
         Console.WriteLine($"Args: {string.Join(", ", args)}");
         //PluginManager.Instance.DumpPluginIdentities();
+    }
+
+    public static void Run(string[] args)
+    {
+        var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
+        var entries = UserCommand.Build(pendingCommands);
+        var cli = UserCommand.BuildCli(entries);
+        cli.Invoke(args);
     }
 
     private static bool InitImpl()

@@ -8,7 +8,7 @@ internal class Program
     {
         Bootstrap.Init();
         Bootstrap.Load();
-        Console.WriteLine("Hello, World!");
+        Bootstrap.Run(args);
         Bootstrap.Shutdown();
     }
 }

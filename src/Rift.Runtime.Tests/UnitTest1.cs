@@ -1,4 +1,5 @@
-﻿using Rift.Runtime.Tasks;
+﻿using Rift.Runtime.Commands;
+using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Tests;
 
@@ -18,12 +19,7 @@ public class UnitTest1 : RuntimeSetup
         var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
 
 
-        /*
-            [
-                [new]
-                [new, classlib]
-            ]
-         */
-        var split = new List<string[]>();
+        var entries = UserCommand.Build(pendingCommands);
+        UserCommand.PrintTree(entries);
     }
 }

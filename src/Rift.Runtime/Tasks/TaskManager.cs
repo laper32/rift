@@ -44,6 +44,9 @@ internal class TaskManager : ITaskManagerInternal
         return ret;
     }
 
+    public IRiftTask? FindTask(string name) =>
+        _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+
     public bool HasTask(string name) => _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public void RunTask(string name)
