@@ -10,6 +10,7 @@ public class Golang : RiftPlugin
     private IGenerateService _generateService = null!;
     public override bool OnLoad()
     {
+        
         return base.OnLoad();
     }
 

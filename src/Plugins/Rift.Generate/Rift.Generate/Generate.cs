@@ -12,22 +12,15 @@ internal class Generate : RiftPlugin
 {
     public override bool OnLoad()
     {
-        TaskManager.RegisterTask("rift.basic", config =>
-        {
-            config.SetIsCommand(true);
-            
-        });
+        var services = new ServiceCollection();
+        services.AddSingleton(this);
+        services.AddSingleton<InterfaceBridge>();
+        services.AddSingleton<IGenerateService, GenerateService>();
 
-        TaskManager.RegisterTask("rift.basic.second", config =>
-        {
-            config.SetIsCommand(true);
-            config.SetDescription("Basic->Second");
-            config.AddAction(() =>
-            {
-                Console.WriteLine("rift.basic.second invoked.");
-            });
-        });
-        var task = TaskManager.RegisterTask("rift.generate", config =>
+        var provider = services.BuildServiceProvider();
+        provider.GetRequiredService<IGenerateService>();
+
+        TaskManager.RegisterTask("rift.generate", config =>
         {
             config
                 .SetIsCommand(true)
@@ -35,32 +28,15 @@ internal class Generate : RiftPlugin
                 .SetErrorHandler((exception, context) =>
                 {
                     Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
-                    
+
                     return Task.CompletedTask;
                 })
                 .AddAction(() =>
                 {
                     GenerateService.Instance.Invoke();
-                })
-                ;
+                });
         });
-        var services = new ServiceCollection();
-        services.AddSingleton<InterfaceBridge>();
-        services.AddSingleton<IGenerateService, GenerateService>();
-        services.BuildServiceProvider();
 
         return base.OnLoad();
-    }
-
-    public override void OnAllLoaded()
-    {
-        Console.WriteLine("Rift.Generate.OnAllLoaded Ok.");
-        base.OnAllLoaded();
-    }
-
-    public override void OnUnload()
-    {
-        Console.WriteLine("Rift.Generate.OnUnload OK.");
-        base.OnUnload();
     }
 }
