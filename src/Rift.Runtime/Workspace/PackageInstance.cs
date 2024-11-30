@@ -20,6 +20,16 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
     public string                               Name         => Value.Name;
     public string                               ManifestPath => Value.ManifestPath;
 
+    public bool HasPlugin(string name)
+    {
+        return Plugins.Any(x => x.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public bool HasDependency(string name)
+    {
+        return Dependencies.Any(x => x.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
     public JsonElement? GetExtensionField(string name)
     {
         if (Value.Others.TryGetValue(name, out var value))

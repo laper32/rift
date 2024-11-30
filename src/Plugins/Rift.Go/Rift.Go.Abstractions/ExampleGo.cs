@@ -1,4 +1,4 @@
-﻿namespace Rift.Go.API;
+﻿namespace Rift.Go.Abstractions;
 
 public class ExampleGo
 {

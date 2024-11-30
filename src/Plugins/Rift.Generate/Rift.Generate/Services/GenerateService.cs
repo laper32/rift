@@ -1,11 +1,10 @@
 ﻿using Rift.Generate.Abstractions;
 using Rift.Generate.Fundamental;
-using Rift.Runtime.Abstractions.Fundamental;
 
 namespace Rift.Generate.Services;
 
 
-internal class GenerateService : IGenerateService, ISharable
+internal class GenerateService : IGenerateService
 {
     public GenerateService(InterfaceBridge bridge)
     {
@@ -14,6 +13,8 @@ internal class GenerateService : IGenerateService, ISharable
         Instance = this;
     }
     public event Action? Generate;
+
+
     internal static GenerateService Instance { get; private set; } = null!;
 
     public void Invoke()
@@ -22,6 +23,6 @@ internal class GenerateService : IGenerateService, ISharable
         Generate?.Invoke();
     }
 
-    public string InterfaceName    => "IGenerateService";
-    public uint   InterfaceVersion => 1;
+    public string InterfaceName => "IGenerateService";
+    public uint InterfaceVersion => 1;
 }
