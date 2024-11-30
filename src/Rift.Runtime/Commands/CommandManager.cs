@@ -3,7 +3,6 @@ using System.Text.Json;
 using Rift.Runtime.Abstractions.Commands;
 using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Fundamental;
-using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
 
@@ -35,6 +34,7 @@ internal sealed class CommandManager : ICommandManagerInternal
         }));
         Console.WriteLine("...End");
         _command.Invoke(args);
+
     }
 
     public bool Init()

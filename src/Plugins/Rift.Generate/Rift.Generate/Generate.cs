@@ -37,26 +37,28 @@ internal class Generate : RiftPlugin
                 Console.WriteLine("rift.basic.second invoked.");
             });
         });
-        //var task = TaskManager.RegisterTask("generate", config =>
-        //{
-        //    config
-        //        .SetIsCommand(true)
-        //        .SetDeferException(true)
-        //        .SetErrorHandler((exception, context) =>
-        //        {
-        //            Console.WriteLine("ErrorHandler");
-        //            return Task.CompletedTask;
-        //        })
-        //        .AddAction(() =>
-        //        {
-        //            _sampleService.Call();
-        //        })
-        //        ;
-        //});
-        //var services = new ServiceCollection();
-        //services.AddSingleton<ISampleService, SampleService>();
-        //var provider = services.BuildServiceProvider();
-        //_sampleService = provider.GetRequiredService<ISampleService>();
+        var task = TaskManager.RegisterTask("rift.generate", config =>
+        {
+            config
+                .SetIsCommand(true)
+                .SetDeferException(true)
+                .SetErrorHandler((exception, context) =>
+                {
+                    Console.WriteLine($"ErrorHandler, {exception.GetType()}");
+                    
+                    return Task.CompletedTask;
+                })
+                .AddAction(() =>
+                {
+                    _sampleService.Call();
+                    throw new Exception("1");
+                })
+                ;
+        });
+        var services = new ServiceCollection();
+        services.AddSingleton<ISampleService, SampleService>();
+        var provider = services.BuildServiceProvider();
+        _sampleService = provider.GetRequiredService<ISampleService>();
 
         //Console.WriteLine(task);
 

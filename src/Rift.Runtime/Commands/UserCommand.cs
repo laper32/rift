@@ -81,10 +81,8 @@ internal class UserCommand
                 newCmd.SetHandler(() =>
                 {
                     Console.WriteLine($"Running task: {task.Name}...");
-                    Task.Run(async () =>
-                    {
-                        await task.Invoke(new TaskContext(bridge));
-                    }).Wait();
+                    TaskManager.Instance.RunTask(task.Name);
+
                     //Task.Run(async () =>
                     //{
                     //    await task.Invoke(new TaskContext(bridge));

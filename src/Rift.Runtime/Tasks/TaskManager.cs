@@ -54,11 +54,6 @@ internal class TaskManager : ITaskManagerInternal
 
     public void RunTask(string name)
     {
-        ExecuteTask(name).GetAwaiter().GetResult();
-    }
-
-    private async Task ExecuteTask(string name)
-    {
         if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task)
         {
             return;
@@ -66,13 +61,19 @@ internal class TaskManager : ITaskManagerInternal
 
         var context = new TaskContext(_bridge);
 
+        try
+        {
+            ExecuteTask(task, context).GetAwaiter().GetResult();
+        }
+        catch (Exception e)
+        {
+            task.ErrorHandler?.Invoke(e, context);
+        }
+    }
+
+    private async Task ExecuteTask(RiftTask task, TaskContext context)
+    {
         await task.Invoke(context);
-        //var task = _tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        //if (task is null)
-        //{
-        //    throw new ArgumentException($"Task \"{name}\" not found");
-        //}
-        ////await task.Execute(context);
     }
 
     public List<string> GetMarkedAsCommandTasks()
