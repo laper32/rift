@@ -27,12 +27,6 @@ internal sealed class CommandManager : ICommandManagerInternal
         {
             BuildCli();
         }
-        Console.WriteLine("Serialized command...");
-        Console.WriteLine(JsonSerializer.Serialize(_command, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        }));
-        Console.WriteLine("...End");
         _command.Invoke(args);
 
     }

@@ -1,21 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Rift.Generate.Abstractions;
+using Rift.Generate.Fundamental;
+using Rift.Generate.Services;
 using Rift.Runtime.Abstractions.Plugin;
 using Rift.Runtime.Abstractions.Tasks;
 
 namespace Rift.Generate;
-
-public interface ISampleService
-{
-    void Call();
-}
-
-internal class SampleService : ISampleService
-{
-    public void Call()
-    {
-        throw new AccessViolationException("This is completely on purpose");
-    }
-}
 
 // ReSharper disable once UnusedMember.Global
 internal class Generate : RiftPlugin
@@ -44,26 +34,20 @@ internal class Generate : RiftPlugin
                 .SetDeferException(true)
                 .SetErrorHandler((exception, context) =>
                 {
-                    Console.WriteLine($"ErrorHandler, {exception.GetType()}");
+                    Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
                     
                     return Task.CompletedTask;
                 })
                 .AddAction(() =>
                 {
-                    _sampleService.Call();
-                    throw new Exception("1");
+                    GenerateService.Instance.Invoke();
                 })
                 ;
         });
         var services = new ServiceCollection();
-        services.AddSingleton<ISampleService, SampleService>();
-        var provider = services.BuildServiceProvider();
-        _sampleService = provider.GetRequiredService<ISampleService>();
-
-        //Console.WriteLine(task);
-
-        //Console.WriteLine("Rift.Generate.OnLoad OK");
-        //TaskManager.RunTask("generate");
+        services.AddSingleton<InterfaceBridge>();
+        services.AddSingleton<IGenerateService, GenerateService>();
+        services.BuildServiceProvider();
 
         return base.OnLoad();
     }
@@ -79,6 +63,4 @@ internal class Generate : RiftPlugin
         Console.WriteLine("Rift.Generate.OnUnload OK.");
         base.OnUnload();
     }
-
-    private ISampleService _sampleService = null!;
 }

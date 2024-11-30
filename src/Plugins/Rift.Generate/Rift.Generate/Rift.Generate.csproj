@@ -13,4 +13,8 @@
 		<ProjectReference Include="..\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Fundamental\" />
+	</ItemGroup>
+
 </Project>

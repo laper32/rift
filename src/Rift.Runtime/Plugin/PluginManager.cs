@@ -31,6 +31,10 @@ internal class PluginManager : IPluginManagerInternal
     private readonly InterfaceBridge                _bridge;
     internal static  PluginManager                  Instance = null!;
 
+    public delegate void DelegatePluginUnload(PluginInstance instance);
+
+    public event DelegatePluginUnload? PluginUnload;
+
     public PluginManager(InterfaceBridge bridge)
     {
         _identities = new PluginIdentities(bridge);
@@ -47,10 +51,7 @@ internal class PluginManager : IPluginManagerInternal
 
     public void Shutdown()
     {
-        _instances.ForEach(x =>
-        {
-            x.Unload(true);
-        });
+        UnloadPlugins();
     }
 
     /// <summary>
@@ -195,6 +196,23 @@ internal class PluginManager : IPluginManagerInternal
     public bool AddMetadataForPlugin(string key, object value)
     {
         return _identities.AddMetadataForPlugin(key, value);
+    }
+
+    private void UnloadPlugins()
+    {
+        foreach (var instance in _instances)
+        {
+            PluginUnload?.Invoke(instance);
+            instance.Unload(true);
+        }
+        _instances.Clear();
+        _sharedContext!.Unload();
+        _sharedContext = null;
+        foreach (var context in _pluginContexts)
+        {
+            context.Unload();
+        }
+        _pluginContexts.Clear();
     }
 
     public void DumpPluginIdentities()
