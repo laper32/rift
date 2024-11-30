@@ -20,6 +20,13 @@ public interface ITaskManager
     IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate);
 
     /// <summary>
+    /// 找到你想要的任务
+    /// </summary>
+    /// <param name="name">对应的任务名</param>
+    /// <returns></returns>
+    IRiftTask? FindTask(string name);
+
+    /// <summary>
     /// 判断该任务是否存在
     /// </summary>
     /// <param name="name">任务名</param>

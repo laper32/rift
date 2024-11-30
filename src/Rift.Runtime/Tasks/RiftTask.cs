@@ -79,4 +79,7 @@ internal class RiftTask(string name) : IRiftTask
             WriteIndented = true
         });
     }
+
+    public bool HasAction => Actions.Count > 0;
+    public bool HasDelayedAction => DelayedActions.Count > 0;
 }

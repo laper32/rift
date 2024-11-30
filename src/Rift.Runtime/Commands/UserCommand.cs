@@ -1,4 +1,8 @@
 ﻿using System.CommandLine;
+using System.Text.Json;
+using Rift.Runtime.Abstractions.Tasks;
+using Rift.Runtime.Fundamental;
+using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
 
@@ -42,21 +46,54 @@ internal class UserCommand
         }
     }
 
-    public static RootCommand BuildCli(UserCommandEntry entry)
+    public static RootCommand BuildCli(UserCommandEntry entry, InterfaceBridge bridge)
     {
-        var root = new RootCommand();
-        BuildCliImpl(root, entry);
+        var root = new RootCommand("Rift, a cross-platform build system");
+        BuildCliImpl(root, entry, bridge);
         return root;
     }
 
-    private static void BuildCliImpl(Command cmd, UserCommandEntry entry)
+    private static void BuildCliImpl(Command cmd, UserCommandEntry entry, InterfaceBridge bridge)
     {
         foreach (var child in entry.Children)
         {
             var newCmd = new Command(child.Name);
             cmd.AddCommand(newCmd);
+            if (TaskManager.Instance.FindTask(child.TaskName) is not RiftTask task)
+            {
+                throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
+            }
+
+            if (child.Children.Count > 0)
+            {
+                if (task.HasAction || task.HasDelayedAction)
+                {
+                    throw new Exception("Task with children cannot have actions.");
+                }
+            }
+
+            newCmd.Description = task.Description;
+            if (task.HasAction)
+            {
+                Console.WriteLine(
+                    $"Command Name: {cmd.Name}, Task: {task.Name}, actions count: {task.Actions.Count}");
+
+                newCmd.SetHandler(() =>
+                {
+                    Console.WriteLine($"Running task: {task.Name}...");
+                    Task.Run(async () =>
+                    {
+                        await task.Invoke(new TaskContext(bridge));
+                    }).Wait();
+                    //Task.Run(async () =>
+                    //{
+                    //    await task.Invoke(new TaskContext(bridge));
+                    //}).Wait();
+                });
+            }
+            
             //Console.WriteLine($"ChildNode: {child.Name}, Children count: {child.Children.Count}");
-            BuildCliImpl(newCmd, child);
+            BuildCliImpl(newCmd, child, bridge);
         }
     }
 }

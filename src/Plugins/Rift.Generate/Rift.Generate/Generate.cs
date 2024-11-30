@@ -25,11 +25,17 @@ internal class Generate : RiftPlugin
         TaskManager.RegisterTask("rift.basic", config =>
         {
             config.SetIsCommand(true);
+            
         });
 
         TaskManager.RegisterTask("rift.basic.second", config =>
         {
             config.SetIsCommand(true);
+            config.SetDescription("Basic->Second");
+            config.AddAction(() =>
+            {
+                Console.WriteLine("rift.basic.second invoked.");
+            });
         });
         //var task = TaskManager.RegisterTask("generate", config =>
         //{

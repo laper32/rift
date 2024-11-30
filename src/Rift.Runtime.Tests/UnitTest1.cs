@@ -1,9 +1,9 @@
-﻿using Rift.Runtime.Commands;
-using Rift.Runtime.Tasks;
+﻿using Rift.Runtime.Tasks;
+using Xunit.Abstractions;
 
 namespace Rift.Runtime.Tests;
 
-public class UnitTest1 : RuntimeSetup
+public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
 {
     [Fact]
     public void Test1()
@@ -16,10 +16,7 @@ public class UnitTest1 : RuntimeSetup
         {
             config.SetIsCommand(true);
         });
-        var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
 
-
-        var entries = UserCommand.Build(pendingCommands);
-        UserCommand.PrintTree(entries);
+        //CommandManager.Instance.ExecuteCommand(Environment.GetCommandLineArgs());
     }
 }

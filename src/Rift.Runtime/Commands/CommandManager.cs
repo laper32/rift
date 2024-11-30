@@ -1,7 +1,9 @@
 ﻿using System.CommandLine;
+using System.Text.Json;
 using Rift.Runtime.Abstractions.Commands;
 using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
 
@@ -9,17 +11,29 @@ internal interface ICommandManagerInternal : ICommandManager, IInitializable;
 
 internal sealed class CommandManager : ICommandManagerInternal
 {
-    internal static  CommandManager Instance { get; private set; } = null!;
-    private readonly RootCommand    _command;
+    internal static  CommandManager  Instance { get; private set; } = null!;
+    private readonly InterfaceBridge _bridge;
+    private          RootCommand     _command     = null!;
+    private          bool            _initialized;
 
     public CommandManager(InterfaceBridge bridge)
     {
-        _command = new RootCommand("Rift, a cross-platform build system");
+        _bridge  = bridge;
         Instance = this;
     }
 
     public void ExecuteCommand(string[] args)
     {
+        if (!_initialized)
+        {
+            BuildCli();
+        }
+        Console.WriteLine("Serialized command...");
+        Console.WriteLine(JsonSerializer.Serialize(_command, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        }));
+        Console.WriteLine("...End");
         _command.Invoke(args);
     }
 
@@ -32,8 +46,16 @@ internal sealed class CommandManager : ICommandManagerInternal
     {
     }
 
-    public void Something()
+    public void BuildCli()
     {
-        _command.AddCommand(new Command("a"));
+        if (_initialized)
+        {
+            return;
+        }
+        var pendingCommands = _bridge.TaskManager.GetMarkedAsCommandTasks();
+
+        var entries = UserCommand.Build(pendingCommands);
+        _command     = UserCommand.BuildCli(entries, _bridge);
+        _initialized = true;
     }
 }

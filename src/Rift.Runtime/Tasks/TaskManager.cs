@@ -11,7 +11,10 @@ using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
-internal interface ITaskManagerInternal : ITaskManager, IInitializable;
+internal interface ITaskManagerInternal : ITaskManager, IInitializable
+{
+    List<string> GetMarkedAsCommandTasks();
+}
 
 internal class TaskManager : ITaskManagerInternal
 {
@@ -72,7 +75,7 @@ internal class TaskManager : ITaskManagerInternal
         ////await task.Execute(context);
     }
 
-    internal List<string> GetMarkedAsCommandTasks()
+    public List<string> GetMarkedAsCommandTasks()
     {
         return (from RiftTask task in _tasks where task.IsCommand select task.Name).ToList();
     }

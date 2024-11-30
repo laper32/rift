@@ -61,10 +61,7 @@ public static class Bootstrap
 
     public static void Run(string[] args)
     {
-        var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
-        var entries = UserCommand.Build(pendingCommands);
-        var cli = UserCommand.BuildCli(entries);
-        cli.Invoke(args);
+        CommandManager.Instance.ExecuteCommand(args);
     }
 
     private static bool InitImpl()
