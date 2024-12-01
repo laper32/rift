@@ -44,8 +44,9 @@ internal class PluginContext : PluginInstanceContext
             Entry = asm;
             return;
         }
-        using var fs = new FileStream(entryPath, FileMode.Open);
-        Entry = LoadFromStream(fs); 
+        //using var fs = new FileStream(entryPath, FileMode.Open);
+
+        Entry = LoadFromAssemblyPath(entryPath); 
     }
 
     protected override Assembly? Load(AssemblyName assemblyName)
@@ -64,7 +65,8 @@ internal class PluginContext : PluginInstanceContext
             return null;
         }
 
-        var fs = new FileStream(path, FileMode.Open);
-        return LoadFromStream(fs);
+        //var fs = new FileStream(path, FileMode.Open);
+        
+        return LoadFromAssemblyPath(path);
     }
 }

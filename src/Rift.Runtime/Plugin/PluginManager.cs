@@ -79,9 +79,6 @@ internal class PluginManager : IPluginManagerInternal
         LoadSharedContext();
         LoadPluginContext();
         ActivateInstances();
-        //Console.WriteLine("BootPlugins...");
-        //GetScriptSharedAssemblies();
-        //Console.WriteLine("...End");
         CleanupTemporaries();
     }
 

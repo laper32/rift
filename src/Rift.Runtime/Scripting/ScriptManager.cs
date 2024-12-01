@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -17,6 +18,8 @@ using Rift.Runtime.Fundamental;
 using Rift.Runtime.Plugin;
 
 namespace Rift.Runtime.Scripting;
+
+internal class ScriptAssemblyLoader {}
 
 internal interface IScriptManagerInternal : IScriptManager, IInitializable
 {
@@ -187,22 +190,18 @@ internal class ScriptManager : IScriptManagerInternal
         using var loader           = new InteractiveAssemblyLoader();
         var       loadedAssemblies = CreateLoadedAssembliesMap();
 
-        Console.WriteLine($"Evaluating {scriptPath}");
         var pluginSharedAssemblies = PluginManager.Instance.GetScriptSharedAssemblies();
 
-        var runtimeSharedLibraries = new List<Assembly>();
+        var runtimeReferences = new List<Assembly>();
+        var pluginReferences  = new List<Assembly>();
 
-        _importLibraries.ForEach(fileName =>
+        _importLibraries.ForEach(AddRuntimeReferences);
+        pluginSharedAssemblies.ForEach((key, _) =>
         {
-            AddRuntimeLibraries(fileName);
-            AddPluginLibraries(fileName);
+            AddPluginReferences(key);
         });
 
-        runtimeSharedLibraries.ForEach(x => {
-            Console.WriteLine(x.FullName);
-        });
-
-        runtimeSharedLibraries.ForEach(loader.RegisterDependency);
+        runtimeReferences.ForEach(loader.RegisterDependency);
 
         // 脚本只应该考虑本地文件，不应该考虑跨包引用的情况，哪怕这些包在同一个workspace下。
         // 如果你有这个情况，你更应该思考项目组织是否合理。
@@ -215,7 +214,8 @@ internal class ScriptManager : IScriptManagerInternal
             .AddImports(_importNamespaces)
             // 运行脚本需要加载的包。
             .AddReferences(_preImportedSdkLibraries)
-            .AddReferences(runtimeSharedLibraries)
+            .AddReferences(runtimeReferences)
+            .AddReferences(pluginReferences)
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
@@ -239,7 +239,7 @@ internal class ScriptManager : IScriptManagerInternal
 
         return;
 
-        void AddRuntimeLibraries(string fileName)
+        void AddRuntimeReferences(string fileName)
         {
             var lib = loadedAssemblies.GetValueOrDefault(fileName);
             if (lib is null)
@@ -247,31 +247,23 @@ internal class ScriptManager : IScriptManagerInternal
                 return;
             }
 
-            if (runtimeSharedLibraries.Contains(lib))
+            if (runtimeReferences.Contains(lib))
             {
                 return;
             }
-            runtimeSharedLibraries.Add(lib);
+            runtimeReferences.Add(lib);
         }
 
-        void AddPluginLibraries(string fileName)
+        void AddPluginReferences(string fileName)
         {
-            Console.WriteLine($"filename: {fileName}");
             var lib = pluginSharedAssemblies.GetValueOrDefault(fileName);
             if (lib is null)
             {
                 return;
             }
-            Console.WriteLine($"{fileName} found");
-
-            if (runtimeSharedLibraries.Contains(lib))
-            {
-                return;
-            }
-
-            runtimeSharedLibraries.Add(lib);
+            Console.WriteLine($"loc: {lib.Location}");
+            pluginReferences.Add(lib);
         }
-
     }
 
     private void CheckAvailable()
