@@ -14,7 +14,6 @@ public class Golang : RiftPlugin
     {
         _generateService = ShareSystem.GetRequiredInterface<IGenerateService>(1);
 
-        _generateService.Generate += GolangGenerateService.Instance.PerformGolangGenerate;
 
         var services = new ServiceCollection();
         services.AddSingleton(this);
@@ -23,6 +22,12 @@ public class Golang : RiftPlugin
         var provider = services.BuildServiceProvider();
 
         provider.GetRequiredService<GolangGenerateService>();
+
+        ScriptManager.AddLibrary(["Rift.Go"]);
+        ScriptManager.AddNamespace("Rift.Go");
+        ScriptManager.AddNamespace("Rift.Go.Scripting");
+
+        _generateService.Generate += GolangGenerateService.Instance.PerformGolangGenerate;
 
         return base.OnLoad();
     }

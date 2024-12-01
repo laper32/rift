@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.Reflection;
+using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
@@ -13,6 +14,7 @@ using Microsoft.CodeAnalysis.Scripting.Hosting;
 using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Plugin;
 
 namespace Rift.Runtime.Scripting;
 
@@ -182,19 +184,22 @@ internal class ScriptManager : IScriptManagerInternal
         // make sure script context path passed in is canonicalized.
         ScriptContext = new ScriptContext(Path.GetFullPath(scriptPath));
 
-        using var loader = new InteractiveAssemblyLoader();
-        var loadedAssemblies = CreateLoadedAssembliesMap();
+        using var loader           = new InteractiveAssemblyLoader();
+        var       loadedAssemblies = CreateLoadedAssembliesMap();
+
+        Console.WriteLine($"Evaluating {scriptPath}");
+        var pluginSharedAssemblies = PluginManager.Instance.GetScriptSharedAssemblies();
 
         var runtimeSharedLibraries = new List<Assembly>();
 
         _importLibraries.ForEach(fileName =>
         {
-            var lib = loadedAssemblies.GetValueOrDefault(fileName);
-            if (lib is null)
-            {
-                return;
-            }
-            runtimeSharedLibraries.Add(lib);
+            AddRuntimeLibraries(fileName);
+            AddPluginLibraries(fileName);
+        });
+
+        runtimeSharedLibraries.ForEach(x => {
+            Console.WriteLine(x.FullName);
         });
 
         runtimeSharedLibraries.ForEach(loader.RegisterDependency);
@@ -231,6 +236,42 @@ internal class ScriptManager : IScriptManagerInternal
             // reset.
             ScriptContext = null;
         }
+
+        return;
+
+        void AddRuntimeLibraries(string fileName)
+        {
+            var lib = loadedAssemblies.GetValueOrDefault(fileName);
+            if (lib is null)
+            {
+                return;
+            }
+
+            if (runtimeSharedLibraries.Contains(lib))
+            {
+                return;
+            }
+            runtimeSharedLibraries.Add(lib);
+        }
+
+        void AddPluginLibraries(string fileName)
+        {
+            Console.WriteLine($"filename: {fileName}");
+            var lib = pluginSharedAssemblies.GetValueOrDefault(fileName);
+            if (lib is null)
+            {
+                return;
+            }
+            Console.WriteLine($"{fileName} found");
+
+            if (runtimeSharedLibraries.Contains(lib))
+            {
+                return;
+            }
+
+            runtimeSharedLibraries.Add(lib);
+        }
+
     }
 
     private void CheckAvailable()

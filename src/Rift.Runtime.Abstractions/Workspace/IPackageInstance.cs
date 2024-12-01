@@ -6,5 +6,10 @@ public interface IPackageInstance
 {
     public string Name         { get; }
     public string ManifestPath { get; }
-    JsonElement?  GetExtensionField(string name);
+
+    JsonElement? GetExtensionField(string name);
+
+    bool HasPlugin(string name);
+
+    bool HasDependency(string name);
 }

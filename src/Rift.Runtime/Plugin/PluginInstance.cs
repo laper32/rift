@@ -16,8 +16,9 @@ namespace Rift.Runtime.Plugin;
 internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
 {
     private readonly PluginIdentity _identity = context.Identity;
-    private readonly Assembly? _entry = context.Entry;
-    public RiftPlugin? Instance { get; private set; }
+    private readonly Assembly?      _entry    = context.Entry;
+    public           RiftPlugin?    Instance { get; private set; }
+    public           PluginContext  Context  => context;
 
     public Exception? Error { get; set; }
 

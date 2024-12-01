@@ -16,6 +16,7 @@ internal class GolangGenerateService
 
     public void PerformGolangGenerate()
     {
-
+        var packages = _bridge.WorkspaceManager.GetAllPackages().Where(x => x.HasPlugin("Rift.Go"));
+        
     }
 }

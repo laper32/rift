@@ -4,8 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-
-using System.CommandLine;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -51,8 +49,6 @@ public static class Bootstrap
         {
             Console.WriteLine($"Error when loading workspace: {e.Message}");
         }
-
-        PluginManager.Instance.NotifyLoadPlugins();
 
         var args = Environment.GetCommandLineArgs();
         Console.WriteLine($"Args: {string.Join(", ", args)}");

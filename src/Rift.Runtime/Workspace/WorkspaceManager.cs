@@ -94,7 +94,14 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
 
-        EvaluateManifestScripts();
+        RetrieveWorkspacePlugins();
+
+        PluginManager.Instance.NotifyLoadPlugins();
+
+        RetrieveWorkspaceDependencies();
+        RetrieveWorkspaceMetadata();
+
+        //EvaluateManifestScripts();
     }
 
     public IPackageInstance? FindPackage(string name)
@@ -405,9 +412,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     private void EvaluateManifestScripts()
     {
-        RetrieveWorkspacePlugins();
-        RetrieveWorkspaceDependencies();
-        RetrieveWorkspaceMetadata();
+        
     }
 
     private void RetrieveWorkspaceDependencies()

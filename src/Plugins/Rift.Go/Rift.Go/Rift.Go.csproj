@@ -14,4 +14,10 @@
 		<ProjectReference Include="..\Rift.Go.Abstractions\Rift.Go.Abstractions.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="Scripting\" />
+	</ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Scripting.ScriptShared" />
+	</ItemGroup>
 </Project>

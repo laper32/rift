@@ -66,6 +66,8 @@ internal class PluginIdentity(
         }
     }
 
+    public IEnumerable<string> ScriptSharedAssembliesPath => GetScriptSharedAssembliesPath();
+
     private const string BinPathName = "bin";
     private const string LibPathName = "lib";
     private const string PluginEntryToken = "deps.json";
