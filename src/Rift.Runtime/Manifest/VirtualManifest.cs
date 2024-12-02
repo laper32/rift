@@ -9,6 +9,24 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Manifest;
 
+public enum EVirtualManifest
+{
+    Folder,
+    Workspace
+}
+
+public interface IVirtualManifest
+{
+    public EVirtualManifest                Type         { get; }
+    public string                          Name         { get; }
+    public List<string>                    Members      { get; }
+    public List<string>                    Exclude      { get; }
+    public string?                         Dependencies { get; }
+    public string?                         Plugins      { get; }
+    public string?                         Configure    { get; }
+    public Dictionary<string, JsonElement> Others       { get; }
+}
+
 internal class VirtualManifest<T> : IVirtualManifest
 {
     public VirtualManifest(T manifest)
