@@ -19,23 +19,23 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
 [assembly: InternalsVisibleTo("Rift.Runtime.Tests", AllInternalsVisible = true)]
-
+[assembly: InternalsVisibleTo("Rift", AllInternalsVisible = true)]
 namespace Rift.Runtime;
 
 
-public static class Bootstrap
+internal static class Bootstrap
 {
-    public static bool Init()
+    internal static bool Init()
     {
         return InitImpl();
     }
 
-    public static void Shutdown()
+    internal static void Shutdown()
     {
         ShutdownImpl();
     }
 
-    public static void Load()
+    internal static void Load()
     {
         // TODO: 要配合命令行的行为。
         // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
@@ -55,7 +55,7 @@ public static class Bootstrap
         //PluginManager.Instance.DumpPluginIdentities();
     }
 
-    public static void Run(string[] args)
+    internal static void Run(string[] args)
     {
         CommandManager.Instance.ExecuteCommand(args);
     }
