@@ -43,6 +43,15 @@ internal class TaskConfiguration(RiftTask task) : ITaskConfiguration
 
     public ITaskConfiguration SetIsCommand(bool value)
     {
+        if (value)
+        {
+            if (!task.Name.StartsWith("rift.", StringComparison.OrdinalIgnoreCase))
+            {
+                // TODO: standardize printer
+                Console.WriteLine($"Task `{task.Name}` must starts with `rift.` if you mark this task as command!");
+                return this;
+            }
+        }
         task.IsCommand = value;
         return this;
     }

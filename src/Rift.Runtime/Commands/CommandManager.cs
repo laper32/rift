@@ -1,25 +1,17 @@
 ﻿using System.CommandLine;
-using Rift.Runtime.Fundamental;
+using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
 
-public interface ICommandManager
-{
-    void ExecuteCommand(string[] args);
-}
 
-internal interface ICommandManagerInternal : ICommandManager, IInitializable;
-
-internal sealed class CommandManager : ICommandManagerInternal
+public sealed class CommandManager
 {
-    internal static  CommandManager  Instance { get; private set; } = null!;
-    private readonly InterfaceBridge _bridge;
+    public static  CommandManager  Instance { get; private set; } = null!;
     private          RootCommand     _command     = null!;
     private          bool            _initialized;
 
-    public CommandManager(InterfaceBridge bridge)
+    public CommandManager()
     {
-        _bridge  = bridge;
         Instance = this;
     }
 
@@ -48,10 +40,11 @@ internal sealed class CommandManager : ICommandManagerInternal
         {
             return;
         }
-        var pendingCommands = _bridge.TaskManager.GetMarkedAsCommandTasks();
+        var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
 
         var entries = UserCommand.Build(pendingCommands);
-        _command     = UserCommand.BuildCli(entries, _bridge);
+        _command     = UserCommand.BuildCli(entries);
+
         _initialized = true;
     }
 }

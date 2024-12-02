@@ -10,21 +10,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Rift.Runtime.Fundamental;
 
-public interface IRuntime
+public sealed class Runtime
 {
-    ILoggerFactory Logger           { get; }
-    string         ExecutablePath   { get; }
-    string         InstallationPath { get; }
-    string         UserPath         { get; }
-}
-
-internal interface IRuntimeInternal : IRuntime;
-
-internal class Runtime : IRuntimeInternal
-{
-    public Runtime(InterfaceBridge bridge)
+    public Runtime(IServiceProvider provider)
     {
-        Logger           = bridge.Provider.GetRequiredService<ILoggerFactory>();
+        Logger           = provider.GetRequiredService<ILoggerFactory>();
         ExecutablePath   = Process.GetCurrentProcess().MainModule!.FileName;
         InstallationPath = Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
         UserPath = Path.Combine(

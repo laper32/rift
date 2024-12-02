@@ -120,25 +120,24 @@ public static class Bootstrap
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<InterfaceBridge>();
-        services.AddSingleton<IRuntimeInternal, Fundamental.Runtime>();
-        services.AddSingleton<IShareSystemInternal, ShareSystem>();
-        services.AddSingleton<IScriptManagerInternal, ScriptManager>();
-        services.AddSingleton<IPluginManagerInternal, PluginManager>();
-        services.AddSingleton<IWorkspaceManagerInternal, WorkspaceManager>();
-        services.AddSingleton<ITaskManagerInternal, TaskManager>();
-        services.AddSingleton<ICommandManagerInternal, CommandManager>();
+        services.AddSingleton<Fundamental.Runtime>();
+        services.AddSingleton<ShareSystem>();
+        services.AddSingleton<ScriptManager>();
+        services.AddSingleton<PluginManager>();
+        services.AddSingleton<WorkspaceManager>();
+        services.AddSingleton<TaskManager>();
+        services.AddSingleton<CommandManager>();
     }
 
     private static void ActivateServices(IServiceProvider provider)
     {
-        provider.GetRequiredService<IRuntimeInternal>();
-        provider.GetRequiredService<IShareSystemInternal>();
-        provider.GetRequiredService<IScriptManagerInternal>();
-        provider.GetRequiredService<IPluginManagerInternal>();
-        provider.GetRequiredService<IWorkspaceManagerInternal>();
-        provider.GetRequiredService<ITaskManagerInternal>();
-        provider.GetRequiredService<ICommandManagerInternal>();
+        provider.GetRequiredService<Fundamental.Runtime>();
+        provider.GetRequiredService<ShareSystem>();
+        provider.GetRequiredService<ScriptManager>();
+        provider.GetRequiredService<PluginManager>();
+        provider.GetRequiredService<WorkspaceManager>();
+        provider.GetRequiredService<TaskManager>();
+        provider.GetRequiredService<CommandManager>();
     }
 
     private static void InitComponents()

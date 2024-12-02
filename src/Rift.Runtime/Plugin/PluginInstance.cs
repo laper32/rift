@@ -8,11 +8,10 @@ using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.Fundamental;
-using Rift.Runtime.Fundamental.Extensions;
 
 namespace Rift.Runtime.Plugin;
 
-internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
+internal class PluginInstance( PluginContext context)
 {
     private readonly PluginIdentity _identity = context.Identity;
     private readonly Assembly?      _entry    = context.Entry;
@@ -116,6 +115,6 @@ internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
     private void MakeError(string message, Exception e)
     {
         Error = e;
-        bridge.PluginManager.Logger.LogError(Error, message);
+        PluginManager.Instance.Logger.LogError(Error, message);
     }
 }

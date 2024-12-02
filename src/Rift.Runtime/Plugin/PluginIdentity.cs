@@ -64,7 +64,6 @@ internal class PluginIdentity(
         }
     }
 
-    public IEnumerable<string> ScriptSharedAssembliesPath => GetScriptSharedAssembliesPath();
 
     private const string BinPathName = "bin";
     private const string LibPathName = "lib";
@@ -116,50 +115,6 @@ internal class PluginIdentity(
     }
 
     /// <summary>
-    /// PE相关的内容看<seealso cref="GetPluginSharedAssembliesPath"/>
-    /// </summary>
-    /// <returns></returns>
-    private IEnumerable<string> GetScriptSharedAssembliesPath()
-    {
-        var dlls = Directory.GetFiles(LibPath, "*.dll");
-
-        foreach (var dll in dlls)
-        {
-            using var fs = new FileStream(dll, FileMode.Open);
-            using var pe = new PEReader(fs);
-            var reader = pe.GetMetadataReader();
-            if (!reader.IsAssembly)
-            {
-                continue;
-            }
-            // 首先找[assembly:]那一堆attributes.
-            var asmDef = reader.GetAssemblyDefinition();
-            // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
-            // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
-            foreach (var attribute in asmDef.GetCustomAttributes())
-            {
-                var attr = reader.GetCustomAttribute(attribute);
-                if (attr.Constructor.Kind != HandleKind.MemberReference)
-                {
-                    continue;
-                }
-
-                var memberReference = reader.GetMemberReference((MemberReferenceHandle)attr.Constructor);
-                if (memberReference.Parent.Kind != HandleKind.TypeReference)
-                {
-                    continue;
-                }
-
-                var typeReference = reader.GetTypeReference((TypeReferenceHandle)memberReference.Parent);
-                if ($"{reader.GetString(typeReference.Namespace)}.{reader.GetString(typeReference.Name)}".Equals(typeof(ScriptShared).FullName!))
-                {
-                    yield return dll;
-                }
-            }
-        }
-    }
-
-    /// <summary>
     /// 获取插件入口dll <br/>
     ///     <remarks>
     ///         需要特别处理文件的大小写问题，这个函数不负责这个！
@@ -180,7 +135,7 @@ internal class PluginIdentity(
     }
 }
 
-internal class PluginIdentities(InterfaceBridge bridge)
+internal class PluginIdentities()
 {
     private const string PluginDirectoryName = "plugins";
 
@@ -190,8 +145,8 @@ internal class PluginIdentities(InterfaceBridge bridge)
 
     private readonly List<string> _pluginSearchPaths =
     [
-        Path.Combine(bridge.Runtime.InstallationPath, PluginDirectoryName), // Rift安装路径
-        Path.Combine(bridge.Runtime.UserPath, PluginDirectoryName)          // 用户目录
+        Path.Combine(Fundamental.Runtime.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
+        Path.Combine(Fundamental.Runtime.Instance.UserPath, PluginDirectoryName)          // 用户目录
     ];
 
     private PluginIdentity CreatePluginIdentity(string manifestPath)
@@ -422,7 +377,7 @@ internal class PluginIdentities(InterfaceBridge bridge)
         {
             return;
         }
-        bridge.ScriptManager.EvaluateScript(scriptPath);
+        ScriptManager.Instance.EvaluateScript(scriptPath);
     }
 
     private void RetrievePluginMetadata(PluginIdentity identity)
@@ -432,7 +387,7 @@ internal class PluginIdentities(InterfaceBridge bridge)
         {
             return;
         }
-        bridge.ScriptManager.EvaluateScript(scriptPath);
+        ScriptManager.Instance.EvaluateScript(scriptPath);
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)

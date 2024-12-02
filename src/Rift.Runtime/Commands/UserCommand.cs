@@ -9,7 +9,7 @@ internal class UserCommand
 {
     public static UserCommandEntry Build(IEnumerable<string> commandTasks)
     {
-        var root = new UserCommandEntry("etc");
+        var root = new UserCommandEntry("rift");
         foreach (var task in commandTasks)
         {
             var parts = task.Split('.');
@@ -45,15 +45,16 @@ internal class UserCommand
         }
     }
 
-    public static RootCommand BuildCli(UserCommandEntry entry, InterfaceBridge bridge)
+    public static RootCommand BuildCli(UserCommandEntry entry)
     {
         var root = new RootCommand("Rift, a cross-platform build system");
-        BuildCliImpl(root, entry, bridge);
+        BuildCliImpl(root, entry);
         return root;
     }
 
-    private static void BuildCliImpl(Command cmd, UserCommandEntry entry, InterfaceBridge bridge)
+    private static void BuildCliImpl(Command cmd, UserCommandEntry entry)
     {
+        
         foreach (var child in entry.Children)
         {
             var newCmd = new Command(child.Name);
@@ -81,7 +82,7 @@ internal class UserCommand
                 });
             }
             cmd.AddCommand(newCmd);
-            BuildCliImpl(newCmd, child, bridge);
+            BuildCliImpl(newCmd, child);
         }
     }
 }

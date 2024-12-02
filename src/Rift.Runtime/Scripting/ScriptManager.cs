@@ -11,39 +11,10 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
 using Rift.Runtime.Fundamental;
-using Rift.Runtime.Fundamental.Extensions;
-using Rift.Runtime.Plugin;
 
 namespace Rift.Runtime.Scripting;
 
-
-public interface IScriptManager
-{
-    void EvaluateScript(string scriptPath, int timedOutUnitSec = 15);
-
-    void AddLibrary(string library);
-
-    void AddLibrary(IEnumerable<string> libraries);
-
-    void RemoveLibrary(string library);
-
-    void RemoveLibrary(IEnumerable<string> libraries);
-
-    void AddNamespace(string @namespace);
-
-    void AddNamespace(IEnumerable<string> namespaces);
-
-    void RemoveNamespace(string @namespace);
-
-    void RemoveNamespace(IEnumerable<string> namespaces);
-}
-
-internal interface IScriptManagerInternal : IScriptManager, IInitializable
-{
-    ScriptContext? ScriptContext { get; }
-}
-
-internal class ScriptManager : IScriptManagerInternal
+public sealed class ScriptManager : IInitializable
 {
     private enum Status
     {
@@ -53,17 +24,15 @@ internal class ScriptManager : IScriptManagerInternal
         Shutdown
     }
 
-    public ScriptManager(InterfaceBridge bridge)
+    public ScriptManager()
     {
-        _bridge       = bridge;
         Instance      = this;
         ScriptContext = null;
     }
 
     internal static  ScriptManager   Instance { get; set; } = null!;
-    private readonly InterfaceBridge _bridge;
 
-    public  ScriptContext? ScriptContext { get; private set; }
+    internal  ScriptContext? ScriptContext { get; private set; }
     private Status         _status = Status.Unknown;
 
     /// <summary>
@@ -207,16 +176,9 @@ internal class ScriptManager : IScriptManagerInternal
         using var loader           = new InteractiveAssemblyLoader();
         var       loadedAssemblies = CreateLoadedAssembliesMap();
 
-        var pluginSharedAssemblies = PluginManager.Instance.GetScriptSharedAssemblies();
-
         var runtimeReferences = new List<Assembly>();
-        var pluginReferences  = new List<Assembly>();
 
         _importLibraries.ForEach(AddRuntimeReferences);
-        pluginSharedAssemblies.ForEach((key, _) =>
-        {
-            AddPluginReferences(key);
-        });
 
         runtimeReferences.ForEach(loader.RegisterDependency);
 
@@ -271,15 +233,6 @@ internal class ScriptManager : IScriptManagerInternal
             runtimeReferences.Add(lib);
         }
 
-        void AddPluginReferences(string fileName)
-        {
-            var lib = pluginSharedAssemblies.GetValueOrDefault(fileName);
-            if (lib is null)
-            {
-                return;
-            }
-            pluginReferences.Add(lib);
-        }
     }
 
     private void CheckAvailable()

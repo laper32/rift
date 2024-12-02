@@ -14,38 +14,23 @@ using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
-public interface IWorkspaceManager
+
+public sealed class WorkspaceManager : IInitializable
 {
-    string Root { get; }
-
-    IPackageInstance? FindPackage(string name);
-
-    IEnumerable<IPackageInstance> GetAllPackages();
-}
-
-internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
-{
-    IEnumerable<PluginDescriptor> CollectPluginsForLoad();
-}
-
-internal class WorkspaceManager : IWorkspaceManagerInternal
-{
-    private readonly InterfaceBridge  _bridge;
     private readonly Packages         _packages;
     private readonly PackageInstances _packageInstances;
     private          EWorkspaceStatus _status;
     internal static  WorkspaceManager Instance = null!;
 
-    public WorkspaceManager(InterfaceBridge bridge)
+    public WorkspaceManager()
     {
         _status           = EWorkspaceStatus.Unknown;
         _packages         = new Packages();
         _packageInstances = new PackageInstances();
-        _bridge           = bridge;
         Instance         = this;
     }
 
-    public string           Root     { get; protected set; } = "__Unknown__";
+    public string Root { get; private set; } = "__Unknown__";
 
     public bool Init()
     {
@@ -122,7 +107,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     #region Manifest operations
 
-    public static TomlManifest LoadManifest(string path)
+    internal static TomlManifest LoadManifest(string path)
     {
         var text      = File.ReadAllText(path);
         var tomlModel = Toml.ToModel(text);
@@ -132,7 +117,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
         return ret;
     }
 
-    public static IEitherManifest ReadManifest(string path)
+    internal static IEitherManifest ReadManifest(string path)
     {
         var schema = LoadManifest(path);
         if (schema is null)
@@ -416,11 +401,6 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     #region Scripts operations
 
-    private void EvaluateManifestScripts()
-    {
-        
-    }
-
     private void RetrieveWorkspaceDependencies()
     {
         foreach (var package in _packages.Value)
@@ -429,7 +409,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
             {
                 continue;
             }
-            _bridge.ScriptManager.EvaluateScript(dependencies);
+            ScriptManager.Instance.EvaluateScript(dependencies);
         }
     }
 
@@ -442,7 +422,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                 continue;
             }
 
-            _bridge.ScriptManager.EvaluateScript(metadata);
+            ScriptManager.Instance.EvaluateScript(metadata);
         }
     }
 
@@ -455,7 +435,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
                 continue;
             }
 
-            _bridge.ScriptManager.EvaluateScript(plugins);
+            ScriptManager.Instance.EvaluateScript(plugins);
         }
     }
 
@@ -524,7 +504,7 @@ internal class WorkspaceManager : IWorkspaceManagerInternal
 
     private PackageInstance? GetPackageInstance()
     {
-        if (_bridge.ScriptManager.ScriptContext is not { } scriptContext)
+        if (ScriptManager.Instance.ScriptContext is not { } scriptContext)
         {
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
         }

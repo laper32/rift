@@ -1,5 +1,6 @@
 ﻿
 using Rift.Runtime.Plugin;
+using Rift.Runtime.Tasks;
 
 namespace Rift.Generate;
 
@@ -17,22 +18,22 @@ internal class Generate : RiftPlugin
         //var provider = services.BuildServiceProvider();
         //provider.GetRequiredService<IGenerateService>();
 
-        //TaskManager.RegisterTask("rift.generate", config =>
-        //{
-        //    config
-        //        .SetIsCommand(true)
-        //        .SetDeferException(true)
-        //        .SetErrorHandler((exception, context) =>
-        //        {
-        //            Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
+        TaskManager.Instance.RegisterTask("rift.generate", config =>
+        {
+            config
+                .SetIsCommand(true)
+                .SetDeferException(true)
+                .SetErrorHandler((exception, context) =>
+                {
+                    Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
 
-        //            return Task.CompletedTask;
-        //        })
-        //        .AddAction(() =>
-        //        {
-        //            GenerateService.Instance.Invoke();
-        //        });
-        //});
+                    return Task.CompletedTask;
+                })
+                .AddAction(() =>
+                {
+                    Console.WriteLine("12121");
+                });
+        });
 
         return base.OnLoad();
     }

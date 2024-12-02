@@ -3,10 +3,9 @@ using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
-internal class TaskContext(InterfaceBridge bridge) : ITaskContext
+internal class TaskContext : ITaskContext
 {
     public ITaskArguments    Arguments        { get; }
-    public IRuntime          Runtime          => bridge.Runtime;
 }
 
 public interface ITaskContext

@@ -8,20 +8,11 @@ using System.Reflection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Scripting;
+using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Plugin;
 
-public interface IPluginManager
-{
-
-}
-
-internal interface IPluginManagerInternal : IPluginManager, IInitializable
-{ 
-    public ILogger<PluginManager> Logger { get; }
-}
-
-internal class PluginManager : IPluginManagerInternal
+public sealed class PluginManager : IInitializable
 {
     // TODO: 未来的插件系统需要想办法处理没有插件入口的情况。
 
@@ -31,20 +22,17 @@ internal class PluginManager : IPluginManagerInternal
     private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos   = [];
     private readonly List<PluginContext>            _pluginContexts        = [];
     private readonly List<PluginInstance>           _instances             = [];
-    private readonly List<string>                   _scriptSharedLibraries = []; // 文件名
     public           ILogger<PluginManager>         Logger { get; }
-    private readonly InterfaceBridge                _bridge;
     internal static  PluginManager                  Instance = null!;
 
-    public delegate void DelegatePluginUnload(PluginInstance instance);
+    internal delegate void DelegatePluginUnload(PluginInstance instance);
 
-    public event DelegatePluginUnload? PluginUnload;
+    internal event DelegatePluginUnload? PluginUnload;
 
-    public PluginManager(InterfaceBridge bridge)
+    public PluginManager()
     {
-        _identities = new PluginIdentities(bridge);
-        _bridge     = bridge;
-        Logger      = _bridge.Runtime.Logger.CreateLogger<PluginManager>();
+        _identities = new PluginIdentities();
+        Logger      = Fundamental.Runtime.Instance.Logger.CreateLogger<PluginManager>();
         Instance    = this;
     }
 
@@ -65,7 +53,7 @@ internal class PluginManager : IPluginManagerInternal
     /// </summary>
     public void NotifyLoadPlugins()
     {
-        var declarators = _bridge.WorkspaceManager.CollectPluginsForLoad();
+        var declarators = WorkspaceManager.Instance.CollectPluginsForLoad();
         foreach (var declarator in declarators)
         {
             _identities.Add(declarator);
@@ -118,9 +106,6 @@ internal class PluginManager : IPluginManagerInternal
                 sharedAssemblies[name].Add(info);
             }
 
-            var scriptSharedLibrariesPath = x.ScriptSharedAssembliesPath;
-            var scriptSharedFileNames     = scriptSharedLibrariesPath.Select(Path.GetFileNameWithoutExtension).ToList();
-            _scriptSharedLibraries.AddRange(scriptSharedFileNames!);
         });
 
         // 排序规则
@@ -183,7 +168,7 @@ internal class PluginManager : IPluginManagerInternal
     {
         foreach (var context in _pluginContexts)
         {
-            _instances.Add(new PluginInstance(_bridge, context));
+            _instances.Add(new PluginInstance(context));
         }
     }
 
@@ -208,11 +193,9 @@ internal class PluginManager : IPluginManagerInternal
     //    });
     //    return ret;
     //}
-
     private void CleanupTemporaries()
     {
         _pendingLoadPlugins.Clear();
-        _scriptSharedLibraries.Clear();
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)

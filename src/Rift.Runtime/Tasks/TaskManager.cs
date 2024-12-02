@@ -6,11 +6,20 @@
 
 
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Tasks;
 
-public interface ITaskManager
+public sealed class TaskManager : IInitializable
 {
+    private readonly List<IRiftTask> _tasks;
+    public static  TaskManager     Instance { get; private set; } = null!;
+    public TaskManager()
+    {
+        _tasks   = [];
+        Instance = this;
+    }
+
     /// <summary>
     /// 注册一个任务 <br/>
     /// <remarks>
@@ -20,41 +29,6 @@ public interface ITaskManager
     /// <param name="name">任务名</param>
     /// <param name="predicate">任务配置</param>">
     /// <returns>想获取的任务</returns>
-    IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate);
-
-    /// <summary>
-    /// 找到你想要的任务
-    /// </summary>
-    /// <param name="name">对应的任务名</param>
-    /// <returns></returns>
-    IRiftTask? FindTask(string name);
-
-    /// <summary>
-    /// 判断该任务是否存在
-    /// </summary>
-    /// <param name="name">任务名</param>
-    /// <returns>想获取的任务</returns>
-    bool HasTask(string name);
-
-    void RunTask(string name);
-}
-internal interface ITaskManagerInternal : ITaskManager, IInitializable
-{
-    List<string> GetMarkedAsCommandTasks();
-}
-
-internal class TaskManager : ITaskManagerInternal
-{
-    private readonly List<IRiftTask> _tasks;
-    internal static  TaskManager     Instance { get; private set; } = null!;
-    private readonly InterfaceBridge _bridge;
-    public TaskManager(InterfaceBridge bridge)
-    {
-        _tasks   = [];
-        _bridge  = bridge;
-        Instance = this;
-    }
-
     public IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
     {
         TaskConfiguration cfg;
@@ -74,9 +48,19 @@ internal class TaskManager : ITaskManagerInternal
         return ret;
     }
 
+    /// <summary>
+    /// 找到你想要的任务
+    /// </summary>
+    /// <param name="name">对应的任务名</param>
+    /// <returns></returns>
     public IRiftTask? FindTask(string name) =>
         _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// 判断该任务是否存在
+    /// </summary>
+    /// <param name="name">任务名</param>
+    /// <returns>想获取的任务</returns>
     public bool HasTask(string name) => _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public void RunTask(string name)
@@ -86,7 +70,7 @@ internal class TaskManager : ITaskManagerInternal
             return;
         }
 
-        var context = new TaskContext(_bridge);
+        var context = new TaskContext();
 
         try
         {
@@ -110,12 +94,12 @@ internal class TaskManager : ITaskManagerInternal
 
     public bool Init()
     {
-        _bridge.ScriptManager.AddNamespace("Rift.Runtime.Tasks");
+        ScriptManager.Instance.AddNamespace("Rift.Runtime.Tasks");
         return true;
     }
 
     public void Shutdown()
     {
-        _bridge.ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
+        ScriptManager.Instance.RemoveNamespace("Rift.Runtime.Tasks");
     }
 }
