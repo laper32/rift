@@ -6,7 +6,7 @@
 
 using System.Text.Json;
 
-namespace Rift.Runtime.Abstractions.Manifest;
+namespace Rift.Runtime.Manifest;
 
 public enum ERiftManifest
 {

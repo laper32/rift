@@ -6,7 +6,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Rift.Runtime.Abstractions.Schema;
+namespace Rift.Runtime.Schema;
 
 // ReSharper disable IdentifierTypo
 // ReSharper disable StringLiteralTypo

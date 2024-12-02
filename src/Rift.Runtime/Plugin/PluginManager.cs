@@ -186,39 +186,7 @@ internal class PluginManager : IPluginManagerInternal
 
     public Dictionary<string, Assembly> GetScriptSharedAssemblies()
     {
-        /*private static Dictionary<string, Assembly> CreateLoadedAssembliesMap()
-           {
-               // Build up a map of loaded assemblies that picks runtime assembly with the highest version.
-               // This aligns with the CoreCLR that uses the highest version strategy.
-               return AppDomain
-                   .CurrentDomain
-                   .GetAssemblies()
-                   .Distinct()
-                   .GroupBy(a => a.GetName().Name, a => a)
-                   .Select(gr => new
-                   {
-                       Name = gr.Key,
-                       ResolvedRuntimeAssembly = gr
-                           .OrderBy(a => a.GetName().Version)
-                           .Last()
-                   })
-                   .ToDictionary(
-                       f => f.Name ?? throw new InvalidOperationException("Why your assembly name is empty?"),
-                       f => f.ResolvedRuntimeAssembly, StringComparer.OrdinalIgnoreCase
-                   );
-           }*/
-        var ret = new Dictionary<string, Assembly>();
-        foreach (var context in _pluginContexts)
-        {
-            foreach (var contextAssembly in context.Assemblies)
-            {
-                Console.WriteLine($"=> {contextAssembly.GetName().Name}");
-                ret.Add(contextAssembly.GetName().Name ?? throw new InvalidOperationException("Why your assembly name is empty??"), contextAssembly);
-            }
-        }
-
-
-        return ret;
+        return _sharedContext!.Assemblies.ToDictionary(asm => asm.GetName().Name ?? throw new InvalidOperationException("Why your assembly name is empty?"));
     }
 
     //public IEnumerable<Assembly> GetScriptSharedLibraries()

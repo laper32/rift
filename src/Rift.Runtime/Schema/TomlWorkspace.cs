@@ -7,27 +7,30 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Rift.Runtime.Abstractions.Schema;
+namespace Rift.Runtime.Schema;
 
-public sealed class TomlPlugin
+
+// ReSharper disable once IdentifierTypo
+public sealed class TomlWorkspace
 {
     [JsonPropertyName("name")]
-    public required string Name { get; set; }
+    public string? Name { get; set; }
 
-    [JsonPropertyName("version")]
-    public required string Version { get; set; }
-    
-    [JsonPropertyName("authors")]
-    public required List<string> Authors { get; set; }
-    
-    [JsonPropertyName("description")]
-    public string? Description { get; set; }
-    
+    [JsonPropertyName("members")]
+    public List<string>? Members { get; set; }
+
+    [JsonPropertyName("exclude")]
+    public List<string>? Exclude { get; set; }
+
+    [JsonPropertyName("plugins")]
+    public string? Plugins { get; set; }
+
     [JsonPropertyName("configure")]
     public string? Configure { get; set; }
-    
+
     [JsonPropertyName("dependencies")]
     public string? Dependencies { get; set; }
 
-    [JsonExtensionData] public Dictionary<string, JsonElement> Others { get; set; } = [];
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> Others { get; set; } = [];
 }

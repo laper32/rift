@@ -4,16 +4,10 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Text.Json;
+namespace Rift.Runtime.Manifest;
 
-namespace Rift.Runtime.Abstractions.Manifest;
-
-public sealed record WorkspaceManifest(
+public sealed record FolderManifest(
     string Name,
     List<string> Members,
-    List<string> Exclude,
-    string? Plugins,
-    string? Configure,
-    string? Dependencies,
-    Dictionary<string, JsonElement> Others
+    List<string> Exclude
     );

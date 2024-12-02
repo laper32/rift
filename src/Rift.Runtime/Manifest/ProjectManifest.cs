@@ -6,7 +6,7 @@
 
 using System.Text.Json;
 
-namespace Rift.Runtime.Abstractions.Manifest;
+namespace Rift.Runtime.Manifest;
 
 /// <summary>
 /// 将Manifest中[project]解析后的数据。

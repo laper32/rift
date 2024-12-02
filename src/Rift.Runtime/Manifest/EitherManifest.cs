@@ -4,8 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.Abstractions.Manifest;
-
 namespace Rift.Runtime.Manifest;
 
 internal enum EEitherManifest

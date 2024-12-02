@@ -18,6 +18,7 @@
 	  <Folder Include="Scripting\" />
 	</ItemGroup>
 	<ItemGroup>
+		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Plugin.PluginShared"/>
 		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Scripting.ScriptShared" />
 	</ItemGroup>
 </Project>

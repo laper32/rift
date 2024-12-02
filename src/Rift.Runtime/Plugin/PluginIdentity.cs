@@ -10,7 +10,6 @@ using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Manifest;
 using Rift.Runtime.Abstractions.Plugin;
 using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Fundamental;
