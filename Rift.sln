@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.Abstractions", "src\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj", "{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime", "src\Rift.Runtime\Rift.Runtime.csproj", "{A8C695AA-742C-4E74-BD71-3764C795F24E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift", "src\Rift\Rift.csproj", "{64A6E16B-BFD5-4549-9217-2D9D197573F3}"
@@ -31,10 +29,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1A50B1C2-4612-4BC0-AC4C-0C07EF02D451}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8C695AA-742C-4E74-BD71-3764C795F24E}.Release|Any CPU.ActiveCfg = Release|Any CPU

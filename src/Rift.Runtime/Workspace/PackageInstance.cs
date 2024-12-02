@@ -5,10 +5,21 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Abstractions.Workspace;
 using Rift.Runtime.Plugin;
 
 namespace Rift.Runtime.Workspace;
+
+public interface IPackageInstance
+{
+    public string Name         { get; }
+    public string ManifestPath { get; }
+
+    JsonElement? GetExtensionField(string name);
+
+    bool HasPlugin(string name);
+
+    bool HasDependency(string name);
+}
 
 internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {

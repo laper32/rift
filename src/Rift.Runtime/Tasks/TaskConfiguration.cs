@@ -1,6 +1,31 @@
-﻿using Rift.Runtime.Abstractions.Tasks;
-
+﻿
 namespace Rift.Runtime.Tasks;
+
+
+/// <summary>
+/// 注册任务时的配置
+/// </summary>
+public interface ITaskConfiguration
+{
+    ITaskConfiguration SetDeferException(bool value);
+
+    ITaskConfiguration SetErrorHandler(Func<Exception, ITaskContext, Task> predicate);
+
+    ITaskConfiguration SetIsCommand(bool              value);
+    ITaskConfiguration AddAction(Action<ITaskContext> action);
+    ITaskConfiguration SetDescription(string          description);
+}
+
+public static class TaskConfigurationExtensions
+{
+    public static ITaskConfiguration AddAction(this ITaskConfiguration configuration, Action action)
+    {
+        return configuration.AddAction(_ =>
+        {
+            action();
+        });
+    }
+}
 
 internal class TaskConfiguration(RiftTask task) : ITaskConfiguration
 {

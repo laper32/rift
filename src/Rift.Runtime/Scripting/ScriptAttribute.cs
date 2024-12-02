@@ -4,13 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Abstractions.Workspace;
+namespace Rift.Runtime.Scripting;
 
-public interface IWorkspaceManager
-{
-    string Root { get; }
-
-    IPackageInstance? FindPackage(string name);
-
-    IEnumerable<IPackageInstance> GetAllPackages();
-}
+[AttributeUsage(AttributeTargets.Assembly)]
+public class ScriptShared : Attribute;

@@ -1,6 +1,12 @@
-﻿using Rift.Runtime.Abstractions.Tasks;
+﻿namespace Rift.Runtime.Tasks;
 
-namespace Rift.Runtime.Tasks;
+public interface ITaskReportRecipe
+{
+    string                  TaskName        { get; }
+    string                  SkippedMessage  { get; }
+    TimeSpan                Duration        { get; }
+    RiftTaskExecutionStatus ExecutionStatus { get; }
+}
 
 public class TaskReportRecipe(
     string                  taskName,

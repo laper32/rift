@@ -10,7 +10,4 @@
 		<ProjectReference Include="..\..\Rift.Generate\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Plugin.PluginShared" />
-	</ItemGroup>
 </Project>

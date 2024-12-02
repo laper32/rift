@@ -1,7 +1,12 @@
 ﻿using System.Collections;
-using Rift.Runtime.Abstractions.Tasks;
 
 namespace Rift.Runtime.Tasks;
+
+public interface ITaskReport
+{
+    void Add(ITaskReportRecipe recipe);
+}
+
 
 public class TaskReport : ITaskReport, IEnumerable<ITaskReportRecipe>
 {

@@ -21,8 +21,4 @@
 	<ItemGroup>
 		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Scripting.ScriptShared" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Commands\" />
-	</ItemGroup>
 </Project>

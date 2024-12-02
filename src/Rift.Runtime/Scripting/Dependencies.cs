@@ -8,7 +8,6 @@
 // 原因只有一个：暴露给脚本的API不能设计的过于复杂，且很多时候脚本是没办法看到dll里面有什么API的。
 
 using System.Text.Json;
-using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Plugin;
 using Rift.Runtime.Workspace;
 

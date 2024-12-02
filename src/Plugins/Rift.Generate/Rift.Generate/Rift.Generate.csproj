@@ -9,12 +9,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" Private="false" ExcludeAssets="runtime" />
+		<ProjectReference Include="..\..\..\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime"/>
 		<ProjectReference Include="..\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Fundamental\" />
 	</ItemGroup>
 
 </Project>

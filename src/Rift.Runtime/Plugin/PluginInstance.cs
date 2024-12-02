@@ -7,9 +7,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Abstractions.Fundamental.Extensions;
-using Rift.Runtime.Abstractions.Plugin;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Extensions;
 
 namespace Rift.Runtime.Plugin;
 
@@ -56,17 +55,6 @@ internal class PluginInstance(InterfaceBridge bridge, PluginContext context)
             return false;
         }
 
-        type.BaseType!.SetReadOnlyField("_bridge", instance,
-            new RiftPlugin.PluginInterfaceBridge(
-                Runtime: bridge.Runtime,
-                ShareSystem: bridge.ShareSystem,
-                PluginManager: bridge.PluginManager,
-                ScriptManager: bridge.ScriptManager,
-                WorkspaceManager: bridge.WorkspaceManager,
-                TaskManager: bridge.TaskManager,
-                CommandManager: bridge.CommandManager
-            )
-        );
 
         Instance = instance;
         Status   = PluginStatus.Checked;

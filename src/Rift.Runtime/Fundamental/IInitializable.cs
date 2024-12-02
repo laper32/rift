@@ -4,9 +4,16 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Abstractions.Plugin;
+namespace Rift.Runtime.Fundamental;
 
-public interface IPluginManager
+// ReSharper disable once IdentifierTypo
+public interface IInitializable
 {
+    bool Init();
 
+    void PostInit()
+    {
+
+    }
+    void Shutdown();
 }

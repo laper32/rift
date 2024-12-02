@@ -7,9 +7,16 @@
 using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Abstractions.Fundamental;
 
 namespace Rift.Runtime.Fundamental;
+
+public interface IRuntime
+{
+    ILoggerFactory Logger           { get; }
+    string         ExecutablePath   { get; }
+    string         InstallationPath { get; }
+    string         UserPath         { get; }
+}
 
 internal interface IRuntimeInternal : IRuntime;
 

@@ -5,12 +5,39 @@
 // ===========================================================================
 
 
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Tasks;
 using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
+public interface ITaskManager
+{
+    /// <summary>
+    /// 注册一个任务 <br/>
+    /// <remarks>
+    /// 如果该任务已经存在，将返回已经存在的任务。 <br/>
+    /// </remarks>
+    /// </summary>
+    /// <param name="name">任务名</param>
+    /// <param name="predicate">任务配置</param>">
+    /// <returns>想获取的任务</returns>
+    IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate);
+
+    /// <summary>
+    /// 找到你想要的任务
+    /// </summary>
+    /// <param name="name">对应的任务名</param>
+    /// <returns></returns>
+    IRiftTask? FindTask(string name);
+
+    /// <summary>
+    /// 判断该任务是否存在
+    /// </summary>
+    /// <param name="name">任务名</param>
+    /// <returns>想获取的任务</returns>
+    bool HasTask(string name);
+
+    void RunTask(string name);
+}
 internal interface ITaskManagerInternal : ITaskManager, IInitializable
 {
     List<string> GetMarkedAsCommandTasks();

@@ -1,6 +1,11 @@
-﻿using Rift.Runtime.Abstractions.Tasks;
-
+﻿
 namespace Rift.Runtime.Tasks;
+
+public interface IDependentTask
+{
+    string Name       { get; }
+    bool   IsRequired { get; }
+}
 
 internal class DependentTask : IDependentTask
 {

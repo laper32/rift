@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Abstractions.Fundamental;
+namespace Rift.Runtime.Fundamental.Extensions;
 
 public static class DictionaryExtension
 {

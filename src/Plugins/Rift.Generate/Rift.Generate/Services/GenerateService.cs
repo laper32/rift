@@ -1,14 +1,13 @@
 ﻿using Rift.Generate.Abstractions;
-using Rift.Generate.Fundamental;
 
 namespace Rift.Generate.Services;
 
 
 internal class GenerateService : IGenerateService
 {
-    public GenerateService(InterfaceBridge bridge)
+    public GenerateService()
     {
-        bridge.ShareSystem.AddInterface(this, bridge.Instance);
+        //bridge.ShareSystem.AddInterface(this, bridge.Instance);
 
         Instance = this;
     }

@@ -6,12 +6,15 @@
 
 using System.Reflection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Plugin;
-using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Plugin;
+
+public interface IPluginManager
+{
+
+}
 
 internal interface IPluginManagerInternal : IPluginManager, IInitializable
 { 

@@ -4,7 +4,12 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Abstractions.Plugin;
+namespace Rift.Runtime.Fundamental;
 
-[AttributeUsage(AttributeTargets.Assembly)]
-public class PluginShared : Attribute;
+public static class Definitions
+{
+    // ReSharper disable once StringLiteralTypo
+    public static string ManifestIdentifier = "Rift.toml";
+
+    public static string DirectoryIdentifier = ".rift";
+}

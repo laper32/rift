@@ -5,11 +5,5 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
-	<ItemGroup>
-		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Plugin.PluginShared" />
-	</ItemGroup>
-	<ItemGroup>
-	  <ProjectReference Include="..\..\..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" Private="false" ExcludeAssets="runtime" />
-	</ItemGroup>
 
 </Project>

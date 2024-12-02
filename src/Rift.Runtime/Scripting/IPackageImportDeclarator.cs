@@ -4,7 +4,12 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Abstractions.Scripting;
+namespace Rift.Runtime.Scripting;
 
-[AttributeUsage(AttributeTargets.Assembly)]
-public class ScriptShared : Attribute;
+public interface IPackageImportDeclarator
+{
+    /// <summary>
+    /// 不管是什么依赖，首先得有名字。。
+    /// </summary>
+    public string Name { get; }
+}

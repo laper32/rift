@@ -5,16 +5,14 @@
 // ===========================================================================
 
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Plugin;
 using Rift.Runtime.Plugin;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Fundamental.Sharing;
 
 internal interface IShareSystemInternal : IShareSystem, IInitializable;
 
-internal class ShareSystem: IShareSystemInternal
+internal class ShareSystem : IShareSystemInternal
 {
     public ShareSystem(InterfaceBridge bridge)
     {
@@ -23,9 +21,9 @@ internal class ShareSystem: IShareSystemInternal
         Instance = this;
     }
 
-    private readonly InterfaceBridge      _bridge;
+    private readonly InterfaceBridge _bridge;
     private readonly ILogger<ShareSystem> _logger;
-    internal static  ShareSystem          Instance = null!;
+    internal static ShareSystem Instance = null!;
 
     private record ShareableInfo(ISharable Instance, IPlugin Plugin);
 

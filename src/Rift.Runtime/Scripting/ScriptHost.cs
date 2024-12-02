@@ -1,6 +1,9 @@
-﻿using Rift.Runtime.Abstractions.Scripting;
+﻿namespace Rift.Runtime.Scripting;
 
-namespace Rift.Runtime.Scripting;
+public interface IScriptHost
+{
+    void Call();
+}
 
 public class ScriptHost : IScriptHost
 {

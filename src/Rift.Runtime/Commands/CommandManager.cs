@@ -1,10 +1,12 @@
 ﻿using System.CommandLine;
-using System.Text.Json;
-using Rift.Runtime.Abstractions.Commands;
-using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Commands;
+
+public interface ICommandManager
+{
+    void ExecuteCommand(string[] args);
+}
 
 internal interface ICommandManagerInternal : ICommandManager, IInitializable;
 

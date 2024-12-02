@@ -1,4 +1,5 @@
-﻿namespace Rift.Runtime.Abstractions.Tasks;
+﻿
+namespace Rift.Runtime.Tasks;
 
 /// <summary>
 /// The execution status of <see cref="IRiftTask"/>

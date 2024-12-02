@@ -9,7 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" Private="false" ExcludeAssets="runtime" />
+		<ProjectReference Include="..\..\..\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime"/>
 		<ProjectReference Include="..\..\Rift.Generate\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
 		<ProjectReference Include="..\Rift.Go.Abstractions\Rift.Go.Abstractions.csproj" />
 	</ItemGroup>
@@ -17,8 +17,5 @@
 	<ItemGroup>
 	  <Folder Include="Scripting\" />
 	</ItemGroup>
-	<ItemGroup>
-		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Plugin.PluginShared"/>
-		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Scripting.ScriptShared" />
-	</ItemGroup>
+
 </Project>

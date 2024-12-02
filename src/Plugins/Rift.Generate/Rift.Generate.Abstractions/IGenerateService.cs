@@ -1,8 +1,6 @@
-﻿using Rift.Runtime.Abstractions.Fundamental;
+﻿namespace Rift.Generate.Abstractions;
 
-namespace Rift.Generate.Abstractions;
-
-public interface IGenerateService : ISharable
+public interface IGenerateService
 {
     public event Action? Generate;
 

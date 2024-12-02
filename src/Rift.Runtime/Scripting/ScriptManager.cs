@@ -5,21 +5,38 @@
 // ===========================================================================
 
 using System.Reflection;
-using System.Reflection.Metadata;
-using System.Text.Json;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Extensions;
 using Rift.Runtime.Plugin;
 
 namespace Rift.Runtime.Scripting;
 
-internal class ScriptAssemblyLoader {}
+
+public interface IScriptManager
+{
+    void EvaluateScript(string scriptPath, int timedOutUnitSec = 15);
+
+    void AddLibrary(string library);
+
+    void AddLibrary(IEnumerable<string> libraries);
+
+    void RemoveLibrary(string library);
+
+    void RemoveLibrary(IEnumerable<string> libraries);
+
+    void AddNamespace(string @namespace);
+
+    void AddNamespace(IEnumerable<string> namespaces);
+
+    void RemoveNamespace(string @namespace);
+
+    void RemoveNamespace(IEnumerable<string> namespaces);
+}
 
 internal interface IScriptManagerInternal : IScriptManager, IInitializable
 {
@@ -215,7 +232,7 @@ internal class ScriptManager : IScriptManagerInternal
             // 运行脚本需要加载的包。
             .AddReferences(_preImportedSdkLibraries)
             .AddReferences(runtimeReferences)
-            .AddReferences(pluginReferences)
+            //.AddReferences(pluginReferences)
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
@@ -261,7 +278,6 @@ internal class ScriptManager : IScriptManagerInternal
             {
                 return;
             }
-            Console.WriteLine($"loc: {lib.Location}");
             pluginReferences.Add(lib);
         }
     }

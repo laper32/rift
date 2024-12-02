@@ -5,16 +5,23 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Scripting;
-using Rift.Runtime.Abstractions.Workspace;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugin;
 using Rift.Runtime.Schema;
+using Rift.Runtime.Scripting;
 using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
+
+public interface IWorkspaceManager
+{
+    string Root { get; }
+
+    IPackageInstance? FindPackage(string name);
+
+    IEnumerable<IPackageInstance> GetAllPackages();
+}
 
 internal interface IWorkspaceManagerInternal : IWorkspaceManager, IInitializable
 {

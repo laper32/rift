@@ -9,11 +9,10 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Plugin;
-using Rift.Runtime.Abstractions.Scripting;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Extensions;
 using Rift.Runtime.Manifest;
+using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 using Semver;
 

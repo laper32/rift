@@ -7,9 +7,9 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Commands;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Sharing;
 using Rift.Runtime.Plugin;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
