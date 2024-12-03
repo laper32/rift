@@ -4,10 +4,16 @@
 		<TargetFramework>net9.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Rift.Generate\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Scripting\" />
 	</ItemGroup>
 
 </Project>

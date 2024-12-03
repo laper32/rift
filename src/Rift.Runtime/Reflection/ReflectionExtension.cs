@@ -7,7 +7,7 @@
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Rift.Runtime.Fundamental.Extensions;
+namespace Rift.Runtime.Reflection;
 
 public static class ReflectionExtension
 {

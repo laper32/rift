@@ -7,7 +7,7 @@ internal class GenerateService : IGenerateService
 {
     public GenerateService()
     {
-        //bridge.ShareSystem.AddInterface(this, bridge.Instance);
+        //bridge.InterfaceManager.AddInterface(this, bridge.Instance);
 
         Instance = this;
     }

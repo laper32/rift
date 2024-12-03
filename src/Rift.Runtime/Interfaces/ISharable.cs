@@ -4,12 +4,12 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Fundamental.Sharing;
+namespace Rift.Runtime.Interfaces;
 
 /// <summary>
 /// 所有接口都必须继承该接口.
 /// </summary>
-public interface ISharable
+public interface IInterface
 {
     /// <summary>
     /// 接口名

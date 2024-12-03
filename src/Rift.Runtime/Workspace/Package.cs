@@ -6,7 +6,7 @@
 
 using Rift.Runtime.Manifest;
 using System.Text.Json;
-using Rift.Runtime.Fundamental.Generic;
+using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Workspace;
 
@@ -256,12 +256,12 @@ internal class Packages
     }
     public void DumpPackagesMetadata()
     {
-        Console.WriteLine("DumpPackagesMetadata...");
+        Tty.WriteLine("DumpPackagesMetadata...");
         var str = JsonSerializer.Serialize(Value, new JsonSerializerOptions
         {
             WriteIndented = true
         });
-        Console.WriteLine(str);
-        Console.WriteLine("...End");
+        Tty.WriteLine(str);
+        Tty.WriteLine("...End");
     }
 }

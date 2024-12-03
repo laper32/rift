@@ -9,7 +9,7 @@ public class Golang : RiftPlugin
     //private IGenerateService _generateService = null!;
     public override bool OnLoad()
     {
-        //_generateService = ShareSystem.GetRequiredInterface<IGenerateService>(1);
+        //_generateService = InterfaceManager.GetRequiredInterface<IGenerateService>(1);
 
 
         //var services = new ServiceCollection();

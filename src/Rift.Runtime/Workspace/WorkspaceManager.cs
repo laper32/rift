@@ -5,7 +5,7 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Fundamental.Generic;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Schema;
@@ -87,7 +87,7 @@ public sealed class WorkspaceManager
 
         RetrieveWorkspacePlugins();
 
-        PluginManager.Instance.NotifyLoadPlugins();
+        //PluginManager.Instance.NotifyLoadPlugins();
 
         RetrieveWorkspaceDependencies();
         RetrieveWorkspaceMetadata();
@@ -514,11 +514,11 @@ public sealed class WorkspaceManager
 
     #endregion
 
-    internal IEnumerable<PluginDescriptor> CollectPluginsForLoad()
-    {
-        CheckAvailable();
-        return _packageInstances.CollectPluginsForLoad();
-    }
+    //internal IEnumerable<PluginDescriptor> CollectPluginsForLoad()
+    //{
+    //    CheckAvailable();
+    //    return _packageInstances.CollectPluginsForLoad();
+    //}
 
     private void CheckAvailable()
     {

@@ -8,7 +8,7 @@
 // 原因只有一个：暴露给脚本的API不能设计的过于复杂，且很多时候脚本是没办法看到dll里面有什么API的。
 
 using System.Text.Json;
-using Rift.Runtime.Plugins;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Workspace;
 
 // ReSharper disable UnusedMember.Global
@@ -25,8 +25,8 @@ public class Dependencies
         {
             return;
         }
-        Console.WriteLine($"Adding dependency => {JsonSerializer.Serialize(dependency)}");
-        PluginManager.Instance.AddDependencyForPlugin(dependency);
+        Tty.WriteLine($"Adding dependency => {JsonSerializer.Serialize(dependency)}");
+        //PluginManager.Instance.AddDependencyForPlugin(dependency);
 
     }
 
@@ -35,7 +35,7 @@ public class Dependencies
         var packageImportDeclarators = dependencies as T[] ?? dependencies.ToArray();
         if (!WorkspaceManager.Instance.AddDependencyForPackage(packageImportDeclarators))
         {
-            PluginManager.Instance.AddDependencyForPlugin(packageImportDeclarators);
+            //PluginManager.Instance.AddDependencyForPlugin(packageImportDeclarators);
         }
     }
 }

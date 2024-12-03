@@ -8,7 +8,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Rift.Runtime.Fundamental.Generic;
+namespace Rift.Runtime.Fundamental;
 
 public sealed class ApplicationHost
 {

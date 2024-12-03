@@ -8,8 +8,9 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.Commands;
-using Rift.Runtime.Fundamental.Generic;
-using Rift.Runtime.Fundamental.Sharing;
+using Rift.Runtime.Fundamental;
+using Rift.Runtime.Interfaces;
+using Rift.Runtime.Modules;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
@@ -20,8 +21,8 @@ using Serilog.Sinks.SystemConsole.Themes;
 
 [assembly: InternalsVisibleTo("Rift.Runtime.Tests", AllInternalsVisible = true)]
 [assembly: InternalsVisibleTo("Rift", AllInternalsVisible = true)]
-namespace Rift.Runtime;
 
+namespace Rift.Runtime;
 
 internal static class Bootstrap
 {
@@ -47,7 +48,7 @@ internal static class Bootstrap
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error when loading workspace: {e.Message}");
+            Tty.Error($"{e.Message}");
         }
 
         var args = Environment.GetCommandLineArgs();
@@ -121,7 +122,8 @@ internal static class Bootstrap
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<ApplicationHost>();
-        services.AddSingleton<ShareSystem>();
+        services.AddSingleton<ModuleManager>();
+        services.AddSingleton<InterfaceManager>();
         services.AddSingleton<ScriptManager>();
         services.AddSingleton<PluginManager>();
         services.AddSingleton<WorkspaceManager>();
@@ -132,7 +134,8 @@ internal static class Bootstrap
     private static void ActivateServices(IServiceProvider provider)
     {
         provider.GetRequiredService<ApplicationHost>();
-        provider.GetRequiredService<ShareSystem>();
+        provider.GetRequiredService<ModuleManager>();
+        provider.GetRequiredService<InterfaceManager>();
         provider.GetRequiredService<ScriptManager>();
         provider.GetRequiredService<PluginManager>();
         provider.GetRequiredService<WorkspaceManager>();
@@ -142,34 +145,39 @@ internal static class Bootstrap
 
     private static void InitComponents()
     {
-        if (!ShareSystem.Init())
+        if (!InterfaceManager.Init())
         {
-            throw new InvalidOperationException("Failed to init ShareSystem.");
+            throw new InvalidOperationException("Failed to init InterfaceManager.");
+        }
+
+        if (!ModuleManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(ModuleManager)}");
         }
 
         if (!ScriptManager.Init())
         {
-            throw new InvalidOperationException("Failed to init ScriptManager.");
+            throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
         }
 
         if (!PluginManager.Init())
         {
-            throw new InvalidOperationException("Failed to init PluginManager.");
+            throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
         }
 
         if (!WorkspaceManager.Init())
         {
-            throw new InvalidOperationException("Failed to init WorkspaceManager.");
+            throw new InvalidOperationException($"Failed to init {nameof(WorkspaceManager)}.");
         }
 
         if (!TaskManager.Init())
         {
-            throw new InvalidOperationException("Failed to init TaskManager");
+            throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
         }
 
         if (!CommandManager.Init())
         {
-            throw new InvalidOperationException("Failed to init C");
+            throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
         }
     }
 
@@ -180,7 +188,7 @@ internal static class Bootstrap
         WorkspaceManager.Shutdown();
         PluginManager.Shutdown();
         ScriptManager.Shutdown();
-        ShareSystem.Shutdown();
+        InterfaceManager.Shutdown();
     }
 
 

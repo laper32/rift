@@ -1,6 +1,6 @@
-﻿namespace Rift.Runtime.Plugins;
+﻿namespace Rift.Runtime.Modules;
 
-public sealed class PluginManager
+public sealed class ModuleManager
 {
     internal static bool Init()
     {

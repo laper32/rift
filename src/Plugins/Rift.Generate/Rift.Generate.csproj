@@ -9,8 +9,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime"/>
-		<ProjectReference Include="..\Rift.Generate.Abstractions\Rift.Generate.Abstractions.csproj" />
+		<ProjectReference Include="..\..\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime" />
 	</ItemGroup>
 
 </Project>

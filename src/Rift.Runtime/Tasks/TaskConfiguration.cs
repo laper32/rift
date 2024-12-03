@@ -1,4 +1,6 @@
 ﻿
+using Rift.Runtime.Fundamental;
+
 namespace Rift.Runtime.Tasks;
 
 
@@ -47,8 +49,7 @@ internal class TaskConfiguration(RiftTask task) : ITaskConfiguration
         {
             if (!task.Name.StartsWith("rift.", StringComparison.OrdinalIgnoreCase))
             {
-                // TODO: standardize printer
-                Console.WriteLine($"Task `{task.Name}` must starts with `rift.` if you mark this task as command!");
+                Tty.Warning($"Task `{task.Name}` must starts with `rift.` if you mark this task as command!");
                 return this;
             }
         }
