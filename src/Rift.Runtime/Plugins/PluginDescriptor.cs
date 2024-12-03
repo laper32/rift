@@ -4,16 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Plugins;
 
-// ReSharper disable once IdentifierTypo
-public interface IInitializable
-{
-    bool Init();
-
-    void PostInit()
-    {
-
-    }
-    void Shutdown();
-}
+public record PluginDescriptor(string Name, string Version);

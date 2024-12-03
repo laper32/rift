@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Fundamental.Generic;
 
 public static class Definitions
 {

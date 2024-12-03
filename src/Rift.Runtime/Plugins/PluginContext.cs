@@ -7,7 +7,7 @@
 using System.Reflection;
 using System.Runtime.Loader;
 
-namespace Rift.Runtime.Plugin;
+namespace Rift.Runtime.Plugins;
 
 // TODO: ModuleManager
 

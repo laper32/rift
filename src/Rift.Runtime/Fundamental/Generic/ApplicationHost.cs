@@ -8,14 +8,14 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Fundamental.Generic;
 
-public sealed class Runtime
+public sealed class ApplicationHost
 {
-    public Runtime(IServiceProvider provider)
+    public ApplicationHost(IServiceProvider provider)
     {
-        Logger           = provider.GetRequiredService<ILoggerFactory>();
-        ExecutablePath   = Process.GetCurrentProcess().MainModule!.FileName;
+        Logger = provider.GetRequiredService<ILoggerFactory>();
+        ExecutablePath = Process.GetCurrentProcess().MainModule!.FileName;
         InstallationPath = Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
         UserPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
@@ -24,9 +24,9 @@ public sealed class Runtime
         Instance = this;
     }
 
-    internal static Runtime        Instance         { get; private set; } = null!;
-    public          ILoggerFactory Logger           { get; }
-    public          string         ExecutablePath   { get; }
-    public          string         InstallationPath { get; }
-    public          string         UserPath         { get; }
+    internal static ApplicationHost Instance { get; private set; } = null!;
+    public ILoggerFactory Logger { get; }
+    public string ExecutablePath { get; }
+    public string InstallationPath { get; }
+    public string UserPath { get; }
 }

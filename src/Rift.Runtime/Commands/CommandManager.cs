@@ -15,36 +15,41 @@ public sealed class CommandManager
         Instance = this;
     }
 
-    public void ExecuteCommand(string[] args)
+    public static void ExecuteCommand(string[] args)
     {
-        if (!_initialized)
+        if (!Instance._initialized)
         {
             BuildCli();
         }
-        _command.Invoke(args);
+        Instance.Invoke(args);
 
     }
 
-    public bool Init()
+    internal static bool Init()
     {
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
     }
 
-    public void BuildCli()
+    private static void BuildCli()
     {
-        if (_initialized)
+        if (Instance._initialized)
         {
             return;
         }
         var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
 
         var entries = UserCommand.Build(pendingCommands);
-        _command     = UserCommand.BuildCli(entries);
+        Instance._command     = UserCommand.BuildCli(entries);
 
-        _initialized = true;
+        Instance._initialized = true;
+    }
+
+    private void Invoke(string[] args)
+    {
+        _command.Invoke(args);
     }
 }

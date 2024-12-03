@@ -5,17 +5,18 @@
 // ===========================================================================
 
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Plugin;
 using System.Diagnostics.CodeAnalysis;
+using Rift.Runtime.Fundamental.Generic;
+using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Fundamental.Sharing;
 
 
-public sealed class ShareSystem : IInitializable
+public sealed class ShareSystem
 {
     public ShareSystem()
     {
-        _logger  = Runtime.Instance.Logger.CreateLogger<ShareSystem>();
+        _logger  = ApplicationHost.Instance.Logger.CreateLogger<ShareSystem>();
         Instance = this;
     }
 
@@ -166,15 +167,15 @@ public sealed class ShareSystem : IInitializable
         }
     }
 
-    public bool Init()
+    internal static bool Init()
     {
-        PluginManager.Instance.PluginUnload += OnPluginUnload;
+        PluginManager.Instance.PluginUnload += Instance.OnPluginUnload;
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
-        PluginManager.Instance.PluginUnload -= OnPluginUnload;
+        PluginManager.Instance.PluginUnload -= Instance.OnPluginUnload;
     }
 
     private void OnPluginUnload(PluginInstance instance)

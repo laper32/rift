@@ -1,5 +1,5 @@
 ﻿
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Plugins;
 
 namespace Rift.Go;
 

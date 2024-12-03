@@ -64,7 +64,6 @@ public class Plugin : IPackageImportDeclarator
 
 // ReSharper disable UnusedMember.Global
 
-// TODO: CommandLine Remake
 public class Plugins
 {
     public static void Add(Plugin plugin)

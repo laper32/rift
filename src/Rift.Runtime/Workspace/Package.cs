@@ -6,7 +6,7 @@
 
 using Rift.Runtime.Manifest;
 using System.Text.Json;
-using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Generic;
 
 namespace Rift.Runtime.Workspace;
 

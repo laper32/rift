@@ -7,9 +7,8 @@
 using System.Diagnostics;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Fundamental;
 
-namespace Rift.Runtime.Plugin;
+namespace Rift.Runtime.Plugins;
 
 internal class PluginInstance( PluginContext context)
 {

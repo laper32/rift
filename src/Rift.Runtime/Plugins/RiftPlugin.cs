@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Plugin;
+namespace Rift.Runtime.Plugins;
 
 // TODO: 未来这部分应该是由ModuleSystem来处理会更好？
 

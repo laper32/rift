@@ -5,9 +5,9 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Generic;
 using Rift.Runtime.Manifest;
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Schema;
 using Rift.Runtime.Scripting;
 using Tomlyn;
@@ -15,7 +15,7 @@ using Tomlyn;
 namespace Rift.Runtime.Workspace;
 
 
-public sealed class WorkspaceManager : IInitializable
+public sealed class WorkspaceManager
 {
     private readonly Packages         _packages;
     private readonly PackageInstances _packageInstances;
@@ -32,20 +32,20 @@ public sealed class WorkspaceManager : IInitializable
 
     public string Root { get; private set; } = "__Unknown__";
 
-    public bool Init()
+    internal static bool Init()
     {
-        _status = EWorkspaceStatus.Init;
+        Instance._status = EWorkspaceStatus.Init;
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
-        _status = EWorkspaceStatus.Shutdown;
+        Instance._status = EWorkspaceStatus.Shutdown;
     }
 
     #region Fundamental operations
 
-    public void SetRootPath(string path)
+    internal void SetRootPath(string path)
     {
         // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
         // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
@@ -60,7 +60,7 @@ public sealed class WorkspaceManager : IInitializable
 
     #endregion
 
-    public void LoadWorkspace()
+    internal void LoadWorkspace()
     {
         var manifestPath = Path.Combine(Root, Definitions.ManifestIdentifier);
         _packages.LoadRecursively(manifestPath);
@@ -70,7 +70,7 @@ public sealed class WorkspaceManager : IInitializable
         _status = EWorkspaceStatus.Ready;
     }
 
-    public void ValidateWorkspace()
+    internal void ValidateWorkspace()
     {
         // TODO: 检查是否存在脚本错误引用的问题
         // TODO:    包括但不限于:
@@ -78,7 +78,7 @@ public sealed class WorkspaceManager : IInitializable
         // TODO:        field引用非自身包的脚本
     }
 
-    public void ActivatePackage()
+    internal void ActivatePackage()
     {
         foreach (var (packageName, maybePackage) in _packages.Value)
         {
@@ -339,7 +339,7 @@ public sealed class WorkspaceManager : IInitializable
     /// <param name="manifestPath">Manifest路径</param>
     /// <param name="scriptPath">脚本路径</param>
     /// <returns></returns>
-    public static string GetActualScriptPath(string manifestPath, string scriptPath)
+    internal static string GetActualScriptPath(string manifestPath, string scriptPath)
     {
         if (!manifestPath.EndsWith("Rift.toml"))
         {
@@ -439,7 +439,7 @@ public sealed class WorkspaceManager : IInitializable
         }
     }
 
-    public bool AddMetadataForPackage(string key, object value)
+    internal bool AddMetadataForPackage(string key, object value)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -450,7 +450,7 @@ public sealed class WorkspaceManager : IInitializable
 
     }
 
-    public bool AddDependencyForPackage(IPackageImportDeclarator declarator)
+    internal bool AddDependencyForPackage(IPackageImportDeclarator declarator)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -461,7 +461,7 @@ public sealed class WorkspaceManager : IInitializable
 
     }
 
-    public bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
+    internal bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {
@@ -476,7 +476,7 @@ public sealed class WorkspaceManager : IInitializable
         return true;
     }
 
-    public bool AddPluginForPackage(Scripting.Plugin plugin)
+    internal bool AddPluginForPackage(Plugin plugin)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {
@@ -487,7 +487,7 @@ public sealed class WorkspaceManager : IInitializable
         return true;
     }
 
-    public bool AddPluginForPackage(IEnumerable<Scripting.Plugin> plugins)
+    internal bool AddPluginForPackage(IEnumerable<Plugin> plugins)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {
@@ -514,7 +514,7 @@ public sealed class WorkspaceManager : IInitializable
 
     #endregion
 
-    public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
+    internal IEnumerable<PluginDescriptor> CollectPluginsForLoad()
     {
         CheckAvailable();
         return _packageInstances.CollectPluginsForLoad();

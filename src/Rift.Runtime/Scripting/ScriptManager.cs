@@ -10,11 +10,10 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
-using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Scripting;
 
-public sealed class ScriptManager : IInitializable
+public sealed class ScriptManager
 {
     private enum Status
     {
@@ -85,21 +84,21 @@ public sealed class ScriptManager : IInitializable
     private readonly List<string> _importLibraries = [];
     private readonly List<string> _importNamespaces = [];
 
-    public bool Init()
+    internal static bool Init()
     {
-        _status = Status.Init;
-        AddLibrary(["Rift.Runtime"]);
-        AddNamespace(["Rift.Runtime.Scripting"]);
-        _status = Status.Ready;
+        Instance._status = Status.Init;
+        Instance.AddLibrary(["Rift.Runtime"]);
+        Instance.AddNamespace(["Rift.Runtime.Scripting"]);
+        Instance._status = Status.Ready;
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
-        RemoveNamespace(["Rift.Runtime.Scripting"]);
-        RemoveLibrary(["Rift.Runtime"]);
+        Instance.RemoveNamespace(["Rift.Runtime.Scripting"]);
+        Instance.RemoveLibrary(["Rift.Runtime"]);
 
-        _status = Status.Shutdown;
+        Instance._status = Status.Shutdown;
     }
 
     public void AddLibrary(string library)
@@ -166,7 +165,7 @@ public sealed class ScriptManager : IInitializable
         }
     }
 
-    public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
+    internal void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
     {
         CheckAvailable();
 

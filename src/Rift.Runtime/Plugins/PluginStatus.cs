@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Plugin;
+namespace Rift.Runtime.Plugins;
 
 /// <summary>
 /// 插件状态

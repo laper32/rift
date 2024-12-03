@@ -8,14 +8,13 @@
 // 原因只有一个：暴露给脚本的API不能设计的过于复杂，且很多时候脚本是没办法看到dll里面有什么API的。
 
 using System.Text.Json;
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Workspace;
 
 // ReSharper disable UnusedMember.Global
 
 namespace Rift.Runtime.Scripting;
 
-// TODO: CommandLine Remake
 public class Dependencies
 {
     public static void Add<T>(T dependency) where T: class, IPackageImportDeclarator

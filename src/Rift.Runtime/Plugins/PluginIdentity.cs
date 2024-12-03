@@ -9,14 +9,14 @@ using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Rift.Runtime.Fundamental;
 using Rift.Runtime.Fundamental.Extensions;
+using Rift.Runtime.Fundamental.Generic;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 using Semver;
 
-namespace Rift.Runtime.Plugin;
+namespace Rift.Runtime.Plugins;
 
 internal record PluginSharedAssemblyInfo(string Path, FileVersionInfo Info, DateTime LastWriteDate);
 
@@ -145,8 +145,8 @@ internal class PluginIdentities()
 
     private readonly List<string> _pluginSearchPaths =
     [
-        Path.Combine(Fundamental.Runtime.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
-        Path.Combine(Fundamental.Runtime.Instance.UserPath, PluginDirectoryName)          // 用户目录
+        Path.Combine(ApplicationHost.Instance.InstallationPath, PluginDirectoryName), // Rift安装路径
+        Path.Combine(ApplicationHost.Instance.UserPath, PluginDirectoryName)          // 用户目录
     ];
 
     private PluginIdentity CreatePluginIdentity(string manifestPath)

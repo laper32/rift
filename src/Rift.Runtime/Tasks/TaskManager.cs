@@ -5,12 +5,11 @@
 // ===========================================================================
 
 
-using Rift.Runtime.Fundamental;
 using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Tasks;
 
-public sealed class TaskManager : IInitializable
+public sealed class TaskManager
 {
     private readonly List<IRiftTask> _tasks;
     public static  TaskManager     Instance { get; private set; } = null!;
@@ -87,18 +86,18 @@ public sealed class TaskManager : IInitializable
         await task.Invoke(context);
     }
 
-    public List<string> GetMarkedAsCommandTasks()
+    internal List<string> GetMarkedAsCommandTasks()
     {
         return (from RiftTask task in _tasks where task.IsCommand select task.Name).ToList();
     }
 
-    public bool Init()
+    internal static bool Init()
     {
         ScriptManager.Instance.AddNamespace("Rift.Runtime.Tasks");
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
         ScriptManager.Instance.RemoveNamespace("Rift.Runtime.Tasks");
     }

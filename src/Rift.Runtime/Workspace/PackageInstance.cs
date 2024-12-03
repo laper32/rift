@@ -5,7 +5,7 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Workspace;
 

@@ -6,23 +6,23 @@
 
 using System.Reflection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Generic;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 
-namespace Rift.Runtime.Plugin;
+namespace Rift.Runtime.Plugins;
 
-public sealed class PluginManager : IInitializable
+public sealed class PluginManager
 {
     // TODO: 未来的插件系统需要想办法处理没有插件入口的情况。
 
     private readonly PluginIdentities               _identities;
     private          PluginInstanceContext?         _sharedContext;
-    private readonly List<PluginIdentity>           _pendingLoadPlugins    = [];
-    private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos   = [];
-    private readonly List<PluginContext>            _pluginContexts        = [];
-    private readonly List<PluginInstance>           _instances             = [];
-    public           ILogger<PluginManager>         Logger { get; }
+    private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
+    private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
+    private readonly List<PluginContext>            _pluginContexts      = [];
+    private readonly List<PluginInstance>           _instances           = [];
+    internal         ILogger<PluginManager>         Logger { get; }
     internal static  PluginManager                  Instance = null!;
 
     internal delegate void DelegatePluginUnload(PluginInstance instance);
@@ -32,26 +32,26 @@ public sealed class PluginManager : IInitializable
     public PluginManager()
     {
         _identities = new PluginIdentities();
-        Logger      = Fundamental.Runtime.Instance.Logger.CreateLogger<PluginManager>();
+        Logger      = ApplicationHost.Instance.Logger.CreateLogger<PluginManager>();
         Instance    = this;
     }
 
-    public bool Init()
+    internal static bool Init()
     {
-        _sharedContext ??= new PluginInstanceContext();
+        Instance._sharedContext ??= new PluginInstanceContext();
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
-        UnloadPlugins();
+        Instance.UnloadPlugins();
     }
 
     /// <summary>
     /// N.B. 插件系统这里和很多地方不一样的是：我们需要支持没有dll的情况（即：这个插件只有二进制文件，或者只有配置文件）<br/>
     /// 所以必须有一个中间层给插件做Identity。
     /// </summary>
-    public void NotifyLoadPlugins()
+    internal void NotifyLoadPlugins()
     {
         var declarators = WorkspaceManager.Instance.CollectPluginsForLoad();
         foreach (var declarator in declarators)
@@ -198,17 +198,17 @@ public sealed class PluginManager : IInitializable
         _pendingLoadPlugins.Clear();
     }
 
-    public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
+    internal bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
     {
         return _identities.AddDependencyForPlugin(declarator);
     }
 
-    public bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
+    internal bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
     {
         return _identities.AddDependencyForPlugin(declarators);
     }
 
-    public bool AddMetadataForPlugin(string key, object value)
+    internal bool AddMetadataForPlugin(string key, object value)
     {
         return _identities.AddMetadataForPlugin(key, value);
     }
@@ -229,8 +229,8 @@ public sealed class PluginManager : IInitializable
         }
         _pluginContexts.Clear();
     }
-
-    public void DumpPluginIdentities()
+    
+    internal void DumpPluginIdentities()
     {
         _identities.Dump();
     }

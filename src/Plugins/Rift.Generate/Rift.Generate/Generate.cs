@@ -1,5 +1,4 @@
-﻿
-using Rift.Runtime.Plugin;
+﻿using Rift.Runtime.Plugins;
 using Rift.Runtime.Tasks;
 
 namespace Rift.Generate;

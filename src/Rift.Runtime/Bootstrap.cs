@@ -8,9 +8,9 @@ using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.Commands;
-using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Generic;
 using Rift.Runtime.Fundamental.Sharing;
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
 using Rift.Runtime.Workspace;
@@ -57,7 +57,7 @@ internal static class Bootstrap
 
     internal static void Run(string[] args)
     {
-        CommandManager.Instance.ExecuteCommand(args);
+        CommandManager.ExecuteCommand(args);
     }
 
     private static bool InitImpl()
@@ -120,7 +120,7 @@ internal static class Bootstrap
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<Fundamental.Runtime>();
+        services.AddSingleton<ApplicationHost>();
         services.AddSingleton<ShareSystem>();
         services.AddSingleton<ScriptManager>();
         services.AddSingleton<PluginManager>();
@@ -131,7 +131,7 @@ internal static class Bootstrap
 
     private static void ActivateServices(IServiceProvider provider)
     {
-        provider.GetRequiredService<Fundamental.Runtime>();
+        provider.GetRequiredService<ApplicationHost>();
         provider.GetRequiredService<ShareSystem>();
         provider.GetRequiredService<ScriptManager>();
         provider.GetRequiredService<PluginManager>();
@@ -142,32 +142,32 @@ internal static class Bootstrap
 
     private static void InitComponents()
     {
-        if (!ShareSystem.Instance.Init())
+        if (!ShareSystem.Init())
         {
             throw new InvalidOperationException("Failed to init ShareSystem.");
         }
 
-        if (!ScriptManager.Instance.Init())
+        if (!ScriptManager.Init())
         {
             throw new InvalidOperationException("Failed to init ScriptManager.");
         }
 
-        if (!PluginManager.Instance.Init())
+        if (!PluginManager.Init())
         {
             throw new InvalidOperationException("Failed to init PluginManager.");
         }
 
-        if (!WorkspaceManager.Instance.Init())
+        if (!WorkspaceManager.Init())
         {
             throw new InvalidOperationException("Failed to init WorkspaceManager.");
         }
 
-        if (!TaskManager.Instance.Init())
+        if (!TaskManager.Init())
         {
             throw new InvalidOperationException("Failed to init TaskManager");
         }
 
-        if (!CommandManager.Instance.Init())
+        if (!CommandManager.Init())
         {
             throw new InvalidOperationException("Failed to init C");
         }
@@ -175,12 +175,12 @@ internal static class Bootstrap
 
     private static void ShutdownComponents()
     {
-        CommandManager.Instance.Shutdown();
-        TaskManager.Instance.Shutdown();
-        WorkspaceManager.Instance.Shutdown();
-        PluginManager.Instance.Shutdown();
-        ScriptManager.Instance.Shutdown();
-        ShareSystem.Instance.Shutdown();
+        CommandManager.Shutdown();
+        TaskManager.Shutdown();
+        WorkspaceManager.Shutdown();
+        PluginManager.Shutdown();
+        ScriptManager.Shutdown();
+        ShareSystem.Shutdown();
     }
 
 
