@@ -144,18 +144,35 @@ internal static class Bootstrap
 
     private static void InitComponents()
     {
-        if (!InterfaceManager.Init()) throw new InvalidOperationException("Failed to init InterfaceManager.");
+        if (!InterfaceManager.Init())
+        {
+            throw new InvalidOperationException("Failed to init InterfaceManager.");
+        }
 
-        if (!ScriptManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
+        if (!ScriptManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
+        }
 
-        if (!PluginManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
+        if (!PluginManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
+        }
 
         if (!WorkspaceManager.Init())
+        {
             throw new InvalidOperationException($"Failed to init {nameof(WorkspaceManager)}.");
+        }
 
-        if (!TaskManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
+        if (!TaskManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
+        }
 
-        if (!CommandManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
+        if (!CommandManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
+        }
     }
 
     private static void ShutdownComponents()

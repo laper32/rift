@@ -39,10 +39,16 @@ internal class UserCommand
         // Print the current node's name
         Console.WriteLine($"{indent}{node.Name}");
         // Print the tasks for the leaf node
-        if (!string.IsNullOrEmpty(node.TaskName)) Console.WriteLine($"{indent}  - {node.TaskName}");
+        if (!string.IsNullOrEmpty(node.TaskName))
+        {
+            Console.WriteLine($"{indent}  - {node.TaskName}");
+        }
 
         // Recursively print the children
-        foreach (var child in node.Children) PrintTree(child, indent + "  ");
+        foreach (var child in node.Children)
+        {
+            PrintTree(child, indent + "  ");
+        }
     }
 
     public static RootCommand BuildCli(UserCommandEntry entry)
@@ -59,15 +65,24 @@ internal class UserCommand
             var newCmd = new Command(child.Name);
 
             if (TaskManager.FindTask(child.TaskName) is not RiftTask task)
+            {
                 throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
+            }
 
             if (child.Children.Count > 0)
+            {
                 if (task.HasAction || task.HasDelayedAction)
+                {
                     throw new Exception("Task with children cannot have actions.");
+                }
+            }
 
             newCmd.Description = task.Description;
             if (task.HasAction)
+            {
                 newCmd.SetHandler(() => { TaskManager.RunTask(task.Name); });
+            }
+
             cmd.AddCommand(newCmd);
             BuildCliImpl(newCmd, child);
         }

@@ -11,19 +11,24 @@ namespace Rift.Runtime.Tasks;
 
 public sealed class TaskManager
 {
+    private static   TaskManager     _instance = null!;
     private readonly List<IRiftTask> _tasks;
 
     public TaskManager()
     {
-        _tasks   = [];
+        _tasks    = [];
         _instance = this;
     }
 
-    private static TaskManager _instance = null!;
+    internal static bool Init()
+    {
+        return _instance.InitInternal();
+    }
 
-    internal static bool Init() => _instance.InitInternal();
-
-    internal static void Shutdown() => _instance.ShutdownInternal();
+    internal static void Shutdown()
+    {
+        _instance.ShutdownInternal();
+    }
 
     /// <summary>
     ///     注册一个任务 <br />
@@ -35,26 +40,40 @@ public sealed class TaskManager
     /// <param name="predicate"> 任务配置 </param>
     /// ">
     /// <returns> 想获取的任务 </returns>
-    public static IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate) =>
-        _instance.RegisterTaskInternal(name, predicate);
+    public static IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
+    {
+        return _instance.RegisterTaskInternal(name, predicate);
+    }
 
     /// <summary>
     ///     找到你想要的任务
     /// </summary>
     /// <param name="name"> 对应的任务名 </param>
     /// <returns> </returns>
-    public static IRiftTask? FindTask(string name) => _instance.FindTaskInternal(name);
+    public static IRiftTask? FindTask(string name)
+    {
+        return _instance.FindTaskInternal(name);
+    }
 
     /// <summary>
     ///     判断该任务是否存在
     /// </summary>
     /// <param name="name"> 任务名 </param>
     /// <returns> 想获取的任务 </returns>
-    public static bool HasTask(string name) => _instance.HasTaskInternal(name);
+    public static bool HasTask(string name)
+    {
+        return _instance.HasTaskInternal(name);
+    }
 
-    public static void RunTask(string name) => _instance.RunTaskInternal(name);
+    public static void RunTask(string name)
+    {
+        _instance.RunTaskInternal(name);
+    }
 
-    internal static List<string> GetMarkedAsCommandTasks() => _instance.GetMarkedAsCommandTasksInternal();
+    internal static List<string> GetMarkedAsCommandTasks()
+    {
+        return _instance.GetMarkedAsCommandTasksInternal();
+    }
 
     private bool InitInternal()
     {
@@ -98,7 +117,10 @@ public sealed class TaskManager
 
     private void RunTaskInternal(string name)
     {
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task) return;
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task)
+        {
+            return;
+        }
 
         var context = new TaskContext();
 

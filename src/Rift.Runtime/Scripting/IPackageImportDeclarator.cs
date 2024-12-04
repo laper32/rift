@@ -6,6 +6,7 @@
 
 namespace Rift.Runtime.Scripting;
 
+// TODO: 准备移除，统一到PackageReference
 public interface IPackageImportDeclarator
 {
     /// <summary>

@@ -13,8 +13,9 @@ namespace Rift.Runtime.Workspace;
 
 public interface IPackageInstance
 {
-    public string Name         { get; }
-    public string ManifestPath { get; }
+    public string                                       Name         { get; }
+    public string                                       ManifestPath { get; }
+    public Dictionary<string, IPackageImportDeclarator> Dependencies { get; }
 
     JsonElement? GetExtensionField(string name);
 
@@ -27,11 +28,11 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {
     public IMaybePackage Value { get; init; } = package;
 
-    public Dictionary<string, object> Metadata     { get; init; } = [];
-    public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, Plugin> Plugins      { get; init; } = [];
-    public string                     Name         => Value.Name;
-    public string                     ManifestPath => Value.ManifestPath;
+    public Dictionary<string, object>                   Metadata     { get; init; } = [];
+    public Dictionary<string, Plugin>                   Plugins      { get; init; } = [];
+    public Dictionary<string, IPackageImportDeclarator> Dependencies { get; init; } = [];
+    public string                                       Name         => Value.Name;
+    public string                                       ManifestPath => Value.ManifestPath;
 
     public bool HasPlugin(string name)
     {
@@ -45,7 +46,10 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
 
     public JsonElement? GetExtensionField(string name)
     {
-        if (Value.Others.TryGetValue(name, out var value)) return value;
+        if (Value.Others.TryGetValue(name, out var value))
+        {
+            return value;
+        }
 
         return null;
     }
@@ -112,11 +116,17 @@ internal class PackageInstances
     {
         foreach (var (packageName, instance) in _value)
         {
-            if (instance.Plugins.Count <= 0) continue;
+            if (instance.Plugins.Count <= 0)
+            {
+                continue;
+            }
 
             foreach (var (pluginName, plugin) in instance.Plugins)
             {
-                if (plugin is null) throw new InvalidOperationException($"{pluginName}'s instance is null.");
+                if (plugin is null)
+                {
+                    throw new InvalidOperationException($"{pluginName}'s instance is null.");
+                }
 
                 var trimmedPluginName = pluginName.Trim();
 
@@ -126,8 +136,11 @@ internal class PackageInstances
                     continue;
                 }
 
-                var trimmedPluginVersion                                             = plugin.Version.Trim();
-                if (string.IsNullOrEmpty(trimmedPluginVersion)) trimmedPluginVersion = "latest";
+                var trimmedPluginVersion = plugin.Version.Trim();
+                if (string.IsNullOrEmpty(trimmedPluginVersion))
+                {
+                    trimmedPluginVersion = "latest";
+                }
 
                 yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
             }

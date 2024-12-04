@@ -158,7 +158,10 @@ public sealed class ScriptManager
     {
         CheckAvailable();
 
-        foreach (var library in libraries) _libraries.Remove(library);
+        foreach (var library in libraries)
+        {
+            _libraries.Remove(library);
+        }
     }
 
     private void AddNamespaceInternal(IEnumerable<string> namespaces)
@@ -170,7 +173,10 @@ public sealed class ScriptManager
     private void RemoveNamespaceInternal(IEnumerable<string> namespaces)
     {
         CheckAvailable();
-        foreach (var @namespace in namespaces) _namespaces.Remove(@namespace);
+        foreach (var @namespace in namespaces)
+        {
+            _namespaces.Remove(@namespace);
+        }
     }
 
     internal void EvaluateScriptInternal(string scriptPath, int timedOutUnitSec = 15)
@@ -207,7 +213,10 @@ public sealed class ScriptManager
         if (compile.Any())
         {
             Console.WriteLine($"Error found when compiling: {scriptPath}");
-            foreach (var diagnostic in compile) Console.WriteLine(diagnostic.GetMessage());
+            foreach (var diagnostic in compile)
+            {
+                Console.WriteLine(diagnostic.GetMessage());
+            }
         }
         else
         {
@@ -222,9 +231,16 @@ public sealed class ScriptManager
         void AddRuntimeReferences(string fileName)
         {
             var lib = loadedAssemblies.GetValueOrDefault(fileName);
-            if (lib is null) return;
+            if (lib is null)
+            {
+                return;
+            }
 
-            if (runtimeReferences.Contains(lib)) return;
+            if (runtimeReferences.Contains(lib))
+            {
+                return;
+            }
+
             runtimeReferences.Add(lib);
         }
     }
@@ -232,7 +248,9 @@ public sealed class ScriptManager
     private void CheckAvailable()
     {
         if (_status is not (Status.Init or Status.Ready))
+        {
             throw new InvalidOperationException("ScriptManager is not available");
+        }
     }
 
     private static Dictionary<string, Assembly> CreateLoadedAssembliesMap()

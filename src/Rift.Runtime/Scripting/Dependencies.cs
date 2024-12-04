@@ -21,7 +21,11 @@ public class Dependencies
     public static void Add<T>(T dependency) where T : class, IPackageImportDeclarator
     {
         // 如果是false的话，就会去尝试插件那找
-        if (WorkspaceManager.AddDependencyForPackage(dependency)) return;
+        if (WorkspaceManager.AddDependencyForPackage(dependency))
+        {
+            return;
+        }
+
         Tty.WriteLine($"Adding dependency => {JsonSerializer.Serialize(dependency)}");
         PluginManager.AddDependencyForPlugin(dependency);
     }
@@ -29,8 +33,16 @@ public class Dependencies
     public static void Add<T>(IEnumerable<T> dependencies) where T : class, IPackageImportDeclarator
     {
         var packageImportDeclarators = dependencies as T[] ?? dependencies.ToArray();
+        
+        Console.WriteLine(JsonSerializer.Serialize(packageImportDeclarators, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        }));
 
-        if (WorkspaceManager.AddDependencyForPackage(packageImportDeclarators)) return;
+        if (WorkspaceManager.AddDependencyForPackage(packageImportDeclarators))
+        {
+            return;
+        }
 
         PluginManager.AddDependencyForPlugin(packageImportDeclarators);
     }

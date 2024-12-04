@@ -135,8 +135,11 @@ public sealed class InterfaceManager
     {
         var version = @interface.InterfaceVersion;
         if (_interfaces.Any(x => x.Instance.InterfaceVersion.Equals(version)))
+        {
             throw new InterfaceAlreadyExistsException(
                 $"Interface `{typeof(T).Name}(version: {version})` already exists");
+        }
+
         _interfaces.Add(new InterfaceInformation(@interface, plugin));
     }
 
@@ -171,7 +174,10 @@ public sealed class InterfaceManager
             .Select(x => x.Instance.InterfaceVersion)
             .ToArray();
 
-        if (!interfaceVersions.Contains(version)) return null;
+        if (!interfaceVersions.Contains(version))
+        {
+            return null;
+        }
 
         var @interface = interfaces.First(x => x.Instance.InterfaceVersion == version);
         return (T)@interface.Instance;
@@ -231,9 +237,11 @@ public sealed class InterfaceManager
         // version 15, runtime provided: 14 => Found but version not provided.
         // 版本区间：[oldestInterfaceVersion, latestInterfaceVersion]
         if (version < interfaceVersions.Min() || version > interfaceVersions.Max())
+        {
             throw new InterfaceNotFoundException(
                 $"Interface <{typeof(T).Name}> version requested ({version}) is not provided in runtime (Available versions: [{string.Join(", ", interfaceVersions)}])."
             );
+        }
 
         throw new InterfaceNotFoundException($"Interface <{typeof(T).Name}> not found.");
     }
@@ -261,13 +269,23 @@ public sealed class InterfaceManager
     private void RemoveInterfaceInternal<T>(T @interface) where T : class, IInterface
     {
         var instance = _interfaces.FirstOrDefault(x => x.Instance == @interface);
-        if (instance != null) _interfaces.Remove(instance);
+        if (instance != null)
+        {
+            _interfaces.Remove(instance);
+        }
     }
 
     private void OnPluginUnload(PluginInstance instance)
     {
-        if (instance.Instance is not { } internalInstance) return;
-        foreach (var @interface in GetPluginInterfaces(internalInstance).ToArray()) RemoveInterface(@interface);
+        if (instance.Instance is not { } internalInstance)
+        {
+            return;
+        }
+
+        foreach (var @interface in GetPluginInterfaces(internalInstance).ToArray())
+        {
+            RemoveInterface(@interface);
+        }
     }
 
     private record InterfaceInformation(IInterface Instance, IPlugin Plugin);

@@ -23,7 +23,11 @@ public sealed class CommandManager
 
     public static void ExecuteCommand(string[] args)
     {
-        if (!Instance._initialized) BuildCli();
+        if (!Instance._initialized)
+        {
+            BuildCli();
+        }
+
         Instance.Invoke(args);
     }
 
@@ -38,7 +42,11 @@ public sealed class CommandManager
 
     private static void BuildCli()
     {
-        if (Instance._initialized) return;
+        if (Instance._initialized)
+        {
+            return;
+        }
+
         var pendingCommands = TaskManager.GetMarkedAsCommandTasks();
 
         var entries = UserCommand.Build(pendingCommands);

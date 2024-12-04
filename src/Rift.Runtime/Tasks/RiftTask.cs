@@ -82,6 +82,7 @@ internal class RiftTask(string name) : IRiftTask
 
         var exceptions = new List<Exception>();
         foreach (var action in Actions)
+        {
             try
             {
                 await action(context).ConfigureAwait(false);
@@ -90,10 +91,15 @@ internal class RiftTask(string name) : IRiftTask
             {
                 exceptions.Add(e);
             }
+        }
 
         if (exceptions.Any())
         {
-            if (exceptions.Count == 1) throw exceptions.Single();
+            if (exceptions.Count == 1)
+            {
+                throw exceptions.Single();
+            }
+
             throw new AggregateException("Task failed with following exceptions", exceptions);
         }
     }

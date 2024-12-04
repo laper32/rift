@@ -66,9 +66,15 @@ internal class PluginInstance(PluginContext context)
         try
         {
             if (Instance == null || !Instance.OnLoad())
+            {
                 throw new InvalidOperationException($"Failed to load plugin \"{_identity.EntryPath}\".");
+            }
 
-            if (Error != null) throw Error;
+            if (Error != null)
+            {
+                throw Error;
+            }
+
             Status = PluginStatus.Running;
         }
         catch (Exception e)
@@ -97,7 +103,10 @@ internal class PluginInstance(PluginContext context)
         else
         {
             // 如果即将关闭shutdown(无论是关闭服务器还是module整个重新加载), 那么就无条件置空状态.
-            if (shutdown) Status = PluginStatus.None;
+            if (shutdown)
+            {
+                Status = PluginStatus.None;
+            }
         }
 
         Instance = null;

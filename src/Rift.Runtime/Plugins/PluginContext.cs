@@ -53,7 +53,10 @@ internal class PluginContext : PluginInstanceContext
         var ret = _sharedContext
             .Assemblies
             .FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
-        if (ret != null) return ret;
+        if (ret != null)
+        {
+            return ret;
+        }
 
         var path = _resolver?.ResolveAssemblyToPath(assemblyName);
         return path == null ? null : LoadFromAssemblyPath(path);

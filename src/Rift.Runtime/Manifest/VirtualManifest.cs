@@ -32,7 +32,9 @@ internal class VirtualManifest<T> : IVirtualManifest
     public VirtualManifest(T manifest)
     {
         if (manifest is not (WorkspaceManifest or FolderManifest))
+        {
             throw new ArgumentException("Manifest must be of type WorkspaceManifest or FolderManifest");
+        }
 
         Type = manifest switch
         {

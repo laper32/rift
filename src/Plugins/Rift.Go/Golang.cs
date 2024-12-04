@@ -3,6 +3,7 @@ using Rift.Generate.Services;
 using Rift.Go.Services;
 using Rift.Runtime.Interfaces;
 using Rift.Runtime.Plugins;
+using Rift.Runtime.Scripting;
 
 namespace Rift.Go;
 
@@ -10,6 +11,7 @@ namespace Rift.Go;
 public class Golang : RiftPlugin
 {
     private IGenerateService _generateService = null!;
+
     public override bool OnLoad()
     {
         //_generateService = InterfaceManager.GetRequiredInterface<IGenerateService>(1);
@@ -20,12 +22,8 @@ public class Golang : RiftPlugin
         var provider = services.BuildServiceProvider();
         provider.GetRequiredService<GolangGenerateService>();
 
-        //ScriptManager.AddLibrary(["Rift.Go"]);
-        //ScriptManager.AddNamespace("Rift.Go");
-        //ScriptManager.AddNamespace("Rift.Go.Scripting");
-
-        //_generateService.Generate += GolangGenerateService.Instance.PerformGolangGenerate;
-        Console.WriteLine("Rift.Go initialized");
+        ScriptManager.AddLibrary("Rift.Go");
+        ScriptManager.AddNamespace("Rift.Go.Scripting");
         return base.OnLoad();
     }
 
@@ -33,11 +31,12 @@ public class Golang : RiftPlugin
     {
         _generateService          =  InterfaceManager.GetRequiredInterface<IGenerateService>(1);
         _generateService.Generate += GolangGenerateService.PerformGolangGenerate;
-        
     }
 
     public override void OnUnload()
     {
         _generateService.Generate -= GolangGenerateService.PerformGolangGenerate;
+        ScriptManager.RemoveNamespace("Rift.Go.Scripting");
+        ScriptManager.RemoveLibrary("Rift.Go");
     }
 }

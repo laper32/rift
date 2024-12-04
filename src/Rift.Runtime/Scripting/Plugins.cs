@@ -12,6 +12,8 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
+// TODO: 准备移除，统一到PackageReference
+[Serializable]
 public class Plugin : IPackageImportDeclarator
 {
     [JsonIgnore]
@@ -43,7 +45,10 @@ public class Plugin : IPackageImportDeclarator
     /// <returns> Instance this </returns>
     public Plugin RefWorkspace()
     {
-        if (_refWorkspace) return this;
+        if (_refWorkspace)
+        {
+            return this;
+        }
 
         Attributes.Add("RefWorkspace", true);
         _refWorkspace = true;

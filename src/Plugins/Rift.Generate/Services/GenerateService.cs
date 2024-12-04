@@ -11,9 +11,6 @@ public interface IGenerateService : IInterface
 
 internal sealed class GenerateService : IGenerateService
 {
-    public         uint            InterfaceVersion => 1;
-    public event Action?           Generate;
-
     private static GenerateService _instance = null!;
 
     public GenerateService()
@@ -21,13 +18,19 @@ internal sealed class GenerateService : IGenerateService
         _instance = this;
     }
 
+    public uint          InterfaceVersion => 1;
+    public event Action? Generate;
+
     public void Call()
     {
         Console.WriteLine("Invocation success");
     }
 
 
-    internal static void Invoke() => _instance.InvokeInternal();
+    internal static void Invoke()
+    {
+        _instance.InvokeInternal();
+    }
 
     private void InvokeInternal()
     {

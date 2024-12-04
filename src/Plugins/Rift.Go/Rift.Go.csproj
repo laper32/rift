@@ -13,8 +13,4 @@
 		<ProjectReference Include="..\Rift.Generate\Rift.Generate.csproj" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Folder Include="Scripting\" />
-	</ItemGroup>
-
 </Project>

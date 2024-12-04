@@ -30,7 +30,10 @@ internal class RiftManifest<T> : IRiftManifest
 {
     public RiftManifest(T manifest)
     {
-        if (manifest is not PluginManifest) throw new ArgumentException("Manifest must be of type RiftManifest");
+        if (manifest is not PluginManifest)
+        {
+            throw new ArgumentException("Manifest must be of type RiftManifest");
+        }
 
         Type = manifest switch
         {

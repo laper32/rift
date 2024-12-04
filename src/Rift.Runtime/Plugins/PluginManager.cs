@@ -62,7 +62,10 @@ public sealed class PluginManager
     internal void NotifyLoadPluginsInternal()
     {
         var declarators = WorkspaceManager.CollectPluginsForLoad();
-        foreach (var declarator in declarators) _identities.Add(declarator);
+        foreach (var declarator in declarators)
+        {
+            _identities.Add(declarator);
+        }
 
         _pendingLoadPlugins.AddRange(_identities.GetSortedIdentities());
 
@@ -81,9 +84,15 @@ public sealed class PluginManager
 
     private void LoadPlugins()
     {
-        foreach (var instance in _instances.Where(instance => instance.Init())) instance.Load();
+        foreach (var instance in _instances.Where(instance => instance.Init()))
+        {
+            instance.Load();
+        }
 
-        foreach (var instance in _instances) instance.AllLoad();
+        foreach (var instance in _instances)
+        {
+            instance.AllLoad();
+        }
     }
 
 
@@ -150,17 +159,26 @@ public sealed class PluginManager
 
     private void LoadSharedContext()
     {
-        foreach (var info in _sharedAssemblyInfos) _sharedContext!.LoadFromAssemblyPath(info.Path);
+        foreach (var info in _sharedAssemblyInfos)
+        {
+            _sharedContext!.LoadFromAssemblyPath(info.Path);
+        }
     }
 
     private void LoadPluginContext()
     {
-        foreach (var identity in _pendingLoadPlugins) _pluginContexts.Add(new PluginContext(identity, _sharedContext!));
+        foreach (var identity in _pendingLoadPlugins)
+        {
+            _pluginContexts.Add(new PluginContext(identity, _sharedContext!));
+        }
     }
 
     private void ActivateInstance()
     {
-        foreach (var context in _pluginContexts) _instances.Add(new PluginInstance(context));
+        foreach (var context in _pluginContexts)
+        {
+            _instances.Add(new PluginInstance(context));
+        }
     }
 
     private void CleanupTemporaries()
@@ -179,7 +197,11 @@ public sealed class PluginManager
         _instances.Clear();
         _sharedContext!.Unload();
         _sharedContext = null;
-        foreach (var context in _pluginContexts) context.Unload();
+        foreach (var context in _pluginContexts)
+        {
+            context.Unload();
+        }
+
         _pluginContexts.Clear();
     }
 

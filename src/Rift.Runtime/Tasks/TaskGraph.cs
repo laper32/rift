@@ -17,7 +17,10 @@ internal class TaskGraph
     public void Add(string node)
     {
         ArgumentNullException.ThrowIfNull(node, nameof(node));
-        if (Exists(node)) throw new ArgumentException($"Node \"{node}\" already exists");
+        if (Exists(node))
+        {
+            throw new ArgumentException($"Node \"{node}\" already exists");
+        }
 
         _nodes.Add(node);
     }
@@ -25,7 +28,9 @@ internal class TaskGraph
     public void Connect(string start, string end)
     {
         if (start.Equals(end, StringComparison.OrdinalIgnoreCase))
+        {
             throw new ArgumentException("Reflexive edges in graph are not allowed.");
+        }
 
         if (_edges.Any(x =>
                 x.Start.Equals(end, StringComparison.OrdinalIgnoreCase) &&
@@ -42,9 +47,20 @@ internal class TaskGraph
 
         if (_edges.Any(x => x.Start.Equals(start, StringComparison.OrdinalIgnoreCase)
                             && x.End.Equals(end, StringComparison.OrdinalIgnoreCase)))
+        {
             return;
-        if (_nodes.All(x => !x.Equals(start, StringComparison.OrdinalIgnoreCase))) _nodes.Add(start);
-        if (_nodes.All(x => !x.Equals(end, StringComparison.OrdinalIgnoreCase))) _nodes.Add(end);
+        }
+
+        if (_nodes.All(x => !x.Equals(start, StringComparison.OrdinalIgnoreCase)))
+        {
+            _nodes.Add(start);
+        }
+
+        if (_nodes.All(x => !x.Equals(end, StringComparison.OrdinalIgnoreCase)))
+        {
+            _nodes.Add(end);
+        }
+
         _edges.Add(new TaskGraphEdge(start, end));
     }
 
@@ -56,7 +72,10 @@ internal class TaskGraph
 
     public IEnumerable<string> Traverse(string task)
     {
-        if (!Exists(task)) return [];
+        if (!Exists(task))
+        {
+            return [];
+        }
 
         var result = new List<string>();
         Traverse(task, result);
@@ -71,7 +90,10 @@ internal class TaskGraph
             visited.Add(node);
             var incoming = _edges.Where(x => x.End.Equals(node, StringComparison.OrdinalIgnoreCase))
                 .Select(x => x.Start);
-            foreach (var child in incoming) Traverse(child, result, visited);
+            foreach (var child in incoming)
+            {
+                Traverse(child, result, visited);
+            }
         }
         else if (!result.Any(x => x.Equals(node, StringComparison.OrdinalIgnoreCase)))
         {

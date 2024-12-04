@@ -24,7 +24,9 @@ internal record EitherManifest<T> : IEitherManifest
     public EitherManifest(T manifest)
     {
         if (manifest is not (IManifest or IVirtualManifest or IRiftManifest))
+        {
             throw new InvalidOperationException("Only accepts `IManifest`, `IVirtualManifest`, or `IRiftManifest`");
+        }
 
         Type = manifest switch
         {

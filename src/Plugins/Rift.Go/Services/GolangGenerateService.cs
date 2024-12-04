@@ -1,4 +1,8 @@
-﻿namespace Rift.Go.Services;
+﻿using Rift.Go.Scripting;
+using Rift.Runtime.Collections.Generic;
+using Rift.Runtime.Workspace;
+
+namespace Rift.Go.Services;
 
 internal class GolangGenerateService
 {
@@ -11,6 +15,17 @@ internal class GolangGenerateService
 
     public static void PerformGolangGenerate()
     {
+        var packages = WorkspaceManager.GetAllPackages();
+        foreach (var package in packages)
+        {
+            Console.WriteLine($"Inspecting {package.Name}");
+            package.Dependencies.ForEach((_, dep) =>
+            {
+                var golangImport = dep as GolangImport;
+                Console.WriteLine($"golangImport: {golangImport?.Name}");
+            });
+        }
+
         Console.WriteLine("Now we generate go projects");
     }
 }

@@ -37,7 +37,9 @@ internal class Manifest<T> : IManifest
     public Manifest(T manifest)
     {
         if (manifest is not (TargetManifest or ProjectManifest))
+        {
             throw new ArgumentException("Manifest must be of type TargetManifest or ProjectManifest");
+        }
 
         Type = manifest switch
         {

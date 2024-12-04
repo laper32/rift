@@ -18,7 +18,10 @@ public class Metadata
 {
     public static void Add(string key, object value)
     {
-        if (WorkspaceManager.AddMetadataForPackage(key, value)) return;
+        if (WorkspaceManager.AddMetadataForPackage(key, value))
+        {
+            return;
+        }
 
         PluginManager.AddMetadataForPlugin(key, value);
     }
