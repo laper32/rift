@@ -58,7 +58,7 @@ internal class UserCommand
         {
             var newCmd = new Command(child.Name);
 
-            if (TaskManager.Instance.FindTask(child.TaskName) is not RiftTask task)
+            if (TaskManager.FindTask(child.TaskName) is not RiftTask task)
                 throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
 
             if (child.Children.Count > 0)
@@ -67,7 +67,7 @@ internal class UserCommand
 
             newCmd.Description = task.Description;
             if (task.HasAction)
-                newCmd.SetHandler(() => { TaskManager.Instance.RunTask(task.Name); });
+                newCmd.SetHandler(() => { TaskManager.RunTask(task.Name); });
             cmd.AddCommand(newCmd);
             BuildCliImpl(newCmd, child);
         }

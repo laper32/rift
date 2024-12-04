@@ -11,9 +11,9 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
     [Fact]
     public void Test1()
     {
-        TaskManager.Instance.RegisterTask("rift.new", config => { config.SetIsCommand(true); });
-        TaskManager.Instance.RegisterTask("rift.new.classlib", config => { config.SetIsCommand(true); });
-        var commands = TaskManager.Instance.GetMarkedAsCommandTasks();
+        TaskManager.RegisterTask("rift.new", config => { config.SetIsCommand(true); });
+        TaskManager.RegisterTask("rift.new.classlib", config => { config.SetIsCommand(true); });
+        var commands = TaskManager.GetMarkedAsCommandTasks();
         var entries  = UserCommand.Build(commands);
 
         //CommandManager.Instance.ExecuteCommand(Environment.GetCommandLineArgs());

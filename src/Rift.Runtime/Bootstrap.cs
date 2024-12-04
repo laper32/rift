@@ -39,12 +39,12 @@ internal static class Bootstrap
     {
         // TODO: 要配合命令行的行为。
         // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
-        WorkspaceManager.Instance.SetRootPath(
+        WorkspaceManager.SetRootPath(
             Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
 
         try
         {
-            WorkspaceManager.Instance.LoadWorkspace();
+            WorkspaceManager.LoadWorkspace();
         }
         catch (Exception e)
         {

@@ -1,28 +1,36 @@
-﻿namespace Rift.Generate.Services;
+﻿using Rift.Runtime.Interfaces;
 
-public interface IGenerateService
+namespace Rift.Generate.Services;
+
+public interface IGenerateService : IInterface
 {
+    event Action? Generate;
+
+    void Call();
 }
 
-internal class GenerateService : IGenerateService
+internal sealed class GenerateService : IGenerateService
 {
+    public         uint            InterfaceVersion => 1;
+    public event Action?           Generate;
+
+    private static GenerateService _instance = null!;
+
     public GenerateService()
     {
-        //bridge.InterfaceManager.AddInterface(this, bridge.Instance);
+        _instance = this;
+    }
 
-        Instance = this;
+    public void Call()
+    {
+        Console.WriteLine("Invocation success");
     }
 
 
-    internal static GenerateService Instance { get; private set; } = null!;
+    internal static void Invoke() => _instance.InvokeInternal();
 
-    public string        InterfaceName    => "IGenerateService";
-    public uint          InterfaceVersion => 1;
-    public event Action? Generate;
-
-    public void Invoke()
+    private void InvokeInternal()
     {
-        Console.WriteLine("Invokes generate registered events");
         Generate?.Invoke();
     }
 }

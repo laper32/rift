@@ -9,7 +9,8 @@ internal class GolangGenerateService
 
     internal static GolangGenerateService Instance { get; private set; } = null!;
 
-    public void PerformGolangGenerate()
+    public static void PerformGolangGenerate()
     {
+        Console.WriteLine("Now we generate go projects");
     }
 }

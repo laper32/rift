@@ -39,7 +39,7 @@ public sealed class CommandManager
     private static void BuildCli()
     {
         if (Instance._initialized) return;
-        var pendingCommands = TaskManager.Instance.GetMarkedAsCommandTasks();
+        var pendingCommands = TaskManager.GetMarkedAsCommandTasks();
 
         var entries = UserCommand.Build(pendingCommands);
         Instance._command = UserCommand.BuildCli(entries);

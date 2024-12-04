@@ -16,7 +16,7 @@ namespace Rift.Runtime.Workspace;
 
 public sealed class WorkspaceManager
 {
-    internal static  WorkspaceManager Instance = null!;
+    private static  WorkspaceManager _instance = null!;
     private readonly PackageInstances _packageInstances;
     private readonly Packages         _packages;
     private          EWorkspaceStatus _status;
@@ -26,25 +26,27 @@ public sealed class WorkspaceManager
         _status           = EWorkspaceStatus.Unknown;
         _packages         = new Packages();
         _packageInstances = new PackageInstances();
-        Instance          = this;
+        _instance          = this;
     }
 
     public string Root { get; private set; } = "__Unknown__";
 
     internal static bool Init()
     {
-        Instance._status = EWorkspaceStatus.Init;
+        _instance._status = EWorkspaceStatus.Init;
         return true;
     }
 
     internal static void Shutdown()
     {
-        Instance._status = EWorkspaceStatus.Shutdown;
+        _instance._status = EWorkspaceStatus.Shutdown;
     }
 
     #region Fundamental operations
 
-    internal void SetRootPath(string path)
+    internal static void SetRootPath(string path) => _instance.SetRootPathInternal(path);
+
+    private void SetRootPathInternal(string path)
     {
         // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
         // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
@@ -53,10 +55,11 @@ public sealed class WorkspaceManager
 
         Root = rootManifest;
     }
-
     #endregion
 
-    internal void LoadWorkspace()
+    internal static void LoadWorkspace() => _instance.LoadWorkspaceInternal();
+
+    private void LoadWorkspaceInternal()
     {
         var manifestPath = Path.Combine(Root, Definitions.ManifestIdentifier);
         _packages.LoadRecursively(manifestPath);
@@ -98,7 +101,7 @@ public sealed class WorkspaceManager
 
     internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
     {
-        return Instance.CollectPluginsForLoadInternal();
+        return _instance.CollectPluginsForLoadInternal();
     }
 
     private IEnumerable<PluginDescriptor> CollectPluginsForLoadInternal()
@@ -148,7 +151,7 @@ public sealed class WorkspaceManager
             else
             {
                 var manifestLocation                                      = Path.GetDirectoryName(path)!;
-                var workspaceRoot                                         = Instance.Root;
+                var workspaceRoot                                         = _instance.Root;
                 if (workspaceRoot.Equals(manifestLocation)) workspaceName = Path.GetFileName(manifestLocation);
             }
 
@@ -185,7 +188,7 @@ public sealed class WorkspaceManager
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
 
-                var workspaceRoot                                      = Instance.Root;
+                var workspaceRoot                                      = _instance.Root;
                 if (workspaceRoot.Equals(manifestLocation)) folderName = Path.GetFileName(manifestLocation);
             }
 
@@ -410,7 +413,7 @@ public sealed class WorkspaceManager
 
     internal static bool AddMetadataForPackage(string key, object value)
     {
-        return Instance.AddMetadataForPackageInternal(key, value);
+        return _instance.AddMetadataForPackageInternal(key, value);
     }
 
     private bool AddMetadataForPackageInternal(string key, object value)
@@ -422,7 +425,7 @@ public sealed class WorkspaceManager
 
     internal static bool AddDependencyForPackage(IPackageImportDeclarator declarator)
     {
-        return Instance.AddDependencyForPackageInternal(declarator);
+        return _instance.AddDependencyForPackageInternal(declarator);
     }
 
     private bool AddDependencyForPackageInternal(IPackageImportDeclarator declarator)
@@ -434,7 +437,7 @@ public sealed class WorkspaceManager
 
     internal static bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
     {
-        return Instance.AddDependencyForPackageInternal(declarators);
+        return _instance.AddDependencyForPackageInternal(declarators);
     }
 
     private bool AddDependencyForPackageInternal(IEnumerable<IPackageImportDeclarator> declarators)
@@ -446,7 +449,7 @@ public sealed class WorkspaceManager
 
     internal static bool AddPluginForPackage(Plugin plugin)
     {
-        return Instance.AddPluginForPackageInternal(plugin);
+        return _instance.AddPluginForPackageInternal(plugin);
     }
 
     private bool AddPluginForPackageInternal(Plugin plugin)
@@ -458,7 +461,7 @@ public sealed class WorkspaceManager
 
     internal static bool AddPluginForPackage(IEnumerable<Plugin> plugins)
     {
-        return Instance.AddPluginForPackageInternal(plugins);
+        return _instance.AddPluginForPackageInternal(plugins);
     }
 
     private bool AddPluginForPackageInternal(IEnumerable<Plugin> plugins)
@@ -477,4 +480,5 @@ public sealed class WorkspaceManager
     }
 
     #endregion
+
 }

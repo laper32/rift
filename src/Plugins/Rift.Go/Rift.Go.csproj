@@ -10,6 +10,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime" />
+		<ProjectReference Include="..\Rift.Generate\Rift.Generate.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

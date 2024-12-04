@@ -1,6 +1,11 @@
-﻿using Rift.Runtime.Plugins;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Rift.Generate.Services;
+using Rift.Runtime.Interfaces;
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
+
+[assembly: PluginShared]
 
 namespace Rift.Generate;
 
@@ -10,15 +15,13 @@ internal class Generate : RiftPlugin
     public override bool OnLoad()
     {
         Console.WriteLine("Rift.Generate initialized");
-        //var services = new ServiceCollection();
-        //services.AddSingleton(this);
-        //services.AddSingleton<InterfaceBridge>();
-        //services.AddSingleton<IGenerateService, GenerateService>();
+        var services = new ServiceCollection();
+        services.AddSingleton<GenerateService>();
 
-        //var provider = services.BuildServiceProvider();
-        //provider.GetRequiredService<IGenerateService>();
+        var provider = services.BuildServiceProvider();
+        InterfaceManager.AddInterface(provider.GetRequiredService<GenerateService>(), this);
 
-        TaskManager.Instance.RegisterTask("rift.generate", config =>
+        TaskManager.RegisterTask("rift.generate", config =>
         {
             config
                 .SetIsCommand(true)
@@ -29,7 +32,11 @@ internal class Generate : RiftPlugin
 
                     return Task.CompletedTask;
                 })
-                .AddAction(() => { Console.WriteLine("12121"); });
+                .AddAction(() =>
+                {
+                    Console.WriteLine("12121");
+                    GenerateService.Invoke();
+                });
         });
         ScriptManager.AddLibrary("Rift.Generate");
         return base.OnLoad();
