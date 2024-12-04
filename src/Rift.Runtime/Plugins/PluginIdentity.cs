@@ -312,7 +312,7 @@ internal class PluginIdentities
 
     private PluginIdentity? FindFromSearchPath(string path, PluginDescriptor descriptor)
     {
-        var pluginPath        = Path.Combine(path, descriptor.Name);
+        var pluginPath        = Path.Combine(path, descriptor.Name.ToLower());
         var pluginVersionsDir = Directory.GetDirectories(pluginPath);
         var pluginVersions    = new List<SemVersion>();
 
