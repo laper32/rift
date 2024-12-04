@@ -20,9 +20,7 @@ internal class RiftPackage(IRiftManifest riftManifest, string manifestPath)
         get
         {
             if (riftManifest.Dependencies is { } dependencies)
-            {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies));
-            }
 
             return null;
         }
@@ -33,9 +31,7 @@ internal class RiftPackage(IRiftManifest riftManifest, string manifestPath)
         get
         {
             if (riftManifest.Configure is { } metadata)
-            {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
-            }
 
             return null;
         }

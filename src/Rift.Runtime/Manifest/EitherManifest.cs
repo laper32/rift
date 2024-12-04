@@ -24,9 +24,7 @@ internal record EitherManifest<T> : IEitherManifest
     public EitherManifest(T manifest)
     {
         if (manifest is not (IManifest or IVirtualManifest or IRiftManifest))
-        {
             throw new InvalidOperationException("Only accepts `IManifest`, `IVirtualManifest`, or `IRiftManifest`");
-        }
 
         Type = manifest switch
         {
@@ -47,9 +45,9 @@ internal record EitherManifest<T> : IEitherManifest
 
     public string Name => Value switch
     {
-        IManifest real => real.Name,
+        IManifest real                   => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,
-        IRiftManifest riftManifest => riftManifest.Name,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        IRiftManifest riftManifest       => riftManifest.Name,
+        _                                => throw new ArgumentException("Invalid manifest type.")
     };
 }

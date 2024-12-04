@@ -14,20 +14,19 @@ using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
-
 public sealed class WorkspaceManager
 {
-    private readonly Packages         _packages;
-    private readonly PackageInstances _packageInstances;
-    private          EWorkspaceStatus _status;
     internal static  WorkspaceManager Instance = null!;
+    private readonly PackageInstances _packageInstances;
+    private readonly Packages         _packages;
+    private          EWorkspaceStatus _status;
 
     public WorkspaceManager()
     {
         _status           = EWorkspaceStatus.Unknown;
         _packages         = new Packages();
         _packageInstances = new PackageInstances();
-        Instance         = this;
+        Instance          = this;
     }
 
     public string Root { get; private set; } = "__Unknown__";
@@ -49,11 +48,8 @@ public sealed class WorkspaceManager
     {
         // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
         // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
-        var rootManifest = GetRootManifest(path);
-        if (rootManifest.EndsWith(Definitions.ManifestIdentifier))
-        {
-            rootManifest = Path.GetDirectoryName(rootManifest)!;
-        }
+        var rootManifest                                                        = GetRootManifest(path);
+        if (rootManifest.EndsWith(Definitions.ManifestIdentifier)) rootManifest = Path.GetDirectoryName(rootManifest)!;
 
         Root = rootManifest;
     }
@@ -81,16 +77,13 @@ public sealed class WorkspaceManager
     internal void ActivatePackage()
     {
         foreach (var (packageName, maybePackage) in _packages.Value)
-        {
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
-        }
         RetrieveWorkspacePlugins();
-        
+
         PluginManager.NotifyLoadPlugins();
 
         RetrieveWorkspaceDependencies();
         RetrieveWorkspaceMetadata();
-
     }
 
     public IPackageInstance? FindPackage(string name)
@@ -101,6 +94,24 @@ public sealed class WorkspaceManager
     public IEnumerable<IPackageInstance> GetAllPackages()
     {
         return _packageInstances.GetAllInstances();
+    }
+
+    internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
+    {
+        return Instance.CollectPluginsForLoadInternal();
+    }
+
+    private IEnumerable<PluginDescriptor> CollectPluginsForLoadInternal()
+    {
+        CheckAvailable();
+
+        return _packageInstances.CollectPluginsForLoad();
+    }
+
+    private void CheckAvailable()
+    {
+        if (_status is not (EWorkspaceStatus.Ready or EWorkspaceStatus.Init))
+            throw new InvalidOperationException("WorkspaceManager is not available.");
     }
 
     #region Manifest operations
@@ -118,20 +129,17 @@ public sealed class WorkspaceManager
     internal static IEitherManifest ReadManifest(string path)
     {
         var schema = LoadManifest(path);
-        if (schema is null)
-        {
-            throw new InvalidOperationException($"Shutdown to load manifest from `{path}`");
-        }
+        if (schema is null) throw new InvalidOperationException($"Shutdown to load manifest from `{path}`");
 
         if (schema.Workspace is { } workspace)
         {
-            if (schema.Folder is not null || schema.Project is not null || schema.Target is not null || schema.Plugin is not null)
-            {
-                throw new InvalidOperationException("Workspace and Folder/Project/Target/Plugin can't be used together.");
-            }
+            if (schema.Folder is not null || schema.Project is not null || schema.Target is not null ||
+                schema.Plugin is not null)
+                throw new InvalidOperationException(
+                    "Workspace and Folder/Project/Target/Plugin can't be used together.");
 
             var workspaceName = "";
-            var schemaName = workspace.Name;
+            var schemaName    = workspace.Name;
 
             if (schemaName != null)
             {
@@ -139,21 +147,18 @@ public sealed class WorkspaceManager
             }
             else
             {
-                var manifestLocation = Path.GetDirectoryName(path)!;
-                var workspaceRoot = Instance.Root;
-                if (workspaceRoot.Equals(manifestLocation))
-                {
-                    workspaceName = Path.GetFileName(manifestLocation);
-                }
+                var manifestLocation                                      = Path.GetDirectoryName(path)!;
+                var workspaceRoot                                         = Instance.Root;
+                if (workspaceRoot.Equals(manifestLocation)) workspaceName = Path.GetFileName(manifestLocation);
             }
 
             return new EitherManifest<VirtualManifest<WorkspaceManifest>>(
                 new VirtualManifest<WorkspaceManifest>(
                     new WorkspaceManifest(
-                        Name: workspaceName,
-                        Members: workspace.Members ?? [],
-                        Exclude: workspace.Exclude ?? [],
-                        Plugins: workspace.Plugins,
+                        workspaceName,
+                        workspace.Members ?? [],
+                        workspace.Exclude ?? [],
+                        workspace.Plugins,
                         Dependencies: workspace.Dependencies,
                         Configure: workspace.Configure,
                         Others: workspace.Others
@@ -164,11 +169,10 @@ public sealed class WorkspaceManager
 
         if (schema.Folder is { } folder)
         {
-            if (schema.Workspace is not null || schema.Project is not null || schema.Target is not null || schema.Plugin is not null)
-            {
+            if (schema.Workspace is not null || schema.Project is not null || schema.Target is not null ||
+                schema.Plugin is not null)
                 throw new InvalidOperationException(
                     "Workspace and Folder/Project/Target/Plugin can't be used together.");
-            }
 
             var folderName = "";
             var schemaName = folder.Name;
@@ -181,41 +185,34 @@ public sealed class WorkspaceManager
             {
                 var manifestLocation = Path.GetDirectoryName(path)!;
 
-                var workspaceRoot = Instance.Root;
-                if (workspaceRoot.Equals(manifestLocation))
-                {
-                    folderName = Path.GetFileName(manifestLocation);
-                }
+                var workspaceRoot                                      = Instance.Root;
+                if (workspaceRoot.Equals(manifestLocation)) folderName = Path.GetFileName(manifestLocation);
             }
 
             return new EitherManifest<VirtualManifest<FolderManifest>>(
                 new VirtualManifest<FolderManifest>(
                     new FolderManifest(
-                        Name: folderName,
-                        Members: schema.Folder.Members ?? [],
-                        Exclude: schema.Folder.Exclude ?? []
+                        folderName,
+                        schema.Folder.Members ?? [],
+                        schema.Folder.Exclude ?? []
                     )
                 )
             );
-
         }
 
         if (schema.Project is { } project)
         {
             if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
-            {
                 throw new InvalidOperationException("Workspace and Folder/Project/Plugin can't be used together.");
-            }
-            
+
             // 如果此时Project和Target在同一级，此时Target的脚本文件将会被直接无视，只看project级别的脚本文件。
             var sameLayeredTarget = schema.Target;
 
             if (sameLayeredTarget is not null)
             {
                 if (project.Members is not null || project.Exclude is not null)
-                {
-                    throw new InvalidOperationException("`project.members` and `project.exclude` cannot occur when `[target]` field exists.");
-                }
+                    throw new InvalidOperationException(
+                        "`project.members` and `project.exclude` cannot occur when `[target]` field exists.");
 
                 //if (sameLayeredTarget.Dependencies is not null)
                 //{
@@ -233,8 +230,8 @@ public sealed class WorkspaceManager
                 //}
 
                 var targetManifest = new TargetManifest(
-                    Name: sameLayeredTarget.Name,
-                    Type: sameLayeredTarget.Type,
+                    sameLayeredTarget.Name,
+                    sameLayeredTarget.Type,
                     Dependencies: null,
                     Configure: null,
                     Plugins: null,
@@ -242,10 +239,10 @@ public sealed class WorkspaceManager
                 );
 
                 var projectManifest = new ProjectManifest(
-                    Name: project.Name,
-                    Authors: project.Authors,
-                    Version: project.Version,
-                    Description: project.Description ?? string.Empty,
+                    project.Name,
+                    project.Authors,
+                    project.Version,
+                    project.Description ?? string.Empty,
                     Dependencies: project.Dependencies,
                     Configure: project.Configure,
                     Plugins: project.Plugins,
@@ -256,7 +253,7 @@ public sealed class WorkspaceManager
                 );
 
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
-                var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
+                var ret      = new EitherManifest<Manifest<ProjectManifest>>(manifest);
                 return ret;
             }
             else
@@ -264,21 +261,21 @@ public sealed class WorkspaceManager
                 var projectMembers = project.Members ?? [];
                 var projectExclude = project.Exclude ?? [];
                 var projectManifest = new ProjectManifest(
-                    Name: project.Name,
-                    Authors: project.Authors,
-                    Version: project.Version,
-                    Description: project.Description ?? string.Empty,
+                    project.Name,
+                    project.Authors,
+                    project.Version,
+                    project.Description ?? string.Empty,
                     Dependencies: project.Dependencies,
                     Configure: project.Configure,
                     Plugins: project.Plugins,
                     Target: null,
                     Members: projectMembers,
                     Exclude: projectExclude,
-                    Others:project.Others
+                    Others: project.Others
                 );
 
                 var manifest = new Manifest<ProjectManifest>(projectManifest);
-                var ret = new EitherManifest<Manifest<ProjectManifest>>(manifest);
+                var ret      = new EitherManifest<Manifest<ProjectManifest>>(manifest);
                 return ret;
             }
         }
@@ -286,19 +283,18 @@ public sealed class WorkspaceManager
         if (schema.Target is { } target)
         {
             if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
-            {
-                throw new InvalidOperationException("Target cannot used together with `[workspace]`, `[folder]`, or `[plugin]`");
-            }
+                throw new InvalidOperationException(
+                    "Target cannot used together with `[workspace]`, `[folder]`, or `[plugin]`");
 
             return new EitherManifest<Manifest<TargetManifest>>(
                 new Manifest<TargetManifest>(
                     new TargetManifest(
-                        Name: target.Name,
-                        Type: target.Type,
-                        Plugins: target.Plugins,
-                        Dependencies: target.Dependencies,
-                        Configure: target.Configure,
-                        Others: target.Others
+                        target.Name,
+                        target.Type,
+                        target.Plugins,
+                        target.Dependencies,
+                        target.Configure,
+                        target.Others
                     )
                 )
             );
@@ -307,21 +303,21 @@ public sealed class WorkspaceManager
         // ReSharper disable once InvertIf
         if (schema.Plugin is { } plugin)
         {
-            if (schema.Folder is not null || schema.Workspace is not null || schema.Project is not null || schema.Target is not null)
-            {
-                throw new InvalidOperationException("Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
-            }
+            if (schema.Folder is not null || schema.Workspace is not null || schema.Project is not null ||
+                schema.Target is not null)
+                throw new InvalidOperationException(
+                    "Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
 
             return new EitherManifest<RiftManifest<PluginManifest>>(
                 new RiftManifest<PluginManifest>(
                     new PluginManifest(
-                        Name: plugin.Name,
-                        Authors: plugin.Authors,
-                        Version: plugin.Version,
-                        Description: plugin.Description ?? string.Empty,
-                        Configure: plugin.Configure,
-                        Dependency: plugin.Dependencies,
-                        Others: plugin.Others
+                        plugin.Name,
+                        plugin.Authors,
+                        plugin.Version,
+                        plugin.Description ?? string.Empty,
+                        plugin.Configure,
+                        plugin.Dependencies,
+                        plugin.Others
                     )
                 )
             );
@@ -331,18 +327,15 @@ public sealed class WorkspaceManager
     }
 
     /// <summary>
-    /// 计算脚本路径是基于传入的Manifest路径判断的。 <br/>
-    /// 此时传入的Manifest路径一定带有Rift.toml
+    ///     计算脚本路径是基于传入的Manifest路径判断的。 <br />
+    ///     此时传入的Manifest路径一定带有Rift.toml
     /// </summary>
-    /// <param name="manifestPath">Manifest路径</param>
-    /// <param name="scriptPath">脚本路径</param>
-    /// <returns></returns>
+    /// <param name="manifestPath"> Manifest路径 </param>
+    /// <param name="scriptPath"> 脚本路径 </param>
+    /// <returns> </returns>
     internal static string GetActualScriptPath(string manifestPath, string scriptPath)
     {
-        if (!manifestPath.EndsWith("Rift.toml"))
-        {
-            throw new InvalidOperationException("No `Rift.toml` found.");
-        }
+        if (!manifestPath.EndsWith("Rift.toml")) throw new InvalidOperationException("No `Rift.toml` found.");
 
 
         return Path.Combine(Path.GetDirectoryName(manifestPath)!, scriptPath);
@@ -351,45 +344,32 @@ public sealed class WorkspaceManager
     private string GetRootManifest(string manifestPath)
     {
         var path = Path.Combine(Environment.CurrentDirectory, manifestPath);
-        if (!path.EndsWith(Definitions.ManifestIdentifier))
-        {
-            return FindRootManifestForCurrentDir(path);
-        }
+        if (!path.EndsWith(Definitions.ManifestIdentifier)) return FindRootManifestForCurrentDir(path);
 
-        if (!Path.Exists(path))
-        {
-            throw new Exception($"manifest path `{manifestPath}` does not exist");
-        }
+        if (!Path.Exists(path)) throw new Exception($"manifest path `{manifestPath}` does not exist");
 
         return path;
     }
 
     private string FindRootManifestForCurrentDir(string cwd)
     {
-        const string invalidManifestName = "rift.toml";
-        var hasInvalidManifestPath = false;
-        var current = new DirectoryInfo(cwd);
+        const string invalidManifestName    = "rift.toml";
+        var          hasInvalidManifestPath = false;
+        var          current                = new DirectoryInfo(cwd);
         while (current != null)
         {
             var validManifest = Path.Combine(current.FullName, Definitions.ManifestIdentifier);
-            if (File.Exists(validManifest))
-            {
-                return validManifest;
-            }
+            if (File.Exists(validManifest)) return validManifest;
 
             var invalidManifest = Path.Combine(Path.Combine(current.FullName, invalidManifestName));
-            if (File.Exists(invalidManifest))
-            {
-                hasInvalidManifestPath = true;
-            }
+            if (File.Exists(invalidManifest)) hasInvalidManifestPath = true;
 
             current = current.Parent;
         }
 
         if (hasInvalidManifestPath)
-        {
-            throw new Exception($"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory, but found {invalidManifestName} please try to rename it to {Definitions.ManifestIdentifier}");
-        }
+            throw new Exception(
+                $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory, but found {invalidManifestName} please try to rename it to {Definitions.ManifestIdentifier}");
 
         throw new Exception(
             $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory.");
@@ -403,10 +383,7 @@ public sealed class WorkspaceManager
     {
         foreach (var package in _packages.Value)
         {
-            if (package.Value.Dependencies is not { } dependencies)
-            {
-                continue;
-            }
+            if (package.Value.Dependencies is not { } dependencies) continue;
             ScriptManager.EvaluateScript(dependencies);
         }
     }
@@ -415,10 +392,7 @@ public sealed class WorkspaceManager
     {
         foreach (var package in _packages.Value)
         {
-            if (package.Value.Configure is not { } metadata)
-            {
-                continue;
-            }
+            if (package.Value.Configure is not { } metadata) continue;
 
             ScriptManager.EvaluateScript(metadata);
         }
@@ -428,108 +402,79 @@ public sealed class WorkspaceManager
     {
         foreach (var package in _packages.Value)
         {
-            if (package.Value.Plugins is not { } plugins)
-            {
-                continue;
-            }
+            if (package.Value.Plugins is not { } plugins) continue;
 
             ScriptManager.EvaluateScript(plugins);
         }
     }
 
-    internal static bool AddMetadataForPackage(string key, object value) => Instance.AddMetadataForPackageInternal(key, value);
+    internal static bool AddMetadataForPackage(string key, object value)
+    {
+        return Instance.AddMetadataForPackageInternal(key, value);
+    }
+
     private bool AddMetadataForPackageInternal(string key, object value)
     {
-        if (GetPackageInstance() is not { } instance)
-        {
-            return false;
-        }
+        if (GetPackageInstance() is not { } instance) return false;
         instance.Metadata.Add(key, value);
         return true;
     }
 
-    internal static bool AddDependencyForPackage(IPackageImportDeclarator declarator) =>
-        Instance.AddDependencyForPackageInternal(declarator);
+    internal static bool AddDependencyForPackage(IPackageImportDeclarator declarator)
+    {
+        return Instance.AddDependencyForPackageInternal(declarator);
+    }
 
     private bool AddDependencyForPackageInternal(IPackageImportDeclarator declarator)
     {
-        if (GetPackageInstance() is not { } instance)
-        {
-            return false;
-        }
+        if (GetPackageInstance() is not { } instance) return false;
         instance.Dependencies.Add(declarator.Name, declarator);
         return true;
     }
 
-    internal static bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators) =>
-        Instance.AddDependencyForPackageInternal(declarators);
+    internal static bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
+    {
+        return Instance.AddDependencyForPackageInternal(declarators);
+    }
 
     private bool AddDependencyForPackageInternal(IEnumerable<IPackageImportDeclarator> declarators)
     {
-        if (GetPackageInstance() is not { } instance)
-        {
-            return false;
-        }
-        foreach (var declarator in declarators)
-        {
-            instance.Dependencies.Add(declarator.Name, declarator);
-        }
+        if (GetPackageInstance() is not { } instance) return false;
+        foreach (var declarator in declarators) instance.Dependencies.Add(declarator.Name, declarator);
         return true;
     }
 
-    internal static bool AddPluginForPackage(Plugin plugin) => Instance.AddPluginForPackageInternal(plugin);
+    internal static bool AddPluginForPackage(Plugin plugin)
+    {
+        return Instance.AddPluginForPackageInternal(plugin);
+    }
+
     private bool AddPluginForPackageInternal(Plugin plugin)
     {
-        if (GetPackageInstance() is not { } packageInstance)
-        {
-            return false;
-        }
+        if (GetPackageInstance() is not { } packageInstance) return false;
         packageInstance.Plugins.Add(plugin.Name, plugin);
         return true;
     }
 
-    internal static bool AddPluginForPackage(IEnumerable<Plugin> plugins) =>
-        Instance.AddPluginForPackageInternal(plugins);
+    internal static bool AddPluginForPackage(IEnumerable<Plugin> plugins)
+    {
+        return Instance.AddPluginForPackageInternal(plugins);
+    }
 
     private bool AddPluginForPackageInternal(IEnumerable<Plugin> plugins)
     {
-        if (GetPackageInstance() is not { } packageInstance)
-        {
-            return false;
-        }
-        foreach (var plugin in plugins)
-        {
-            packageInstance.Plugins.Add(plugin.Name, plugin);
-        }
+        if (GetPackageInstance() is not { } packageInstance) return false;
+        foreach (var plugin in plugins) packageInstance.Plugins.Add(plugin.Name, plugin);
         return true;
     }
 
     private PackageInstance? GetPackageInstance()
     {
         if (ScriptManager.ScriptContext is not { } scriptContext)
-        {
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
-        }
 
         return _packageInstances.FindPackageFromScriptPath(scriptContext.Path);
     }
 
     #endregion
-
-    internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad() => Instance.CollectPluginsForLoadInternal();
-
-    private IEnumerable<PluginDescriptor> CollectPluginsForLoadInternal()
-    {
-        CheckAvailable();
-
-        return _packageInstances.CollectPluginsForLoad();
-    }
-
-    private void CheckAvailable()
-    {
-        if (_status is not (EWorkspaceStatus.Ready or EWorkspaceStatus.Init))
-        {
-            throw new InvalidOperationException("WorkspaceManager is not available.");
-        }
-    }
 }

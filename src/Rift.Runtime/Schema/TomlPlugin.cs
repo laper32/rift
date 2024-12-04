@@ -16,18 +16,19 @@ public sealed class TomlPlugin
 
     [JsonPropertyName("version")]
     public required string Version { get; set; }
-    
+
     [JsonPropertyName("authors")]
     public required List<string> Authors { get; set; }
-    
+
     [JsonPropertyName("description")]
     public string? Description { get; set; }
-    
+
     [JsonPropertyName("configure")]
     public string? Configure { get; set; }
-    
+
     [JsonPropertyName("dependencies")]
     public string? Dependencies { get; set; }
 
-    [JsonExtensionData] public Dictionary<string, JsonElement> Others { get; set; } = [];
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement> Others { get; set; } = [];
 }

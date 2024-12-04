@@ -6,50 +6,53 @@ namespace Rift.Runtime.Tasks;
 public interface IRiftTask
 {
     /// <summary>
-    /// 名字
+    ///     名字
     /// </summary>
     string Name { get; }
 
     /// <summary>
-    /// 描述
+    ///     描述
     /// </summary>
     string Description { get; }
 
     /// <summary>
-    /// 如果需要执行这个task，需要哪些task提前执行？
+    ///     如果需要执行这个task，需要哪些task提前执行？
     /// </summary>
     IReadOnlyList<IDependentTask> Dependencies { get; }
 
     /// <summary>
-    /// 这个task会被哪些task依赖？
+    ///     这个task会被哪些task依赖？
     /// </summary>
     IReadOnlyList<IDependentTask> Dependents { get; }
 }
 
 internal class RiftTask(string name) : IRiftTask
 {
-    public string                            Name          { get; }      = name ?? throw new ArgumentNullException(name, nameof(name));
-    public string                            Description   { get; set; } = string.Empty;
-    public bool                              IsCommand     { get; set; }
-    public IReadOnlyList<IDependentTask> Dependencies  => _dependencies;
-    public IReadOnlyList<IDependentTask> Dependents    => _dependents;
-
-    [JsonIgnore]
-    public List<Func<ITaskContext, Task>>      Actions        { get; init; } = [];
-
-    [JsonIgnore]
-    public Queue<Action<ITaskContext>>         DelayedActions { get; init; } = [];
-
-    [JsonIgnore]
-    public Func<Exception, ITaskContext, Task>? ErrorHandler   { get; private set; }
-
-    public bool DeferExceptions { get; set; }
-
     [JsonIgnore]
     private readonly List<IDependentTask> _dependencies = [];
 
     [JsonIgnore]
-    private readonly List<IDependentTask> _dependents   = [];
+    private readonly List<IDependentTask> _dependents = [];
+
+    public bool IsCommand { get; set; }
+
+    [JsonIgnore]
+    public List<Func<ITaskContext, Task>> Actions { get; init; } = [];
+
+    [JsonIgnore]
+    public Queue<Action<ITaskContext>> DelayedActions { get; init; } = [];
+
+    [JsonIgnore]
+    public Func<Exception, ITaskContext, Task>? ErrorHandler { get; private set; }
+
+    public bool DeferExceptions { get; set; }
+
+    public bool                          HasAction => Actions.Count > 0;
+    public bool                          HasDelayedAction => DelayedActions.Count > 0;
+    public string                        Name { get; } = name ?? throw new ArgumentNullException(name, nameof(name));
+    public string                        Description { get; set; } = string.Empty;
+    public IReadOnlyList<IDependentTask> Dependencies => _dependencies;
+    public IReadOnlyList<IDependentTask> Dependents => _dependents;
 
     public void SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
     {
@@ -59,10 +62,10 @@ internal class RiftTask(string name) : IRiftTask
     }
 
     /// <summary>
-    /// Executes the task using the specified context.
+    ///     Executes the task using the specified context.
     /// </summary>
-    /// <param name="context">The context.</param>
-    /// <returns>Returned Task.</returns>
+    /// <param name="context"> The context. </param>
+    /// <returns> Returned Task. </returns>
     public async Task Invoke(ITaskContext context)
     {
         while (DelayedActions.Count > 0)
@@ -73,7 +76,6 @@ internal class RiftTask(string name) : IRiftTask
 
         var exceptions = new List<Exception>();
         foreach (var action in Actions)
-        {
             try
             {
                 await action(context).ConfigureAwait(false);
@@ -82,14 +84,10 @@ internal class RiftTask(string name) : IRiftTask
             {
                 exceptions.Add(e);
             }
-        }
 
         if (exceptions.Any())
         {
-            if (exceptions.Count == 1)
-            {
-                throw exceptions.Single();
-            }
+            if (exceptions.Count == 1) throw exceptions.Single();
             throw new AggregateException("Task failed with following exceptions", exceptions);
         }
     }
@@ -101,7 +99,4 @@ internal class RiftTask(string name) : IRiftTask
             WriteIndented = true
         });
     }
-
-    public bool HasAction => Actions.Count > 0;
-    public bool HasDelayedAction => DelayedActions.Count > 0;
 }

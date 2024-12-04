@@ -1,28 +1,27 @@
-﻿
-namespace Rift.Runtime.Tasks;
+﻿namespace Rift.Runtime.Tasks;
 
 /// <summary>
-/// The execution status of <see cref="IRiftTask"/>
+///     The execution status of <see cref="IRiftTask" />
 /// </summary>
 public enum RiftTaskExecutionStatus
 {
     /// <summary>
-    /// The task was executed.
+    ///     The task was executed.
     /// </summary>
     Executed,
 
     /// <summary>
-    /// The task delegated execution.
+    ///     The task delegated execution.
     /// </summary>
     Delegated,
 
     /// <summary>
-    /// The task was skipped.
+    ///     The task was skipped.
     /// </summary>
     Skipped,
 
     /// <summary>
-    /// The task failed.
+    ///     The task failed.
     /// </summary>
     Failed
 }

@@ -3,12 +3,12 @@ using System.Runtime.Loader;
 
 namespace Rift.Runtime.Plugins;
 
-
 internal class PluginInstanceContext : AssemblyLoadContext
 {
     public PluginInstanceContext() : base(true)
     {
-        Resolving += (_, args) => AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == args.Name);
+        Resolving += (_, args) =>
+            AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == args.Name);
     }
 }
 
@@ -17,8 +17,6 @@ internal class PluginContext : PluginInstanceContext
     private readonly AssemblyDependencyResolver? _resolver;
     private readonly AssemblyLoadContext         _sharedContext;
     public readonly  PluginIdentity              Identity;
-
-    public Assembly? Entry { get; }
 
     public PluginContext(PluginIdentity identity, AssemblyLoadContext sharedContext)
     {
@@ -30,7 +28,8 @@ internal class PluginContext : PluginInstanceContext
             Entry = null;
             return;
         }
-        _resolver      = new AssemblyDependencyResolver(entryPath);
+
+        _resolver = new AssemblyDependencyResolver(entryPath);
         var asmName = AssemblyName.GetAssemblyName(entryPath);
         if (_sharedContext.Assemblies.FirstOrDefault(x => x.GetName().Name == asmName.Name) is { } asm)
         {
@@ -39,21 +38,18 @@ internal class PluginContext : PluginInstanceContext
         }
 
         Entry = LoadFromAssemblyPath(entryPath);
-
     }
+
+    public Assembly? Entry { get; }
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
         var ret = _sharedContext
             .Assemblies
             .FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
-        if (ret != null)
-        {
-            return ret;
-        }
+        if (ret != null) return ret;
 
         var path = _resolver?.ResolveAssemblyToPath(assemblyName);
         return path == null ? null : LoadFromAssemblyPath(path);
-
     }
 }

@@ -39,7 +39,8 @@ internal static class Bootstrap
     {
         // TODO: 要配合命令行的行为。
         // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
-        WorkspaceManager.Instance.SetRootPath(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
+        WorkspaceManager.Instance.SetRootPath(
+            Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
 
         try
         {
@@ -69,7 +70,7 @@ internal static class Bootstrap
         var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateOnBuild = true,
-            ValidateScopes = true
+            ValidateScopes  = true
         });
 
         ActivateServices(provider);
@@ -98,7 +99,8 @@ internal static class Bootstrap
 
     private static void ConfigureLogging(IServiceCollection services)
     {
-        const string consoleTemplate = "L [{Timestamp:MM/dd HH:mm:ss}] | {Level} | {SourceContext}{Scope} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
+        const string consoleTemplate =
+            "L [{Timestamp:MM/dd HH:mm:ss}] | {Level} | {SourceContext}{Scope} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .MinimumLevel.Verbose()
@@ -142,35 +144,18 @@ internal static class Bootstrap
 
     private static void InitComponents()
     {
-        if (!InterfaceManager.Init())
-        {
-            throw new InvalidOperationException("Failed to init InterfaceManager.");
-        }
+        if (!InterfaceManager.Init()) throw new InvalidOperationException("Failed to init InterfaceManager.");
 
-        if (!ScriptManager.Init())
-        {
-            throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
-        }
+        if (!ScriptManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
 
-        if (!PluginManager.Init())
-        {
-            throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
-        }
+        if (!PluginManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
 
         if (!WorkspaceManager.Init())
-        {
             throw new InvalidOperationException($"Failed to init {nameof(WorkspaceManager)}.");
-        }
 
-        if (!TaskManager.Init())
-        {
-            throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
-        }
+        if (!TaskManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
 
-        if (!CommandManager.Init())
-        {
-            throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
-        }
+        if (!CommandManager.Init()) throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
     }
 
     private static void ShutdownComponents()
@@ -182,6 +167,4 @@ internal static class Bootstrap
         ScriptManager.Shutdown();
         InterfaceManager.Shutdown();
     }
-
-
 }

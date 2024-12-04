@@ -19,12 +19,12 @@ public sealed class TomlManifest
     [JsonPropertyName("project")]
     public TomlProject? Project { get; set; }
 
-    [JsonPropertyName("folder")] 
+    [JsonPropertyName("folder")]
     public TomlFolder? Folder { get; set; }
 
-    [JsonPropertyName("workspace")] 
+    [JsonPropertyName("workspace")]
     public TomlWorkspace? Workspace { get; set; }
 
-    [JsonPropertyName("plugin")] 
+    [JsonPropertyName("plugin")]
     public TomlPlugin? Plugin { get; set; }
 }

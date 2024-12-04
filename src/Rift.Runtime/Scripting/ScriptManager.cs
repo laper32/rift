@@ -14,27 +14,13 @@ namespace Rift.Runtime.Scripting;
 
 public sealed class ScriptManager
 {
-    private enum Status
-    {
-        Unknown,
-        Init,
-        Ready,
-        Shutdown
-    }
-
-    public ScriptManager()
-    {
-        _instance      = this;
-        ScriptContext = null;
-    }
-
     private static ScriptManager _instance = null!;
-    private        Status        _status   = Status.Unknown;
 
-    internal static ScriptContext? ScriptContext { get; private set; }
+    private readonly List<string> _libraries  = [];
+    private readonly List<string> _namespaces = [];
 
     /// <summary>
-    /// Check <seealso cref="ScriptOptions"/> for more details. 
+    ///     Check <seealso cref="ScriptOptions" /> for more details.
     /// </summary>
     private readonly IEnumerable<string> _preImportedSdkLibraries =
     [
@@ -66,7 +52,7 @@ public sealed class ScriptManager
     ];
 
     /// <summary>
-    /// Check .csproj file for the list of pre-imported namespaces
+    ///     Check .csproj file for the list of pre-imported namespaces
     /// </summary>
     private readonly IEnumerable<string> _preImportedSdkNamespaces =
     [
@@ -80,31 +66,70 @@ public sealed class ScriptManager
         "System.Linq"
     ];
 
-    private readonly List<string> _libraries = [];
-    private readonly List<string> _namespaces = [];
+    private Status _status = Status.Unknown;
 
-    internal static bool Init() => _instance.InitInternal();
+    public ScriptManager()
+    {
+        _instance     = this;
+        ScriptContext = null;
+    }
 
-    internal static void Shutdown() => _instance.ShutdownInternal();
+    internal static ScriptContext? ScriptContext { get; private set; }
 
-    internal static void EvaluateScript(string scriptPath, int timedOutUnitSec = 15) =>
+    internal static bool Init()
+    {
+        return _instance.InitInternal();
+    }
+
+    internal static void Shutdown()
+    {
+        _instance.ShutdownInternal();
+    }
+
+    internal static void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
+    {
         _instance.EvaluateScriptInternal(scriptPath, timedOutUnitSec);
+    }
 
-    public static void AddLibrary(string library) => _instance.AddLibraryInternal([library]);
+    public static void AddLibrary(string library)
+    {
+        _instance.AddLibraryInternal([library]);
+    }
 
-    public static void AddLibrary(IEnumerable<string> libraries) => _instance.AddLibraryInternal(libraries);
+    public static void AddLibrary(IEnumerable<string> libraries)
+    {
+        _instance.AddLibraryInternal(libraries);
+    }
 
-    public static void RemoveLibrary(string library) => _instance.RemoveLibraryInternal([library]);
+    public static void RemoveLibrary(string library)
+    {
+        _instance.RemoveLibraryInternal([library]);
+    }
 
-    public static void RemoveLibrary(IEnumerable<string> libraries) => _instance.RemoveLibraryInternal(libraries);
+    public static void RemoveLibrary(IEnumerable<string> libraries)
+    {
+        _instance.RemoveLibraryInternal(libraries);
+    }
 
-    public static void AddNamespace(string @namespace) => _instance.AddNamespaceInternal([@namespace]);
+    public static void AddNamespace(string @namespace)
+    {
+        _instance.AddNamespaceInternal([@namespace]);
+    }
 
-    public static void AddNamespace(IEnumerable<string> namespaces) => _instance.AddNamespaceInternal(namespaces);
+    public static void AddNamespace(IEnumerable<string> namespaces)
+    {
+        _instance.AddNamespaceInternal(namespaces);
+    }
 
-    public static void RemoveNamespace(string @namespace) => _instance.RemoveNamespaceInternal([@namespace]);
+    public static void RemoveNamespace(string @namespace)
+    {
+        _instance.RemoveNamespaceInternal([@namespace]);
+    }
 
-    public static void RemoveNamespace(IEnumerable<string> namespaces) => _instance.RemoveNamespaceInternal(namespaces);
+    public static void RemoveNamespace(IEnumerable<string> namespaces)
+    {
+        _instance.RemoveNamespaceInternal(namespaces);
+    }
 
     internal bool InitInternal()
     {
@@ -133,10 +158,7 @@ public sealed class ScriptManager
     {
         CheckAvailable();
 
-        foreach (var library in libraries)
-        {
-            _libraries.Remove(library);
-        }
+        foreach (var library in libraries) _libraries.Remove(library);
     }
 
     private void AddNamespaceInternal(IEnumerable<string> namespaces)
@@ -148,10 +170,7 @@ public sealed class ScriptManager
     private void RemoveNamespaceInternal(IEnumerable<string> namespaces)
     {
         CheckAvailable();
-        foreach (var @namespace in namespaces)
-        {
-            _namespaces.Remove(@namespace);
-        }
+        foreach (var @namespace in namespaces) _namespaces.Remove(@namespace);
     }
 
     internal void EvaluateScriptInternal(string scriptPath, int timedOutUnitSec = 15)
@@ -161,7 +180,7 @@ public sealed class ScriptManager
         // make sure script context path passed in is canonicalized.
         ScriptContext = new ScriptContext(Path.GetFullPath(scriptPath));
 
-        var       loadedAssemblies = CreateLoadedAssembliesMap();
+        var loadedAssemblies = CreateLoadedAssembliesMap();
 
         var runtimeReferences = new List<Assembly>();
 
@@ -183,15 +202,12 @@ public sealed class ScriptManager
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
-        var script = CSharpScript.Create(ScriptContext.Text, opts);
+        var script  = CSharpScript.Create(ScriptContext.Text, opts);
         var compile = script.Compile();
         if (compile.Any())
         {
             Console.WriteLine($"Error found when compiling: {scriptPath}");
-            foreach (var diagnostic in compile)
-            {
-                Console.WriteLine(diagnostic.GetMessage());
-            }
+            foreach (var diagnostic in compile) Console.WriteLine(diagnostic.GetMessage());
         }
         else
         {
@@ -206,26 +222,17 @@ public sealed class ScriptManager
         void AddRuntimeReferences(string fileName)
         {
             var lib = loadedAssemblies.GetValueOrDefault(fileName);
-            if (lib is null)
-            {
-                return;
-            }
+            if (lib is null) return;
 
-            if (runtimeReferences.Contains(lib))
-            {
-                return;
-            }
+            if (runtimeReferences.Contains(lib)) return;
             runtimeReferences.Add(lib);
         }
-
     }
 
     private void CheckAvailable()
     {
         if (_status is not (Status.Init or Status.Ready))
-        {
             throw new InvalidOperationException("ScriptManager is not available");
-        }
     }
 
     private static Dictionary<string, Assembly> CreateLoadedAssembliesMap()
@@ -248,5 +255,13 @@ public sealed class ScriptManager
                 f => f.Name ?? throw new InvalidOperationException("Why your assembly name is empty?"),
                 f => f.ResolvedRuntimeAssembly, StringComparer.OrdinalIgnoreCase
             );
+    }
+
+    private enum Status
+    {
+        Unknown,
+        Init,
+        Ready,
+        Shutdown
     }
 }

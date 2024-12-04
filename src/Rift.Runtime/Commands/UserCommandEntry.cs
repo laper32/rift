@@ -2,7 +2,7 @@
 
 internal class UserCommandEntry(string name)
 {
-    public string                 Name     { get; set; } = name;
+    public string                 Name     { get; set; }  = name;
     public List<UserCommandEntry> Children { get; init; } = [];
 
     public string TaskName { get; set; } = null!;

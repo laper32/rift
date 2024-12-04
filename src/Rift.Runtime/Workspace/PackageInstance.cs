@@ -7,6 +7,7 @@
 using System.Text.Json;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Plugins;
+using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Workspace;
 
@@ -26,11 +27,11 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {
     public IMaybePackage Value { get; init; } = package;
 
-    public Dictionary<string, object>           Metadata     { get; init; } = [];
-    public Dictionary<string, object>           Dependencies { get; init; } = [];
-    public Dictionary<string, Scripting.Plugin> Plugins      { get; init; } = [];
-    public string                               Name         => Value.Name;
-    public string                               ManifestPath => Value.ManifestPath;
+    public Dictionary<string, object> Metadata     { get; init; } = [];
+    public Dictionary<string, object> Dependencies { get; init; } = [];
+    public Dictionary<string, Plugin> Plugins      { get; init; } = [];
+    public string                     Name         => Value.Name;
+    public string                     ManifestPath => Value.ManifestPath;
 
     public bool HasPlugin(string name)
     {
@@ -44,10 +45,7 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
 
     public JsonElement? GetExtensionField(string name)
     {
-        if (Value.Others.TryGetValue(name, out var value))
-        {
-            return value;
-        }
+        if (Value.Others.TryGetValue(name, out var value)) return value;
 
         return null;
     }
@@ -91,9 +89,9 @@ internal class PackageInstances
         var packageInstance = _value.Values.FirstOrDefault(x =>
         {
             var canonicalizedPath = Path.GetFullPath(scriptPath);
-            var isPlugin = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isDependency = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isConfigure = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isPlugin          = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isDependency      = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isConfigure       = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
             return isPlugin || isDependency || isConfigure;
         });
         return packageInstance;
@@ -114,17 +112,11 @@ internal class PackageInstances
     {
         foreach (var (packageName, instance) in _value)
         {
-            if (instance.Plugins.Count <= 0)
-            {
-                continue;
-            }
+            if (instance.Plugins.Count <= 0) continue;
 
             foreach (var (pluginName, plugin) in instance.Plugins)
             {
-                if (plugin is null)
-                {
-                    throw new InvalidOperationException($"{pluginName}'s instance is null.");
-                }
+                if (plugin is null) throw new InvalidOperationException($"{pluginName}'s instance is null.");
 
                 var trimmedPluginName = pluginName.Trim();
 
@@ -134,11 +126,8 @@ internal class PackageInstances
                     continue;
                 }
 
-                var trimmedPluginVersion = plugin.Version.Trim();
-                if (string.IsNullOrEmpty(trimmedPluginVersion))
-                {
-                    trimmedPluginVersion = "latest";
-                }
+                var trimmedPluginVersion                                             = plugin.Version.Trim();
+                if (string.IsNullOrEmpty(trimmedPluginVersion)) trimmedPluginVersion = "latest";
 
                 yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
             }

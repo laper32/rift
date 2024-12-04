@@ -6,6 +6,7 @@ public class RuntimeSetup : IDisposable
     {
         Bootstrap.Init();
     }
+
     public void Dispose()
     {
         Bootstrap.Shutdown();

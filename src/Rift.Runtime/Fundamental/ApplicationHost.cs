@@ -12,10 +12,15 @@ namespace Rift.Runtime.Fundamental;
 
 public sealed class ApplicationHost
 {
+    private readonly string         _executablePath;
+    private readonly string         _installationPath;
+    private readonly ILoggerFactory _logger;
+    private readonly string         _userPath;
+
     public ApplicationHost(IServiceProvider provider)
     {
-        _logger = provider.GetRequiredService<ILoggerFactory>();
-        _executablePath = Process.GetCurrentProcess().MainModule!.FileName;
+        _logger           = provider.GetRequiredService<ILoggerFactory>();
+        _executablePath   = Process.GetCurrentProcess().MainModule!.FileName;
         _installationPath = Directory.GetParent(Directory.GetParent(_executablePath)!.FullName)!.FullName;
         _userPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
@@ -23,15 +28,10 @@ public sealed class ApplicationHost
         );
         Instance = this;
     }
-    private readonly string         _executablePath;
-    private readonly string         _installationPath;
-    private readonly string         _userPath;
-    private readonly ILoggerFactory _logger;
 
     internal static ApplicationHost Instance         { get; private set; } = null!;
     public static   ILoggerFactory  Logger           => Instance._logger;
     public static   string          ExecutablePath   => Instance._executablePath;
     public static   string          InstallationPath => Instance._installationPath;
     public static   string          UserPath         => Instance._userPath;
-
 }

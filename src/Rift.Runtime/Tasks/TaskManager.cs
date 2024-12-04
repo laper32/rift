@@ -12,26 +12,29 @@ namespace Rift.Runtime.Tasks;
 public sealed class TaskManager
 {
     private readonly List<IRiftTask> _tasks;
-    public static  TaskManager     Instance { get; private set; } = null!;
+
     public TaskManager()
     {
         _tasks   = [];
         Instance = this;
     }
 
+    public static TaskManager Instance { get; private set; } = null!;
+
     /// <summary>
-    /// 注册一个任务 <br/>
-    /// <remarks>
-    /// 如果该任务已经存在，将返回已经存在的任务。 <br/>
-    /// </remarks>
+    ///     注册一个任务 <br />
+    ///     <remarks>
+    ///         如果该任务已经存在，将返回已经存在的任务。 <br />
+    ///     </remarks>
     /// </summary>
-    /// <param name="name">任务名</param>
-    /// <param name="predicate">任务配置</param>">
-    /// <returns>想获取的任务</returns>
+    /// <param name="name"> 任务名 </param>
+    /// <param name="predicate"> 任务配置 </param>
+    /// ">
+    /// <returns> 想获取的任务 </returns>
     public IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
     {
         TaskConfiguration cfg;
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is {} task)
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } task)
         {
             cfg = new TaskConfiguration((RiftTask)task);
             predicate(cfg);
@@ -48,26 +51,28 @@ public sealed class TaskManager
     }
 
     /// <summary>
-    /// 找到你想要的任务
+    ///     找到你想要的任务
     /// </summary>
-    /// <param name="name">对应的任务名</param>
-    /// <returns></returns>
-    public IRiftTask? FindTask(string name) =>
-        _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    /// <param name="name"> 对应的任务名 </param>
+    /// <returns> </returns>
+    public IRiftTask? FindTask(string name)
+    {
+        return _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
 
     /// <summary>
-    /// 判断该任务是否存在
+    ///     判断该任务是否存在
     /// </summary>
-    /// <param name="name">任务名</param>
-    /// <returns>想获取的任务</returns>
-    public bool HasTask(string name) => _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    /// <param name="name"> 任务名 </param>
+    /// <returns> 想获取的任务 </returns>
+    public bool HasTask(string name)
+    {
+        return _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
 
     public void RunTask(string name)
     {
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task)
-        {
-            return;
-        }
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task) return;
 
         var context = new TaskContext();
 

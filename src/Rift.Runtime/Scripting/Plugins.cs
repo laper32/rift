@@ -14,9 +14,8 @@ namespace Rift.Runtime.Scripting;
 
 public class Plugin : IPackageImportDeclarator
 {
-    public string                     Name       { get; init; }
-    public string                     Version    { get; set; }
-    public Dictionary<string, object> Attributes { get; init; }
+    [JsonIgnore]
+    private bool _refWorkspace;
 
     public Plugin(string name)
     {
@@ -32,22 +31,19 @@ public class Plugin : IPackageImportDeclarator
         Attributes = [];
     }
 
-    [JsonIgnore]
-    private bool _refWorkspace;
+    public string                     Version    { get; set; }
+    public Dictionary<string, object> Attributes { get; init; }
+    public string                     Name       { get; init; }
 
     /// <summary>
-    /// 指定该包使用根目录下的声明. <br/>
-    ///
-    /// 该标记拥有最高优先级. <br />
-    /// 如果你的项目比较复杂(如Workspace-Project-Target结构), 则请使用 <see cref="Ref"/>声明具体需要使用的项目.
+    ///     指定该包使用根目录下的声明. <br />
+    ///     该标记拥有最高优先级. <br />
+    ///     如果你的项目比较复杂(如Workspace-Project-Target结构), 则请使用 <see cref="Ref" />声明具体需要使用的项目.
     /// </summary>
-    /// <returns>Instance this</returns>
+    /// <returns> Instance this </returns>
     public Plugin RefWorkspace()
     {
-        if (_refWorkspace)
-        {
-            return this;
-        }
+        if (_refWorkspace) return this;
 
         Attributes.Add("RefWorkspace", true);
         _refWorkspace = true;
@@ -63,7 +59,6 @@ public class Plugin : IPackageImportDeclarator
 }
 
 // ReSharper disable UnusedMember.Global
-
 public class Plugins
 {
     public static void Add(Plugin plugin)

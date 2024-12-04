@@ -1,4 +1,4 @@
-﻿﻿// ===========================================================================
+﻿// ===========================================================================
 // Rift
 // Copyright (C) 2024 - Present laper32.
 // All Rights Reserved
@@ -26,13 +26,16 @@ internal class PluginIdentity(
     // 如果你需要类型转换, 用 EitherManifest<RiftManifest<PluginManifest>>
     IMaybePackage package)
 {
-    public IMaybePackage Value { get; init; } = package;
-    public Dictionary<string, object> Dependencies { get; init; } = [];
-    public Dictionary<string, object> Metadata { get; init; } = [];
-    public string Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
-    public string LibPath => Path.Combine(Location, LibPathName);
-    public string BinPath => Path.Combine(Location, BinPathName);
-    public string EntryPath => GetEntryDll();
+    private const string BinPathName = "bin";
+    private const string LibPathName = "lib";
+    private const string PluginEntryToken = "deps.json";
+    public        IMaybePackage Value { get; init; } = package;
+    public        Dictionary<string, object> Dependencies { get; init; } = [];
+    public        Dictionary<string, object> Metadata { get; init; } = [];
+    public        string Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
+    public        string LibPath => Path.Combine(Location, LibPathName);
+    public        string BinPath => Path.Combine(Location, BinPathName);
+    public        string EntryPath => GetEntryDll();
 
     // 一个插件内是不应该出现在一个包里有相同插件但有不同版本的情况的, 这个情况只会在多个插件的时候才会出现.
     // (如: 两个不同的插件A, B, 同时依赖了插件C的不同版本. 但很明显, A或B自身是不可能出现同时引用一个插件的不同版本的情况的.)
@@ -41,13 +44,10 @@ internal class PluginIdentity(
     {
         get
         {
-            var ret       = new Dictionary<string,PluginSharedAssemblyInfo>();
+            var ret       = new Dictionary<string, PluginSharedAssemblyInfo>();
             var sharedAsm = GetPluginSharedAssembliesPath().ToArray();
 
-            if (!sharedAsm.Any())
-            {
-                return ret;
-            }
+            if (!sharedAsm.Any()) return ret;
 
             foreach (var sharedAssemblyPath in sharedAsm)
             {
@@ -65,10 +65,6 @@ internal class PluginIdentity(
         }
     }
 
-    private const string BinPathName = "bin";
-    private const string LibPathName = "lib";
-    private const string PluginEntryToken = "deps.json";
-
     private IEnumerable<string> GetPluginSharedAssembliesPath()
     {
         var dlls = Directory.GetFiles(LibPath, "*.dll");
@@ -80,13 +76,10 @@ internal class PluginIdentity(
         // 然后我们通过读PE的方式找到这些带了这个标签的二进制文件, 把他们收集起来, 再根据一定的规则把他们都变成共享context。
         foreach (var dll in dlls)
         {
-            using var fs = new FileStream(dll, FileMode.Open);
-            using var pe = new PEReader(fs);
-            var reader = pe.GetMetadataReader();
-            if (!reader.IsAssembly)
-            {
-                continue;
-            }
+            using var fs     = new FileStream(dll, FileMode.Open);
+            using var pe     = new PEReader(fs);
+            var       reader = pe.GetMetadataReader();
+            if (!reader.IsAssembly) continue;
             // 首先找[assembly:]那一堆attributes.
             var asmDef = reader.GetAssemblyDefinition();
             // ReSharper disable once ForeachCanBeConvertedToQueryUsingAnotherGetEnumerator
@@ -94,34 +87,26 @@ internal class PluginIdentity(
             foreach (var attribute in asmDef.GetCustomAttributes())
             {
                 var attr = reader.GetCustomAttribute(attribute);
-                if (attr.Constructor.Kind != HandleKind.MemberReference)
-                {
-                    continue;
-                }
+                if (attr.Constructor.Kind != HandleKind.MemberReference) continue;
 
                 var memberReference = reader.GetMemberReference((MemberReferenceHandle)attr.Constructor);
-                if (memberReference.Parent.Kind != HandleKind.TypeReference)
-                {
-                    continue;
-                }
+                if (memberReference.Parent.Kind != HandleKind.TypeReference) continue;
 
                 var typeReference = reader.GetTypeReference((TypeReferenceHandle)memberReference.Parent);
-                if ($"{reader.GetString(typeReference.Namespace)}.{reader.GetString(typeReference.Name)}".Equals(typeof(PluginSharedAttribute).FullName!))
-                {
-                    yield return dll;
-                }
+                if ($"{reader.GetString(typeReference.Namespace)}.{reader.GetString(typeReference.Name)}".Equals(
+                        typeof(PluginSharedAttribute).FullName!)) yield return dll;
             }
         }
     }
 
 
     /// <summary>
-    /// 获取插件入口dll <br/>
+    ///     获取插件入口dll <br />
     ///     <remarks>
     ///         需要特别处理文件的大小写问题，这个函数不负责这个！
     ///     </remarks>
     /// </summary>
-    /// <returns></returns>
+    /// <returns> </returns>
     private string GetEntryDll()
     {
         var conf = Directory.GetFiles(LibPath, $"*.{PluginEntryToken}");
@@ -136,19 +121,19 @@ internal class PluginIdentity(
     }
 }
 
-internal class PluginIdentities()
+internal class PluginIdentities
 {
     private const string PluginDirectoryName = "plugins";
 
     private readonly List<PluginIdentity> _identities = [];
-
-    private PluginIdentity? _currentEvaluatingIdentity;
 
     private readonly List<string> _pluginSearchPaths =
     [
         Path.Combine(ApplicationHost.InstallationPath, PluginDirectoryName), // Rift安装路径
         Path.Combine(ApplicationHost.UserPath, PluginDirectoryName)          // 用户目录
     ];
+
+    private PluginIdentity? _currentEvaluatingIdentity;
 
     private PluginIdentity CreatePluginIdentity(string manifestPath)
     {
@@ -186,14 +171,14 @@ internal class PluginIdentities()
     }
 
     /// <summary>
-    /// 根据Descriptor添加Identity <br/>
-    /// 注：<br/>
-    /// <remarks>
-    ///     1. 插件的名字一定是文件夹的名字，且版本是根据文件夹名来做分类。 <br/>
-    ///     2. 通过Rift.toml解析插件包。
-    /// </remarks>
+    ///     根据Descriptor添加Identity <br />
+    ///     注：<br />
+    ///     <remarks>
+    ///         1. 插件的名字一定是文件夹的名字，且版本是根据文件夹名来做分类。 <br />
+    ///         2. 通过Rift.toml解析插件包。
+    ///     </remarks>
     /// </summary>
-    /// <param name="descriptor"></param>
+    /// <param name="descriptor"> </param>
     public void Add(PluginDescriptor descriptor)
     {
         var uniqueSearchPaths = _pluginSearchPaths.Distinct().ToList();
@@ -221,10 +206,7 @@ internal class PluginIdentities()
         {
             try
             {
-                if (FindFromSearchPath(x, descriptor) is { } identity)
-                {
-                    possiblePlugins.Add(identity);
-                }
+                if (FindFromSearchPath(x, descriptor) is { } identity) possiblePlugins.Add(identity);
             }
             catch (Exception)
             {
@@ -232,10 +214,7 @@ internal class PluginIdentities()
             }
         });
 
-        if (possiblePlugins.Count == 0)
-        {
-            return;
-        }
+        if (possiblePlugins.Count == 0) return;
         var possiblePlugin = possiblePlugins.First();
 
         // 去除重复插件
@@ -244,12 +223,10 @@ internal class PluginIdentities()
         if (_identities.Exists(x =>
             {
                 var nameEquals = x.Value.Name.Equals(possiblePlugin.Value.Name, StringComparison.OrdinalIgnoreCase);
-                
+
                 return nameEquals;
             }))
-        {
             return;
-        }
 
 
         _currentEvaluatingIdentity = possiblePlugin;
@@ -257,13 +234,12 @@ internal class PluginIdentities()
         RetrievePluginMetadata(possiblePlugin);
         _identities.Add(possiblePlugin);
         AnalyzeDependencies(possiblePlugin);
-
     }
 
     /// <summary>
-    /// 从下到上搜索依赖，所以加载顺序应该是反过来的？
+    ///     从下到上搜索依赖，所以加载顺序应该是反过来的？
     /// </summary>
-    /// <returns></returns>
+    /// <returns> </returns>
     public List<PluginIdentity> GetSortedIdentities()
     {
         var result = new List<PluginIdentity>(_identities);
@@ -275,7 +251,7 @@ internal class PluginIdentities()
     {
         Console.WriteLine(JsonSerializer.Serialize(_identities, new JsonSerializerOptions
         {
-            WriteIndented = true,
+            WriteIndented        = true,
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
             Converters =
             {
@@ -286,25 +262,15 @@ internal class PluginIdentities()
 
     private void AnalyzeDependencies(PluginIdentity identity)
     {
-
         identity.Dependencies.ForEach((_, value) =>
         {
-            if (value is not Plugin declarator)
-            {
-                return;
-            }
+            if (value is not Plugin declarator) return;
 
             var name = declarator.Name.Trim();
-            if (string.IsNullOrEmpty(name))
-            {
-                Console.WriteLine("Unknown plugin, skip");
-            }
+            if (string.IsNullOrEmpty(name)) Console.WriteLine("Unknown plugin, skip");
 
-            var version = declarator.Version.Trim();
-            if (string.IsNullOrEmpty(version))
-            {
-                version = "latest";
-            }
+            var version                                = declarator.Version.Trim();
+            if (string.IsNullOrEmpty(version)) version = "latest";
 
             Add(new PluginDescriptor(name, version));
         });
@@ -312,23 +278,17 @@ internal class PluginIdentities()
 
     private PluginIdentity? FindFromSearchPath(string path, PluginDescriptor descriptor)
     {
-        var pluginPath = Path.Combine(path, descriptor.Name);
+        var pluginPath        = Path.Combine(path, descriptor.Name);
         var pluginVersionsDir = Directory.GetDirectories(pluginPath);
-        var pluginVersions = new List<SemVersion>();
+        var pluginVersions    = new List<SemVersion>();
 
         foreach (var s in pluginVersionsDir)
         {
             var versionDir = Path.GetFileName(s);
-            if (SemVersion.TryParse(versionDir, out var version))
-            {
-                pluginVersions.Add(version);
-            }
+            if (SemVersion.TryParse(versionDir, out var version)) pluginVersions.Add(version);
         }
 
-        if (pluginVersionsDir.Length <= 0)
-        {
-            return null;
-        }
+        if (pluginVersionsDir.Length <= 0) return null;
 
         var latestVersion = pluginVersions.Max(SemVersion.SortOrderComparer)!;
 
@@ -376,29 +336,20 @@ internal class PluginIdentities()
     private void RetrievePluginDependencies(PluginIdentity identity)
     {
         var scriptPath = identity.Value.Dependencies;
-        if (scriptPath is null)
-        {
-            return;
-        }
+        if (scriptPath is null) return;
         ScriptManager.EvaluateScript(scriptPath);
     }
 
     private void RetrievePluginMetadata(PluginIdentity identity)
     {
         var scriptPath = identity.Value.Configure;
-        if (scriptPath is null)
-        {
-            return;
-        }
+        if (scriptPath is null) return;
         ScriptManager.EvaluateScript(scriptPath);
     }
 
     public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
     {
-        if (_currentEvaluatingIdentity is null)
-        {
-            return false;
-        }
+        if (_currentEvaluatingIdentity is null) return false;
 
         _currentEvaluatingIdentity.Dependencies.Add(declarator.Name, declarator);
 
@@ -407,28 +358,19 @@ internal class PluginIdentities()
 
     public bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
     {
-        if (_currentEvaluatingIdentity is null)
-        {
-            return false;
-        }
+        if (_currentEvaluatingIdentity is null) return false;
 
         foreach (var declarator in declarators)
-        {
             _currentEvaluatingIdentity.Dependencies.Add(declarator.Name, declarator);
-        }
 
         return true;
     }
 
     public bool AddMetadataForPlugin(string key, object value)
     {
-        if (_currentEvaluatingIdentity is null)
-        {
-            return false;
-        }
+        if (_currentEvaluatingIdentity is null) return false;
 
         _currentEvaluatingIdentity.Metadata.Add(key, value);
         return true;
     }
-
 }

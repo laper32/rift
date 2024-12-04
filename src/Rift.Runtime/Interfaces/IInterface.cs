@@ -7,13 +7,12 @@
 namespace Rift.Runtime.Interfaces;
 
 /// <summary>
-/// 所有接口都必须继承该接口.
+///     所有接口都必须继承该接口.
 /// </summary>
 public interface IInterface
 {
-
     /// <summary>
-    /// 接口版本
+    ///     接口版本
     /// </summary>
     uint InterfaceVersion { get; }
 }

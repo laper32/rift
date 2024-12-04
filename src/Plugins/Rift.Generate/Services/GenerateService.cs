@@ -1,9 +1,7 @@
-﻿
-namespace Rift.Generate.Services;
+﻿namespace Rift.Generate.Services;
 
 public interface IGenerateService
 {
-
 }
 
 internal class GenerateService : IGenerateService
@@ -14,17 +12,17 @@ internal class GenerateService : IGenerateService
 
         Instance = this;
     }
-    public event Action? Generate;
 
 
     internal static GenerateService Instance { get; private set; } = null!;
+
+    public string        InterfaceName    => "IGenerateService";
+    public uint          InterfaceVersion => 1;
+    public event Action? Generate;
 
     public void Invoke()
     {
         Console.WriteLine("Invokes generate registered events");
         Generate?.Invoke();
     }
-
-    public string InterfaceName => "IGenerateService";
-    public uint InterfaceVersion => 1;
 }

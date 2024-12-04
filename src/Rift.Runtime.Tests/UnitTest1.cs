@@ -11,16 +11,10 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
     [Fact]
     public void Test1()
     {
-        TaskManager.Instance.RegisterTask("rift.new", (config) =>
-        {
-            config.SetIsCommand(true);
-        });
-        TaskManager.Instance.RegisterTask("rift.new.classlib", config =>
-        {
-            config.SetIsCommand(true);
-        });
+        TaskManager.Instance.RegisterTask("rift.new", config => { config.SetIsCommand(true); });
+        TaskManager.Instance.RegisterTask("rift.new.classlib", config => { config.SetIsCommand(true); });
         var commands = TaskManager.Instance.GetMarkedAsCommandTasks();
-        var entries = UserCommand.Build(commands);
+        var entries  = UserCommand.Build(commands);
 
         //CommandManager.Instance.ExecuteCommand(Environment.GetCommandLineArgs());
     }
@@ -30,18 +24,12 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
     {
         var dict = new Dictionary<string, string>
         {
-            {"a", "b"},
-            {"c", "d"}
+            { "a", "b" },
+            { "c", "d" }
         };
-        dict.ForEach((key, value) =>
-        {
-            testOutputHelper.WriteLine($"{key}: {value}");
-        });
+        dict.ForEach((key, value) => { testOutputHelper.WriteLine($"{key}: {value}"); });
 
         var readonlyDict = new ReadOnlyDictionary<string, string>(dict);
-        readonlyDict.ForEach(kv =>
-        {
-            testOutputHelper.WriteLine($"{kv.Key}: {kv.Value}");
-        });
+        readonlyDict.ForEach(kv => { testOutputHelper.WriteLine($"{kv.Key}: {kv.Value}"); });
     }
 }

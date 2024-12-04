@@ -1,8 +1,7 @@
-﻿
-namespace Rift.Runtime.Tasks;
+﻿namespace Rift.Runtime.Tasks;
 
 /// <summary>
-/// 表示命令行参数
+///     表示命令行参数
 /// </summary>
 public interface ITaskArguments
 {

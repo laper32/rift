@@ -29,12 +29,8 @@ internal class Generate : RiftPlugin
 
                     return Task.CompletedTask;
                 })
-                .AddAction(() =>
-                {
-                    Console.WriteLine("12121");
-                });
+                .AddAction(() => { Console.WriteLine("12121"); });
         });
-        ScriptManager.AddNamespace("Rift.Generate");
         ScriptManager.AddLibrary("Rift.Generate");
         return base.OnLoad();
     }
@@ -42,7 +38,6 @@ internal class Generate : RiftPlugin
     public override void OnUnload()
     {
         ScriptManager.RemoveLibrary("Rift.Generate");
-        ScriptManager.RemoveNamespace("Rift.Generate");
         base.OnUnload();
     }
 }

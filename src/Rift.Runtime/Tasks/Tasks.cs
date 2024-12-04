@@ -1,5 +1,4 @@
-﻿
-namespace Rift.Runtime.Tasks;
+﻿namespace Rift.Runtime.Tasks;
 
 // ReSharper disable UnusedMember.Global
 public class Tasks

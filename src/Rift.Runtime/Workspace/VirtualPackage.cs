@@ -21,9 +21,7 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         get
         {
             if (virtualManifest.Dependencies is { } dependencies)
-            {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, dependencies));
-            }
 
             return null;
         }
@@ -34,9 +32,7 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         get
         {
             if (virtualManifest.Plugins is { } plugins)
-            {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, plugins));
-            }
 
             return null;
         }
@@ -47,9 +43,7 @@ internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestP
         get
         {
             if (virtualManifest.Configure is { } metadata)
-            {
                 return Path.GetFullPath(WorkspaceManager.GetActualScriptPath(ManifestPath, metadata));
-            }
 
             return null;
         }

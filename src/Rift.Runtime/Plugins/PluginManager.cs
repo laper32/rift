@@ -5,16 +5,14 @@ namespace Rift.Runtime.Plugins;
 
 public sealed class PluginManager
 {
-    internal delegate void DelegatePluginUnload(PluginInstance instance);
+    private static PluginManager _instance = null!;
 
     private readonly PluginIdentities               _identities;
-    private          PluginInstanceContext?         _sharedContext;
-    private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
-    private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
-    private readonly List<PluginContext>            _pluginContexts      = [];
     private readonly List<PluginInstance>           _instances           = [];
-    private static   PluginManager                  _instance            = null!;
-    internal event DelegatePluginUnload?            PluginUnload;
+    private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
+    private readonly List<PluginContext>            _pluginContexts      = [];
+    private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
+    private          PluginInstanceContext?         _sharedContext;
 
     public PluginManager()
     {
@@ -23,14 +21,22 @@ public sealed class PluginManager
         _instance      = this;
     }
 
-    internal static bool Init() => _instance.InitInternal();
+    internal static event DelegatePluginUnload? PluginUnload;
+
+    internal static bool Init()
+    {
+        return _instance.InitInternal();
+    }
 
     private bool InitInternal()
     {
         return true;
     }
 
-    internal static void Shutdown() => _instance.ShutdownInternal();
+    internal static void Shutdown()
+    {
+        _instance.ShutdownInternal();
+    }
 
     private void ShutdownInternal()
     {
@@ -39,18 +45,18 @@ public sealed class PluginManager
 
 
     /// <summary>
-    /// N.B. 插件系统这里和很多地方不一样的是：我们需要支持没有dll的情况（即：这个插件只有二进制文件，或者只有配置文件）<br/>
-    /// 所以必须有一个中间层给插件做Identity。
+    ///     N.B. 插件系统这里和很多地方不一样的是：我们需要支持没有dll的情况（即：这个插件只有二进制文件，或者只有配置文件）<br />
+    ///     所以必须有一个中间层给插件做Identity。
     /// </summary>
-    internal static void NotifyLoadPlugins() => _instance.NotifyLoadPluginsInternal();
+    internal static void NotifyLoadPlugins()
+    {
+        _instance.NotifyLoadPluginsInternal();
+    }
 
     internal void NotifyLoadPluginsInternal()
     {
         var declarators = WorkspaceManager.CollectPluginsForLoad();
-        foreach (var declarator in declarators)
-        {
-            _identities.Add(declarator);
-        }
+        foreach (var declarator in declarators) _identities.Add(declarator);
 
         _pendingLoadPlugins.AddRange(_identities.GetSortedIdentities());
 
@@ -69,15 +75,9 @@ public sealed class PluginManager
 
     private void LoadPlugins()
     {
-        foreach (var instance in _instances.Where(instance => instance.Init()))
-        {
-            instance.Load();
-        }
+        foreach (var instance in _instances.Where(instance => instance.Init())) instance.Load();
 
-        foreach (var instance in _instances)
-        {
-            instance.AllLoad();
-        }
+        foreach (var instance in _instances) instance.AllLoad();
     }
 
 
@@ -98,6 +98,7 @@ public sealed class PluginManager
                     value = [];
                     sharedAssemblies.Add(name, value);
                 }
+
                 sharedAssemblies[name].Add(info);
             }
         });
@@ -143,26 +144,17 @@ public sealed class PluginManager
 
     private void LoadSharedContext()
     {
-        foreach (var info in _sharedAssemblyInfos)
-        {
-            _sharedContext!.LoadFromAssemblyPath(info.Path);
-        }
+        foreach (var info in _sharedAssemblyInfos) _sharedContext!.LoadFromAssemblyPath(info.Path);
     }
 
     private void LoadPluginContext()
     {
-        foreach (var identity in _pendingLoadPlugins)
-        {
-            _pluginContexts.Add(new PluginContext(identity, _sharedContext!));
-        }
+        foreach (var identity in _pendingLoadPlugins) _pluginContexts.Add(new PluginContext(identity, _sharedContext!));
     }
 
     private void ActivateInstance()
     {
-        foreach (var context in _pluginContexts)
-        {
-            _instances.Add(new PluginInstance(context));
-        }
+        foreach (var context in _pluginContexts) _instances.Add(new PluginInstance(context));
     }
 
     private void CleanupTemporaries()
@@ -177,29 +169,43 @@ public sealed class PluginManager
             PluginUnload?.Invoke(instance);
             instance.Unload(true);
         }
+
         _instances.Clear();
         _sharedContext!.Unload();
         _sharedContext = null;
-        foreach (var context in _pluginContexts)
-        {
-            context.Unload();
-        }
+        foreach (var context in _pluginContexts) context.Unload();
         _pluginContexts.Clear();
     }
 
-    internal static bool AddDependencyForPlugin(IPackageImportDeclarator declarator) =>
-        _instance.AddDependencyForPluginInternal(declarator);
+    internal static bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
+    {
+        return _instance.AddDependencyForPluginInternal(declarator);
+    }
 
-    private bool AddDependencyForPluginInternal(IPackageImportDeclarator declarator) =>
-        _identities.AddDependencyForPlugin(declarator);
+    private bool AddDependencyForPluginInternal(IPackageImportDeclarator declarator)
+    {
+        return _identities.AddDependencyForPlugin(declarator);
+    }
 
-    internal static bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators) =>
-        _instance.AddDependencyForPluginInternal(declarators);
+    internal static bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
+    {
+        return _instance.AddDependencyForPluginInternal(declarators);
+    }
 
-    private bool AddDependencyForPluginInternal(IEnumerable<IPackageImportDeclarator> declarators) =>
-        _identities.AddDependencyForPlugin(declarators);
+    private bool AddDependencyForPluginInternal(IEnumerable<IPackageImportDeclarator> declarators)
+    {
+        return _identities.AddDependencyForPlugin(declarators);
+    }
 
-    internal static bool AddMetadataForPlugin(string key, object value) => _instance.AddMetadataForPluginInternal(key, value);
+    internal static bool AddMetadataForPlugin(string key, object value)
+    {
+        return _instance.AddMetadataForPluginInternal(key, value);
+    }
 
-    private bool AddMetadataForPluginInternal(string key, object value) => _identities.AddMetadataForPlugin(key, value);
+    private bool AddMetadataForPluginInternal(string key, object value)
+    {
+        return _identities.AddMetadataForPlugin(key, value);
+    }
+
+    internal delegate void DelegatePluginUnload(PluginInstance instance);
 }

@@ -1,11 +1,8 @@
-﻿
-using Rift.Runtime.Fundamental;
-
-namespace Rift.Runtime.Tasks;
+﻿namespace Rift.Runtime.Tasks;
 
 internal class TaskContext : ITaskContext
 {
-    public ITaskArguments    Arguments        { get; }
+    public ITaskArguments Arguments { get; }
 }
 
 public interface ITaskContext

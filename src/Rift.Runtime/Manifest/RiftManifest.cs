@@ -14,7 +14,6 @@ public enum ERiftManifest
     Plugin
 }
 
-
 public interface IRiftManifest
 {
     public ERiftManifest            Type         { get; }
@@ -31,10 +30,7 @@ internal class RiftManifest<T> : IRiftManifest
 {
     public RiftManifest(T manifest)
     {
-        if (manifest is not PluginManifest)
-        {
-            throw new ArgumentException("Manifest must be of type RiftManifest");
-        }
+        if (manifest is not PluginManifest) throw new ArgumentException("Manifest must be of type RiftManifest");
 
         Type = manifest switch
         {
@@ -45,10 +41,10 @@ internal class RiftManifest<T> : IRiftManifest
         Value = manifest;
     }
 
-    public ERiftManifest Type { get; init; }
-
     [JsonIgnore]
     public T Value { get; init; }
+
+    public ERiftManifest Type { get; init; }
 
     public string Name => Value switch
     {
