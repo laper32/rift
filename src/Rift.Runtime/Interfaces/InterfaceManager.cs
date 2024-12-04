@@ -29,6 +29,13 @@ public sealed class InterfaceManager
         _instance.ShutdownInternal();
     }
 
+    /// <summary>
+    ///     注册接口
+    /// </summary>
+    /// <typeparam name="T"> 继承自<see cref="IInterface" />的接口类型 </typeparam>
+    /// <param name="interface"> 接口实例 </param>
+    /// <param name="plugin"> 对应的插件 </param>
+    /// <exception cref="InterfaceAlreadyExistsException"> 如果接口已经存在则抛出异常 </exception>
     public static void AddInterface<T>(T @interface, IPlugin plugin) where T : class, IInterface
     {
         _instance.AddInterfaceInternal(@interface, plugin);

@@ -1,4 +1,10 @@
-﻿namespace Rift.Runtime.Plugins;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+namespace Rift.Runtime.Plugins;
 
 public interface IPlugin
 {

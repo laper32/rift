@@ -1,4 +1,10 @@
-﻿namespace Rift.Runtime.Tasks;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+namespace Rift.Runtime.Tasks;
 
 // ReSharper disable UnusedMember.Global
 public class Tasks

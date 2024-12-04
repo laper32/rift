@@ -1,4 +1,10 @@
-﻿using Rift.Runtime.Scripting;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Plugins;

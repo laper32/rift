@@ -1,4 +1,10 @@
-﻿using System.CommandLine;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.CommandLine;
 using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;

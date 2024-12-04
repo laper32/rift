@@ -1,4 +1,10 @@
-﻿using Kokuban;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Kokuban;
 
 namespace Rift.Runtime.Fundamental;
 

@@ -1,4 +1,10 @@
-﻿using Rift.Runtime.Fundamental;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
