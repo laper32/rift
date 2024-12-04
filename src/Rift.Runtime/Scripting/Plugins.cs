@@ -12,66 +12,16 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
-// TODO: 准备移除，统一到PackageReference
-[Serializable]
-public class Plugin : IPackageImportDeclarator
-{
-    [JsonIgnore]
-    private bool _refWorkspace;
-
-    public Plugin(string name)
-    {
-        Name       = name;
-        Version    = "";
-        Attributes = [];
-    }
-
-    public Plugin(string name, string version)
-    {
-        Name       = name;
-        Version    = version;
-        Attributes = [];
-    }
-
-    public string                     Version    { get; set; }
-    public Dictionary<string, object> Attributes { get; init; }
-    public string                     Name       { get; init; }
-
-    /// <summary>
-    ///     指定该包使用根目录下的声明. <br />
-    ///     该标记拥有最高优先级. <br />
-    ///     如果你的项目比较复杂(如Workspace-Project-Target结构), 则请使用 <see cref="Ref" />声明具体需要使用的项目.
-    /// </summary>
-    /// <returns> Instance this </returns>
-    public Plugin RefWorkspace()
-    {
-        if (_refWorkspace)
-        {
-            return this;
-        }
-
-        Attributes.Add("RefWorkspace", true);
-        _refWorkspace = true;
-
-        return this;
-    }
-
-    public Plugin Ref(string packageName)
-    {
-        Attributes.Add("Ref", packageName);
-        return this;
-    }
-}
 
 // ReSharper disable UnusedMember.Global
 public class Plugins
 {
-    public static void Add(Plugin plugin)
+    public static void Add(PackageReference plugin)
     {
         WorkspaceManager.AddPluginForPackage(plugin);
     }
 
-    public static void Add(IEnumerable<Plugin> plugins)
+    public static void Add(IEnumerable<PackageReference> plugins)
     {
         WorkspaceManager.AddPluginForPackage(plugins);
     }

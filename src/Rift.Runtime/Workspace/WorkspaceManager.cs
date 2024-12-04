@@ -31,15 +31,22 @@ public sealed class WorkspaceManager
 
     public string Root { get; private set; } = "__Unknown__";
 
-    internal static bool Init()
+    internal static bool Init() => _instance.InitInternal();
+
+    private bool InitInternal()
     {
-        _instance._status = EWorkspaceStatus.Init;
+        _status = EWorkspaceStatus.Init;
+        ScriptManager.AddNamespace("Rift.Runtime.Workspace");
         return true;
     }
 
-    internal static void Shutdown()
+
+    internal static void Shutdown() => _instance.ShutdownInternal();
+
+    private void ShutdownInternal()
     {
-        _instance._status = EWorkspaceStatus.Shutdown;
+        ScriptManager.RemoveNamespace("Rift.Runtime.Workspace");
+        _status = EWorkspaceStatus.Shutdown;
     }
 
     internal static void LoadWorkspace()
@@ -495,12 +502,12 @@ public sealed class WorkspaceManager
         return true;
     }
 
-    internal static bool AddDependencyForPackage(IPackageImportDeclarator declarator)
+    internal static bool AddDependencyForPackage(PackageReference declarator)
     {
         return _instance.AddDependencyForPackageInternal(declarator);
     }
 
-    private bool AddDependencyForPackageInternal(IPackageImportDeclarator declarator)
+    private bool AddDependencyForPackageInternal(PackageReference declarator)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -511,12 +518,12 @@ public sealed class WorkspaceManager
         return true;
     }
 
-    internal static bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
+    internal static bool AddDependencyForPackage(IEnumerable<PackageReference> declarators)
     {
         return _instance.AddDependencyForPackageInternal(declarators);
     }
 
-    private bool AddDependencyForPackageInternal(IEnumerable<IPackageImportDeclarator> declarators)
+    private bool AddDependencyForPackageInternal(IEnumerable<PackageReference> declarators)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -531,12 +538,12 @@ public sealed class WorkspaceManager
         return true;
     }
 
-    internal static bool AddPluginForPackage(Plugin plugin)
+    internal static bool AddPluginForPackage(PackageReference plugin)
     {
         return _instance.AddPluginForPackageInternal(plugin);
     }
 
-    private bool AddPluginForPackageInternal(Plugin plugin)
+    private bool AddPluginForPackageInternal(PackageReference plugin)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {
@@ -547,12 +554,12 @@ public sealed class WorkspaceManager
         return true;
     }
 
-    internal static bool AddPluginForPackage(IEnumerable<Plugin> plugins)
+    internal static bool AddPluginForPackage(IEnumerable<PackageReference> plugins)
     {
         return _instance.AddPluginForPackageInternal(plugins);
     }
 
-    private bool AddPluginForPackageInternal(IEnumerable<Plugin> plugins)
+    private bool AddPluginForPackageInternal(IEnumerable<PackageReference> plugins)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {

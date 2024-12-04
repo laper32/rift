@@ -205,22 +205,22 @@ public sealed class PluginManager
         _pluginContexts.Clear();
     }
 
-    internal static bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
+    internal static bool AddDependencyForPlugin(PackageReference declarator)
     {
         return _instance.AddDependencyForPluginInternal(declarator);
     }
 
-    private bool AddDependencyForPluginInternal(IPackageImportDeclarator declarator)
+    private bool AddDependencyForPluginInternal(PackageReference declarator)
     {
         return _identities.AddDependencyForPlugin(declarator);
     }
 
-    internal static bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
+    internal static bool AddDependencyForPlugin(IEnumerable<PackageReference> declarators)
     {
         return _instance.AddDependencyForPluginInternal(declarators);
     }
 
-    private bool AddDependencyForPluginInternal(IEnumerable<IPackageImportDeclarator> declarators)
+    private bool AddDependencyForPluginInternal(IEnumerable<PackageReference> declarators)
     {
         return _identities.AddDependencyForPlugin(declarators);
     }

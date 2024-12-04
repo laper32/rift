@@ -289,7 +289,7 @@ internal class PluginIdentities
     {
         identity.Dependencies.ForEach((_, value) =>
         {
-            if (value is not Plugin declarator)
+            if (value is not PackageReference declarator)
             {
                 return;
             }
@@ -395,7 +395,7 @@ internal class PluginIdentities
         ScriptManager.EvaluateScript(scriptPath);
     }
 
-    public bool AddDependencyForPlugin(IPackageImportDeclarator declarator)
+    public bool AddDependencyForPlugin(PackageReference declarator)
     {
         if (_currentEvaluatingIdentity is null)
         {
@@ -407,7 +407,7 @@ internal class PluginIdentities
         return true;
     }
 
-    public bool AddDependencyForPlugin(IEnumerable<IPackageImportDeclarator> declarators)
+    public bool AddDependencyForPlugin(IEnumerable<PackageReference> declarators)
     {
         if (_currentEvaluatingIdentity is null)
         {

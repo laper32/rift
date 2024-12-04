@@ -32,4 +32,9 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
         var readonlyDict = new ReadOnlyDictionary<string, string>(dict);
         readonlyDict.ForEach(kv => { testOutputHelper.WriteLine($"{kv.Key}: {kv.Value}"); });
     }
+
+    public void SetPackageReferenceRefWorkspace()
+    {
+
+    }
 }

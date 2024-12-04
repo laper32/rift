@@ -13,9 +13,9 @@ namespace Rift.Runtime.Workspace;
 
 public interface IPackageInstance
 {
-    public string                                       Name         { get; }
-    public string                                       ManifestPath { get; }
-    public Dictionary<string, IPackageImportDeclarator> Dependencies { get; }
+    public string                               Name         { get; }
+    public string                               ManifestPath { get; }
+    public Dictionary<string, PackageReference> Dependencies { get; }
 
     JsonElement? GetExtensionField(string name);
 
@@ -28,11 +28,11 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {
     public IMaybePackage Value { get; init; } = package;
 
-    public Dictionary<string, object>                   Metadata     { get; init; } = [];
-    public Dictionary<string, Plugin>                   Plugins      { get; init; } = [];
-    public Dictionary<string, IPackageImportDeclarator> Dependencies { get; init; } = [];
-    public string                                       Name         => Value.Name;
-    public string                                       ManifestPath => Value.ManifestPath;
+    public Dictionary<string, object>           Metadata     { get; init; } = [];
+    public Dictionary<string, PackageReference> Plugins      { get; init; } = [];
+    public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
+    public string                               Name         => Value.Name;
+    public string                               ManifestPath => Value.ManifestPath;
 
     public bool HasPlugin(string name)
     {
