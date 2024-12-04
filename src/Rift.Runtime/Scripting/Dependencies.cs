@@ -9,6 +9,7 @@
 
 using System.Text.Json;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Workspace;
 
 // ReSharper disable UnusedMember.Global
@@ -21,21 +22,24 @@ public class Dependencies
     {
 
         // 如果是false的话，就会去尝试插件那找
-        if (WorkspaceManager.Instance.AddDependencyForPackage(dependency))
+        if (WorkspaceManager.AddDependencyForPackage(dependency))
         {
             return;
         }
         Tty.WriteLine($"Adding dependency => {JsonSerializer.Serialize(dependency)}");
-        //PluginManager.Instance.AddDependencyForPlugin(dependency);
+        PluginManager.AddDependencyForPlugin(dependency);
 
     }
 
     public static void Add<T>(IEnumerable<T> dependencies) where T : class, IPackageImportDeclarator
     {
         var packageImportDeclarators = dependencies as T[] ?? dependencies.ToArray();
-        if (!WorkspaceManager.Instance.AddDependencyForPackage(packageImportDeclarators))
+
+        if (WorkspaceManager.AddDependencyForPackage(packageImportDeclarators))
         {
-            //PluginManager.Instance.AddDependencyForPlugin(packageImportDeclarators);
+            return;
         }
+
+        PluginManager.AddDependencyForPlugin(packageImportDeclarators);
     }
 }

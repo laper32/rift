@@ -1,4 +1,5 @@
 ﻿using Rift.Runtime.Plugins;
+using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
 
 namespace Rift.Generate;
@@ -33,7 +34,23 @@ internal class Generate : RiftPlugin
                     Console.WriteLine("12121");
                 });
         });
-
+        ScriptManager.AddNamespace("Rift.Generate");
+        ScriptManager.AddLibrary("Rift.Generate");
         return base.OnLoad();
+    }
+
+    public override void OnUnload()
+    {
+        ScriptManager.RemoveLibrary("Rift.Generate");
+        ScriptManager.RemoveNamespace("Rift.Generate");
+        base.OnUnload();
+    }
+}
+
+public static class Sth
+{
+    public static void Call()
+    {
+        Console.WriteLine("Call from Sth.Call()");
     }
 }

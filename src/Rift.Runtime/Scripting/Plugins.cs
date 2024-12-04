@@ -68,11 +68,11 @@ public class Plugins
 {
     public static void Add(Plugin plugin)
     {
-        WorkspaceManager.Instance.AddPluginForPackage(plugin);
+        WorkspaceManager.AddPluginForPackage(plugin);
     }
 
     public static void Add(IEnumerable<Plugin> plugins)
     {
-        WorkspaceManager.Instance.AddPluginForPackage(plugins);
+        WorkspaceManager.AddPluginForPackage(plugins);
     }
 }

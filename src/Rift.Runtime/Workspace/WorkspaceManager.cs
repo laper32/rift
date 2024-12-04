@@ -84,15 +84,13 @@ public sealed class WorkspaceManager
         {
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
-
         RetrieveWorkspacePlugins();
-
-        //PluginManager.Instance.NotifyLoadPlugins();
+        
+        PluginManager.NotifyLoadPlugins();
 
         RetrieveWorkspaceDependencies();
         RetrieveWorkspaceMetadata();
 
-        //EvaluateManifestScripts();
     }
 
     public IPackageInstance? FindPackage(string name)
@@ -409,7 +407,7 @@ public sealed class WorkspaceManager
             {
                 continue;
             }
-            ScriptManager.Instance.EvaluateScript(dependencies);
+            ScriptManager.EvaluateScript(dependencies);
         }
     }
 
@@ -422,7 +420,7 @@ public sealed class WorkspaceManager
                 continue;
             }
 
-            ScriptManager.Instance.EvaluateScript(metadata);
+            ScriptManager.EvaluateScript(metadata);
         }
     }
 
@@ -435,11 +433,12 @@ public sealed class WorkspaceManager
                 continue;
             }
 
-            ScriptManager.Instance.EvaluateScript(plugins);
+            ScriptManager.EvaluateScript(plugins);
         }
     }
 
-    internal bool AddMetadataForPackage(string key, object value)
+    internal static bool AddMetadataForPackage(string key, object value) => Instance.AddMetadataForPackageInternal(key, value);
+    private bool AddMetadataForPackageInternal(string key, object value)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -447,10 +446,12 @@ public sealed class WorkspaceManager
         }
         instance.Metadata.Add(key, value);
         return true;
-
     }
 
-    internal bool AddDependencyForPackage(IPackageImportDeclarator declarator)
+    internal static bool AddDependencyForPackage(IPackageImportDeclarator declarator) =>
+        Instance.AddDependencyForPackageInternal(declarator);
+
+    private bool AddDependencyForPackageInternal(IPackageImportDeclarator declarator)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -458,53 +459,54 @@ public sealed class WorkspaceManager
         }
         instance.Dependencies.Add(declarator.Name, declarator);
         return true;
-
     }
 
-    internal bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators)
+    internal static bool AddDependencyForPackage(IEnumerable<IPackageImportDeclarator> declarators) =>
+        Instance.AddDependencyForPackageInternal(declarators);
+
+    private bool AddDependencyForPackageInternal(IEnumerable<IPackageImportDeclarator> declarators)
     {
-        if (GetPackageInstance() is not { } packageInstance)
+        if (GetPackageInstance() is not { } instance)
         {
             return false;
         }
-
         foreach (var declarator in declarators)
         {
-            packageInstance.Dependencies.Add(declarator.Name, declarator);
+            instance.Dependencies.Add(declarator.Name, declarator);
         }
-
         return true;
     }
 
-    internal bool AddPluginForPackage(Plugin plugin)
+    internal static bool AddPluginForPackage(Plugin plugin) => Instance.AddPluginForPackageInternal(plugin);
+    private bool AddPluginForPackageInternal(Plugin plugin)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {
             return false;
         }
-
         packageInstance.Plugins.Add(plugin.Name, plugin);
         return true;
     }
 
-    internal bool AddPluginForPackage(IEnumerable<Plugin> plugins)
+    internal static bool AddPluginForPackage(IEnumerable<Plugin> plugins) =>
+        Instance.AddPluginForPackageInternal(plugins);
+
+    private bool AddPluginForPackageInternal(IEnumerable<Plugin> plugins)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {
             return false;
         }
-
         foreach (var plugin in plugins)
         {
             packageInstance.Plugins.Add(plugin.Name, plugin);
         }
-
         return true;
     }
 
     private PackageInstance? GetPackageInstance()
     {
-        if (ScriptManager.Instance.ScriptContext is not { } scriptContext)
+        if (ScriptManager.ScriptContext is not { } scriptContext)
         {
             throw new InvalidOperationException("This function is only allowed in package dependency script.");
         }
@@ -514,11 +516,14 @@ public sealed class WorkspaceManager
 
     #endregion
 
-    //internal IEnumerable<PluginDescriptor> CollectPluginsForLoad()
-    //{
-    //    CheckAvailable();
-    //    return _packageInstances.CollectPluginsForLoad();
-    //}
+    internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad() => Instance.CollectPluginsForLoadInternal();
+
+    private IEnumerable<PluginDescriptor> CollectPluginsForLoadInternal()
+    {
+        CheckAvailable();
+
+        return _packageInstances.CollectPluginsForLoad();
+    }
 
     private void CheckAvailable()
     {

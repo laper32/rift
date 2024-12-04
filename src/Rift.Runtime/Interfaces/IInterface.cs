@@ -11,10 +11,6 @@ namespace Rift.Runtime.Interfaces;
 /// </summary>
 public interface IInterface
 {
-    /// <summary>
-    /// 接口名
-    /// </summary>
-    string InterfaceName { get; }
 
     /// <summary>
     /// 接口版本

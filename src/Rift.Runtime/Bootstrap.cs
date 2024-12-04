@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 using Rift.Runtime.Commands;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Interfaces;
-using Rift.Runtime.Modules;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
@@ -122,7 +121,6 @@ internal static class Bootstrap
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<ApplicationHost>();
-        services.AddSingleton<ModuleManager>();
         services.AddSingleton<InterfaceManager>();
         services.AddSingleton<ScriptManager>();
         services.AddSingleton<PluginManager>();
@@ -134,7 +132,6 @@ internal static class Bootstrap
     private static void ActivateServices(IServiceProvider provider)
     {
         provider.GetRequiredService<ApplicationHost>();
-        provider.GetRequiredService<ModuleManager>();
         provider.GetRequiredService<InterfaceManager>();
         provider.GetRequiredService<ScriptManager>();
         provider.GetRequiredService<PluginManager>();
@@ -148,11 +145,6 @@ internal static class Bootstrap
         if (!InterfaceManager.Init())
         {
             throw new InvalidOperationException("Failed to init InterfaceManager.");
-        }
-
-        if (!ModuleManager.Init())
-        {
-            throw new InvalidOperationException($"Failed to init {nameof(ModuleManager)}");
         }
 
         if (!ScriptManager.Init())

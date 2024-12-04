@@ -93,12 +93,12 @@ public sealed class TaskManager
 
     internal static bool Init()
     {
-        ScriptManager.Instance.AddNamespace("Rift.Runtime.Tasks");
+        ScriptManager.AddNamespace("Rift.Runtime.Tasks");
         return true;
     }
 
     internal static void Shutdown()
     {
-        ScriptManager.Instance.RemoveNamespace("Rift.Runtime.Tasks");
+        ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
     }
 }

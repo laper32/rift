@@ -1,7 +1,10 @@
-﻿using Rift.Generate.Abstractions;
-
+﻿
 namespace Rift.Generate.Services;
 
+public interface IGenerateService
+{
+
+}
 
 internal class GenerateService : IGenerateService
 {

@@ -7,6 +7,7 @@
 // 为什么我们把暴露给脚本的三兄弟都放在本体里而不是放在API包里？
 // 原因只有一个：暴露给脚本的API不能设计的过于复杂，且很多时候脚本是没办法看到dll里面有什么API的。
 
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Workspace;
 
 // ReSharper disable UnusedMember.Global
@@ -17,11 +18,11 @@ public class Metadata
 {
     public static void Add(string key, object value)
     {
-        if (WorkspaceManager.Instance.AddMetadataForPackage(key, value))
+        if (WorkspaceManager.AddMetadataForPackage(key, value))
         {
             return;
         }
 
-        //PluginManager.Instance.AddMetadataForPlugin(key, value);
+        PluginManager.AddMetadataForPlugin(key, value);
     }
 }

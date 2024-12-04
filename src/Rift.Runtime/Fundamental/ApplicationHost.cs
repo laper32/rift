@@ -14,19 +14,24 @@ public sealed class ApplicationHost
 {
     public ApplicationHost(IServiceProvider provider)
     {
-        Logger = provider.GetRequiredService<ILoggerFactory>();
-        ExecutablePath = Process.GetCurrentProcess().MainModule!.FileName;
-        InstallationPath = Directory.GetParent(Directory.GetParent(ExecutablePath)!.FullName)!.FullName;
-        UserPath = Path.Combine(
+        _logger = provider.GetRequiredService<ILoggerFactory>();
+        _executablePath = Process.GetCurrentProcess().MainModule!.FileName;
+        _installationPath = Directory.GetParent(Directory.GetParent(_executablePath)!.FullName)!.FullName;
+        _userPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             Definitions.DirectoryIdentifier
         );
         Instance = this;
     }
+    private readonly string         _executablePath;
+    private readonly string         _installationPath;
+    private readonly string         _userPath;
+    private readonly ILoggerFactory _logger;
 
-    internal static ApplicationHost Instance { get; private set; } = null!;
-    public ILoggerFactory Logger { get; }
-    public string ExecutablePath { get; }
-    public string InstallationPath { get; }
-    public string UserPath { get; }
+    internal static ApplicationHost Instance         { get; private set; } = null!;
+    public static   ILoggerFactory  Logger           => Instance._logger;
+    public static   string          ExecutablePath   => Instance._executablePath;
+    public static   string          InstallationPath => Instance._installationPath;
+    public static   string          UserPath         => Instance._userPath;
+
 }
