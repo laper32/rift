@@ -300,11 +300,7 @@ internal class PluginIdentities
                 Console.WriteLine("Unknown plugin, skip");
             }
 
-            var version = declarator.Version.Trim();
-            if (string.IsNullOrEmpty(version))
-            {
-                version = "latest";
-            }
+            var version = declarator.Version;
 
             Add(new PluginDescriptor(name, version));
         });

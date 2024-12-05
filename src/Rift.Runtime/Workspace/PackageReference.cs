@@ -5,18 +5,15 @@ public class PackageReference
     public string                     Name       { get; init; }
     public string                     Version    { get; set; }
     public Dictionary<string, object> Attributes { get; init; } = [];
-    public PackageReference(string name)
+    public PackageReference(string name) : this(name, "")
     {
-        Name = name;
-        Version = "";
-        Attributes = [];
     }
 
     public PackageReference(string name, string version)
     {
-        Name       = name;
-        Version    = version;
-        Attributes = [];
+        Name    = name;
+        version = version.Trim();
+        Version = string.IsNullOrEmpty(version) ? "latest" : version;
     }
 }
 

@@ -21,6 +21,8 @@ public sealed class WorkspaceManager
     private readonly Packages         _packages;
     private          EWorkspaceStatus _status;
 
+    public static event Action<IPackageInstance, PackageReference>? AddingReference;
+
     public WorkspaceManager()
     {
         _status           = EWorkspaceStatus.Unknown;
@@ -502,21 +504,8 @@ public sealed class WorkspaceManager
         return true;
     }
 
-    internal static bool AddDependencyForPackage(PackageReference declarator)
-    {
-        return _instance.AddDependencyForPackageInternal(declarator);
-    }
-
-    private bool AddDependencyForPackageInternal(PackageReference declarator)
-    {
-        if (GetPackageInstance() is not { } instance)
-        {
-            return false;
-        }
-
-        instance.Dependencies.Add(declarator.Name, declarator);
-        return true;
-    }
+    internal static bool AddDependencyForPackage(PackageReference declarator) =>
+        _instance.AddDependencyForPackageInternal([declarator]);
 
     internal static bool AddDependencyForPackage(IEnumerable<PackageReference> declarators)
     {
@@ -532,27 +521,15 @@ public sealed class WorkspaceManager
 
         foreach (var declarator in declarators)
         {
+            AddingReference?.Invoke(instance, declarator);
             instance.Dependencies.Add(declarator.Name, declarator);
         }
 
         return true;
     }
 
-    internal static bool AddPluginForPackage(PackageReference plugin)
-    {
-        return _instance.AddPluginForPackageInternal(plugin);
-    }
-
-    private bool AddPluginForPackageInternal(PackageReference plugin)
-    {
-        if (GetPackageInstance() is not { } packageInstance)
-        {
-            return false;
-        }
-
-        packageInstance.Plugins.Add(plugin.Name, plugin);
-        return true;
-    }
+    internal static bool AddPluginForPackage(PackageReference plugin) =>
+        _instance.AddPluginForPackageInternal([plugin]);
 
     internal static bool AddPluginForPackage(IEnumerable<PackageReference> plugins)
     {

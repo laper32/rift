@@ -5,23 +5,38 @@
 // ===========================================================================
 
 using System.Text.Json;
+using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Plugins;
-using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Workspace;
 
 public interface IPackageInstance
 {
-    public string                               Name         { get; }
-    public string                               ManifestPath { get; }
-    public Dictionary<string, PackageReference> Dependencies { get; }
+    public string Name         { get; }
+    public string ManifestPath { get; }
 
     JsonElement? GetExtensionField(string name);
 
     bool HasPlugin(string name);
 
+    PackageReference? FindPlugin(string name);
+
     bool HasDependency(string name);
+
+    PackageReference? FindDependency(string name);
+
+    void ForEachDependencies(Action<KeyValuePair<string, PackageReference>> action);
+
+    void ForEachDependencies(Action<string, PackageReference> action);
+
+    bool HasMetadata(string name);
+
+    object? FindMetadata(string name);
+
+    void ForEachMetadata(Action<string, object> action);
+
+    void ForEachMetadata(Action<KeyValuePair<string, object>> action);
 }
 
 internal class PackageInstance(IMaybePackage package) : IPackageInstance
@@ -34,14 +49,55 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
     public string                               Name         => Value.Name;
     public string                               ManifestPath => Value.ManifestPath;
 
+    public bool HasMetadata(string name)
+    {
+        return Metadata.ContainsKey(name);
+    }
+
+    public object? FindMetadata(string name)
+    {
+        return Metadata.GetValueOrDefault(name);
+    }
+
     public bool HasPlugin(string name)
     {
         return Plugins.Any(x => x.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
+    public PackageReference? FindPlugin(string name)
+    {
+        return Plugins.GetValueOrDefault(name);
+    }
+
     public bool HasDependency(string name)
     {
         return Dependencies.Any(x => x.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+
+
+    public PackageReference? FindDependency(string name)
+    {
+        return Plugins.GetValueOrDefault(name);
+    }
+
+    public void ForEachDependencies(Action<KeyValuePair<string, PackageReference>> action)
+    {
+        Dependencies.ForEach(action);
+    }
+
+    public void ForEachDependencies(Action<string, PackageReference> action)
+    {
+        Dependencies.ForEach(action);
+    }
+
+    public void ForEachMetadata(Action<KeyValuePair<string, object>> action)
+    {
+        Metadata.ForEach(action);
+    }
+
+    public void ForEachMetadata(Action<string, object> action)
+    {
+        Metadata.ForEach(action);
     }
 
     public JsonElement? GetExtensionField(string name)

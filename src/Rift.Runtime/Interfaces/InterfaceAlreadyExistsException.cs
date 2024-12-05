@@ -10,4 +10,4 @@ namespace Rift.Runtime.Interfaces;
 ///     一般只在注册接口时用，如果接口已经存在则抛出此异常.
 /// </summary>
 /// <param name="message"> </param>
-public class InterfaceAlreadyExistsException(string message = "") : Exception;
+public class InterfaceAlreadyExistsException(string message = "") : Exception(message);
