@@ -473,6 +473,7 @@ public sealed class WorkspaceManager
                 ConfigurePackage?.Invoke(instance);
                 return;
             }
+            Console.WriteLine($"Running: {configure}");
             ScriptManager.EvaluateScript(configure);
             ConfigurePackage?.Invoke(instance);
         });
@@ -501,7 +502,6 @@ public sealed class WorkspaceManager
         {
             return false;
         }
-
         instance.Metadata.Add(key, value);
         return true;
     }

@@ -7,35 +7,38 @@ internal class GolangWorkspaceService
 {
     private readonly List<GolangPackage> _packages = [];
 
-    private GolangConfiguration? _config;
-
-    internal static GolangWorkspaceService Instance { get; private set; } = null!;
+    private static GolangWorkspaceService _instance  = null!;
 
     public GolangWorkspaceService()
     {
         CollectGolangPackages();
-        Instance = this;
+        _instance = this;
     }
 
     internal static void OnAddingReference(IPackageInstance package, PackageReference reference) =>
-        Instance.OnAddingReferenceInternal(package, reference);
+        _instance.OnAddingReferenceInternal(package, reference);
 
-    internal void SetGolangConfigure(GolangConfiguration config)
-    {
-        if (_config is not null)
-        {
-            return;
-        }
+    internal static void OnConfigurePackage(IPackageInstance package) => _instance.OnConfigurePackageInternal(package);
 
-        _config = config;
-    }
+    internal static void DumpGolangPackages()
+        => _instance.DumpGolangPackagesInternal();
 
-    internal void DumpGolangPackages()
+    private void DumpGolangPackagesInternal()
     {
         Console.WriteLine(JsonSerializer.Serialize(_packages, new JsonSerializerOptions
         {
             WriteIndented = true
         }));
+    }
+
+    private void OnConfigurePackageInternal(IPackageInstance self)
+    {
+        if (_packages.FirstOrDefault(x => x.Instance.Equals(self)) is not { } package)
+        {
+            return;
+        }
+
+        self.ForEachMetadata(package.Metadata.Add);
     }
 
     private void OnAddingReferenceInternal(IPackageInstance self, PackageReference reference)
@@ -46,24 +49,18 @@ internal class GolangWorkspaceService
         }
 
         package.Dependencies.Add(reference.Name, reference);
-
-        DumpGolangPackages();
     }
 
     private void CollectGolangPackages()
     {
         foreach (var package in WorkspaceManager.GetAllPackages())
         {
-
             if (!package.HasPlugin("Rift.Go"))
             {
                 continue;
             }
 
-            Console.WriteLine($"Package: {package.Name}, HasPackage: {package.HasPlugin("Rift.Go")}");
             _packages.Add(new GolangPackage(package));
-
         }
-        Console.WriteLine($"Collected packages count: {_packages.Count}");
     }
 }

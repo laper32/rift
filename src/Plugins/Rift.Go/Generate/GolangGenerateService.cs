@@ -1,6 +1,7 @@
-﻿using Rift.Runtime.Workspace;
+﻿using System.Text.Json;
+using Rift.Go.Workspace;
 
-namespace Rift.Go.Services;
+namespace Rift.Go.Generate;
 
 internal class GolangGenerateService
 {
@@ -29,6 +30,19 @@ internal class GolangGenerateService
         //}
 
         //Console.WriteLine("Now we generate go projects");
+        //try
+        //{
+        //    Console.WriteLine(JsonSerializer.Serialize(GolangWorkspaceService._instance.GetConfiguration(),
+        //        new JsonSerializerOptions
+        //        {
+        //            WriteIndented = true
+        //        }));
+        //}
+        //catch (Exception e)
+        //{
+        //    Console.WriteLine(e);
+        //}
+        //GolangWorkspaceService.DumpGolangPackages();
     }
 
     internal string GenerateGoModString()

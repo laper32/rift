@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Microsoft.CodeAnalysis.Scripting.Hosting;
 
 namespace Rift.Runtime.Scripting;
 
@@ -208,7 +209,7 @@ public sealed class ScriptManager
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
-        var script  = CSharpScript.Create(ScriptContext.Text, opts);
+        var script  = CSharpScript.Create(ScriptContext.Text, opts, assemblyLoader: new InteractiveAssemblyLoader());
         var compile = script.Compile();
         if (compile.Any())
         {
