@@ -256,7 +256,7 @@ internal class PluginIdentities
 
         _currentEvaluatingIdentity = possiblePlugin;
         RetrievePluginDependencies(possiblePlugin);
-        RetrievePluginMetadata(possiblePlugin);
+        RetrievePluginConfiguration(possiblePlugin);
         _identities.Add(possiblePlugin);
         AnalyzeDependencies(possiblePlugin);
     }
@@ -380,7 +380,7 @@ internal class PluginIdentities
         ScriptManager.EvaluateScript(scriptPath);
     }
 
-    private void RetrievePluginMetadata(PluginIdentity identity)
+    private void RetrievePluginConfiguration(PluginIdentity identity)
     {
         var scriptPath = identity.Value.Configure;
         if (scriptPath is null)

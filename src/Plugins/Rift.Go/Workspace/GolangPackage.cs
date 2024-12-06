@@ -17,7 +17,11 @@ internal class GolangPackage(IPackageInstance package)
     // 4. 配置包
 
     // 为什么要把扫描依赖和配置包放在加载插件之后？
-    // 为了应对一些极端情况：有些包只会在某些特定环境下启用（常见的就是操作系统相关的库）
+    // 为了应对一些极端情况：有些包只会在某些特定环境下启用（常见的就是操作系统相关的库，或者某些库只在某个特定环境下启用）
+    // 比如说一个库同时支持.NET8, .NET9，然后.NET8环境下库版本肯定和.NET9的不一样
+    // 这时候runtime builtin是不可能满足这些需求的。
+    // (环境变量行不行？不行，因为不管怎么样还是会回到这个问题上：环境变量）
+    // 现在还是草稿，会持续更新，直到定稿为止。
 
     public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
     public Dictionary<string, object>           Metadata     { get; init; } = [];
