@@ -22,6 +22,7 @@ public sealed class WorkspaceManager
     private          EWorkspaceStatus _status;
 
     public static event Action<IPackageInstance, PackageReference>? AddingReference;
+    public static event Action<IPackageInstance>?                   ConfigurePackage;
 
     public WorkspaceManager()
     {
@@ -81,15 +82,17 @@ public sealed class WorkspaceManager
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
 
-        RetrieveWorkspacePlugins();
+        RunWorkspacePluginsScript();
 
         PluginManager.NotifyLoadPlugins();
 
-        RetrieveWorkspaceDependencies();
-        RetrieveWorkspaceMetadata();
+        RunWorkspaceDependenciesScript();
+        RunWorkspaceConfigurationScript();
     }
 
-    public IPackageInstance? FindPackage(string name)
+    public static IPackageInstance? FindPackage(string name) => _instance.FindPackageInternal(name);
+
+    private IPackageInstance? FindPackageInternal(string name)
     {
         return _packageInstances.FindInstance(name);
     }
@@ -449,43 +452,42 @@ public sealed class WorkspaceManager
 
     #region Scripts operations
 
-    private void RetrieveWorkspaceDependencies()
+    private void RunWorkspaceDependenciesScript()
     {
-        foreach (var package in _packages.Value)
+        _packageInstances.ForEach((_, instance) =>
         {
-            if (package.Value.Dependencies is not { } dependencies)
+            if (instance.Value.Dependencies is not { } dependencies)
             {
-                continue;
+                return;
             }
-
             ScriptManager.EvaluateScript(dependencies);
-        }
+        });
     }
 
-    private void RetrieveWorkspaceMetadata()
+    private void RunWorkspaceConfigurationScript()
     {
-        foreach (var package in _packages.Value)
+        _packageInstances.ForEach((_, instance) =>
         {
-            if (package.Value.Configure is not { } metadata)
+            if (instance.Value.Configure is not { } configure)
             {
-                continue;
+                ConfigurePackage?.Invoke(instance);
+                return;
             }
-
-            ScriptManager.EvaluateScript(metadata);
-        }
+            ScriptManager.EvaluateScript(configure);
+            ConfigurePackage?.Invoke(instance);
+        });
     }
 
-    private void RetrieveWorkspacePlugins()
+    private void RunWorkspacePluginsScript()
     {
-        foreach (var package in _packages.Value)
+        _packageInstances.ForEach((_, instance) =>
         {
-            if (package.Value.Plugins is not { } plugins)
+            if (instance.Value.Plugins is not { } plugins)
             {
-                continue;
+                return;
             }
-
             ScriptManager.EvaluateScript(plugins);
-        }
+        });
     }
 
     internal static bool AddMetadataForPackage(string key, object value)
@@ -521,8 +523,8 @@ public sealed class WorkspaceManager
 
         foreach (var declarator in declarators)
         {
-            AddingReference?.Invoke(instance, declarator);
             instance.Dependencies.Add(declarator.Name, declarator);
+            AddingReference?.Invoke(instance, declarator);
         }
 
         return true;

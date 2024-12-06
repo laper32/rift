@@ -17,10 +17,8 @@ internal class GolangWorkspaceService
         Instance = this;
     }
 
-    internal static void OnAddingReference(IPackageInstance package, PackageReference reference)
-    {
-        Console.WriteLine($"Ref: {package.Name}, refName: {reference.Name}");
-    }
+    internal static void OnAddingReference(IPackageInstance package, PackageReference reference) =>
+        Instance.OnAddingReferenceInternal(package, reference);
 
     internal void SetGolangConfigure(GolangConfiguration config)
     {
@@ -40,6 +38,18 @@ internal class GolangWorkspaceService
         }));
     }
 
+    private void OnAddingReferenceInternal(IPackageInstance self, PackageReference reference)
+    {
+        if (_packages.FirstOrDefault(x => x.Instance.Equals(self)) is not { } package)
+        {
+            return;
+        }
+
+        package.Dependencies.Add(reference.Name, reference);
+
+        DumpGolangPackages();
+    }
+
     private void CollectGolangPackages()
     {
         foreach (var package in WorkspaceManager.GetAllPackages())
@@ -55,6 +65,5 @@ internal class GolangWorkspaceService
 
         }
         Console.WriteLine($"Collected packages count: {_packages.Count}");
-        DumpGolangPackages();
     }
 }

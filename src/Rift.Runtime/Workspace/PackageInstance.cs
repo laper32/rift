@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Collections;
 using System.Text.Json;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Fundamental;
@@ -201,5 +202,15 @@ internal class PackageInstances
                 yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
             }
         }
+    }
+
+    public void ForEach(Action<KeyValuePair<string, PackageInstance>> predicate)
+    {
+        _value.ForEach(predicate);
+    }
+
+    public void ForEach(Action<string, PackageInstance> predicate)
+    {
+        _value.ForEach(predicate);
     }
 }
