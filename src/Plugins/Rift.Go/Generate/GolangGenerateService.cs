@@ -22,6 +22,7 @@ internal class GolangGenerateService
 
     internal static GolangGenerateService Instance { get; private set; } = null!;
 
+    
     public static void PerformGolangGenerate()
     {
         var          goProxy = Environment.GetEnvironmentVariable("GOPROXY") ?? "";
@@ -51,18 +52,39 @@ internal class GolangGenerateService
         };
         httpClient.DefaultRequestHeaders.Add("User-Agent", "Rift.Go.Generate");
 
-        var queryResult = Task.Run(async () =>
+        GolangWorkspaceService.Packages.ForEach(pkg =>
         {
-            // https://proxy.golang.org/github.com/laper32/goose/@v0.1.0
-            // https://proxy.golang.org/github.com/laper32/goose/@latest
-            var url = $"github.com/laper32/goose/@latest";
-            var response = await httpClient.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-            var result = await response.Content.ReadAsStringAsync() ??
-                         throw new InvalidDataException("Invalid upstream data");
-            return result;
-        }).Result;
-        Console.WriteLine($"{queryResult}");
+            foreach (var reference in pkg.Dependencies.Values)
+            {
+                Console.WriteLine($"ref version: {reference.Version}");
+                //var actualVersion = Task.Run(async () =>
+                //{
+                //    const string url
+                //}).Result;
+            }
+        });
+
+
+        //var queryResult = Task.Run(async () =>
+        //{
+        //    // goproxy.cn: {"Version":"v0.1.0","Time":"2024-12-05T08:59:34Z"}
+        //    // https://proxy.golang.org/github.com/laper32/goose/@v0.1.0
+        //    // https://proxy.golang.org/github.com/laper32/goose/@latest
+        //    const string url = $"github.com/laper32/goose/@latest";
+
+        //    var response = await httpClient.GetAsync(url);
+        //    response.EnsureSuccessStatusCode();
+        //    var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object?>>() ??
+        //                 throw new InvalidDataException("Invalid upstream data");
+        //    return result;
+        //}).Result;
+
+        //Console.WriteLine($"Version: {queryResult["Version"]}");
+    }
+
+    private void ResolveActualReferenceVersion()
+    {
+
     }
 
     internal string GenerateGoModString()
