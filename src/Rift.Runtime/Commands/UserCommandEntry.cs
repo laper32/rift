@@ -1,8 +1,14 @@
-﻿namespace Rift.Runtime.Commands;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+namespace Rift.Runtime.Commands;
 
 internal class UserCommandEntry(string name)
 {
-    public string                 Name     { get; set; } = name;
+    public string                 Name     { get; set; }  = name;
     public List<UserCommandEntry> Children { get; init; } = [];
 
     public string TaskName { get; set; } = null!;

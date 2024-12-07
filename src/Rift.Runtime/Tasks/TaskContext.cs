@@ -1,13 +1,17 @@
-﻿using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Tasks;
-using Rift.Runtime.Abstractions.Workspace;
-using Rift.Runtime.Fundamental;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
 
 namespace Rift.Runtime.Tasks;
 
-internal class TaskContext(InterfaceBridge bridge) : ITaskContext
+internal class TaskContext : ITaskContext
 {
-    public ITaskArguments    Arguments        { get; }
-    public IRuntime          Runtime          => bridge.Runtime;
-    public IWorkspaceManager WorkspaceManager => bridge.WorkspaceManager;
+    public ITaskArguments Arguments { get; }
+}
+
+public interface ITaskContext
+{
+    ITaskArguments Arguments { get; }
 }

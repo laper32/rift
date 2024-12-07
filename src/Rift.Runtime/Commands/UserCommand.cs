@@ -1,7 +1,10 @@
-﻿using System.CommandLine;
-using System.Text.Json;
-using Rift.Runtime.Abstractions.Tasks;
-using Rift.Runtime.Fundamental;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.CommandLine;
 using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
@@ -10,7 +13,7 @@ internal class UserCommand
 {
     public static UserCommandEntry Build(IEnumerable<string> commandTasks)
     {
-        var root = new UserCommandEntry("etc");
+        var root = new UserCommandEntry("rift");
         foreach (var task in commandTasks)
         {
             var parts = task.Split('.');
@@ -23,9 +26,11 @@ internal class UserCommand
                 // Move to the child node
                 currentNode = childNode;
             }
+
             // Add the task to the leaf node
             currentNode.TaskName = task;
         }
+
         return root;
     }
 
@@ -46,20 +51,20 @@ internal class UserCommand
         }
     }
 
-    public static RootCommand BuildCli(UserCommandEntry entry, InterfaceBridge bridge)
+    public static RootCommand BuildCli(UserCommandEntry entry)
     {
         var root = new RootCommand("Rift, a cross-platform build system");
-        BuildCliImpl(root, entry, bridge);
+        BuildCliImpl(root, entry);
         return root;
     }
 
-    private static void BuildCliImpl(Command cmd, UserCommandEntry entry, InterfaceBridge bridge)
+    private static void BuildCliImpl(Command cmd, UserCommandEntry entry)
     {
         foreach (var child in entry.Children)
         {
             var newCmd = new Command(child.Name);
-            
-            if (TaskManager.Instance.FindTask(child.TaskName) is not RiftTask task)
+
+            if (TaskManager.FindTask(child.TaskName) is not RiftTask task)
             {
                 throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
             }
@@ -75,14 +80,11 @@ internal class UserCommand
             newCmd.Description = task.Description;
             if (task.HasAction)
             {
-
-                newCmd.SetHandler(() =>
-                {
-                    TaskManager.Instance.RunTask(task.Name);
-                });
+                newCmd.SetHandler(() => { TaskManager.RunTask(task.Name); });
             }
+
             cmd.AddCommand(newCmd);
-            BuildCliImpl(newCmd, child, bridge);
+            BuildCliImpl(newCmd, child);
         }
     }
 }

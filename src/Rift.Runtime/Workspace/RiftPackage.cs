@@ -5,11 +5,11 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Abstractions.Manifest;
+using Rift.Runtime.Manifest;
 
 namespace Rift.Runtime.Workspace;
 
-public class RiftPackage(IRiftManifest riftManifest, string manifestPath)
+internal class RiftPackage(IRiftManifest riftManifest, string manifestPath)
 {
     public string        Name         => riftManifest.Name;
     public string        ManifestPath => manifestPath;

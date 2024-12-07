@@ -5,33 +5,91 @@
 // ===========================================================================
 
 
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Tasks;
-using Rift.Runtime.Fundamental;
+using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Tasks;
 
-internal interface ITaskManagerInternal : ITaskManager, IInitializable
+public sealed class TaskManager
 {
-    List<string> GetMarkedAsCommandTasks();
-}
-
-internal class TaskManager : ITaskManagerInternal
-{
+    private static   TaskManager     _instance = null!;
     private readonly List<IRiftTask> _tasks;
-    internal static  TaskManager     Instance { get; private set; } = null!;
-    private readonly InterfaceBridge _bridge;
-    public TaskManager(InterfaceBridge bridge)
+
+    public TaskManager()
     {
-        _tasks   = [];
-        _bridge  = bridge;
-        Instance = this;
+        _tasks    = [];
+        _instance = this;
     }
 
-    public IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
+    internal static bool Init()
+    {
+        return _instance.InitInternal();
+    }
+
+    internal static void Shutdown()
+    {
+        _instance.ShutdownInternal();
+    }
+
+    /// <summary>
+    ///     注册一个任务 <br />
+    ///     <remarks>
+    ///         如果该任务已经存在，将返回已经存在的任务。 <br />
+    ///     </remarks>
+    /// </summary>
+    /// <param name="name"> 任务名 </param>
+    /// <param name="predicate"> 任务配置 </param>
+    /// ">
+    /// <returns> 想获取的任务 </returns>
+    public static IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
+    {
+        return _instance.RegisterTaskInternal(name, predicate);
+    }
+
+    /// <summary>
+    ///     找到你想要的任务
+    /// </summary>
+    /// <param name="name"> 对应的任务名 </param>
+    /// <returns> </returns>
+    public static IRiftTask? FindTask(string name)
+    {
+        return _instance.FindTaskInternal(name);
+    }
+
+    /// <summary>
+    ///     判断该任务是否存在
+    /// </summary>
+    /// <param name="name"> 任务名 </param>
+    /// <returns> 想获取的任务 </returns>
+    public static bool HasTask(string name)
+    {
+        return _instance.HasTaskInternal(name);
+    }
+
+    public static void RunTask(string name)
+    {
+        _instance.RunTaskInternal(name);
+    }
+
+    internal static List<string> GetMarkedAsCommandTasks()
+    {
+        return _instance.GetMarkedAsCommandTasksInternal();
+    }
+
+    private bool InitInternal()
+    {
+        ScriptManager.AddNamespace("Rift.Runtime.Tasks");
+        return true;
+    }
+
+    private void ShutdownInternal()
+    {
+        ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
+    }
+
+    private IRiftTask RegisterTaskInternal(string name, Action<ITaskConfiguration> predicate)
     {
         TaskConfiguration cfg;
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is {} task)
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } task)
         {
             cfg = new TaskConfiguration((RiftTask)task);
             predicate(cfg);
@@ -47,19 +105,24 @@ internal class TaskManager : ITaskManagerInternal
         return ret;
     }
 
-    public IRiftTask? FindTask(string name) =>
-        _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    private IRiftTask? FindTaskInternal(string name)
+    {
+        return _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
 
-    public bool HasTask(string name) => _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    private bool HasTaskInternal(string name)
+    {
+        return _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
 
-    public void RunTask(string name)
+    private void RunTaskInternal(string name)
     {
         if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task)
         {
             return;
         }
 
-        var context = new TaskContext(_bridge);
+        var context = new TaskContext();
 
         try
         {
@@ -71,24 +134,13 @@ internal class TaskManager : ITaskManagerInternal
         }
     }
 
-    private async Task ExecuteTask(RiftTask task, TaskContext context)
-    {
-        await task.Invoke(context);
-    }
-
-    public List<string> GetMarkedAsCommandTasks()
+    private List<string> GetMarkedAsCommandTasksInternal()
     {
         return (from RiftTask task in _tasks where task.IsCommand select task.Name).ToList();
     }
 
-    public bool Init()
+    private async Task ExecuteTask(RiftTask task, TaskContext context)
     {
-        _bridge.ScriptManager.AddNamespace("Rift.Runtime.Tasks");
-        return true;
-    }
-
-    public void Shutdown()
-    {
-        _bridge.ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
+        await task.Invoke(context);
     }
 }

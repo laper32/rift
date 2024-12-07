@@ -6,9 +6,25 @@
 
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Rift.Runtime.Abstractions.Manifest;
 
 namespace Rift.Runtime.Manifest;
+
+public enum ERiftManifest
+{
+    Plugin
+}
+
+public interface IRiftManifest
+{
+    public ERiftManifest            Type         { get; }
+    string                          Name         { get; }
+    List<string>                    Authors      { get; }
+    string                          Version      { get; }
+    string?                         Description  { get; }
+    string?                         Configure    { get; }
+    string?                         Dependencies { get; }
+    Dictionary<string, JsonElement> Others       { get; }
+}
 
 internal class RiftManifest<T> : IRiftManifest
 {
@@ -28,10 +44,10 @@ internal class RiftManifest<T> : IRiftManifest
         Value = manifest;
     }
 
-    public ERiftManifest Type { get; init; }
-
     [JsonIgnore]
     public T Value { get; init; }
+
+    public ERiftManifest Type { get; init; }
 
     public string Name => Value switch
     {

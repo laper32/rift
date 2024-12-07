@@ -4,15 +4,13 @@
 // All Rights Reserved
 // ===========================================================================
 
-
-using System.CommandLine;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Abstractions.Fundamental;
 using Rift.Runtime.Commands;
 using Rift.Runtime.Fundamental;
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Interfaces;
+using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Tasks;
 using Rift.Runtime.Workspace;
@@ -21,47 +19,46 @@ using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
 
 [assembly: InternalsVisibleTo("Rift.Runtime.Tests", AllInternalsVisible = true)]
+[assembly: InternalsVisibleTo("Rift", AllInternalsVisible = true)]
 
 namespace Rift.Runtime;
 
-
-public static class Bootstrap
+internal static class Bootstrap
 {
-    public static bool Init()
+    internal static bool Init()
     {
         return InitImpl();
     }
 
-    public static void Shutdown()
+    internal static void Shutdown()
     {
         ShutdownImpl();
     }
 
-    public static void Load()
+    internal static void Load()
     {
         // TODO: 要配合命令行的行为。
         // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
-        WorkspaceManager.Instance.SetRootPath(Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
+        WorkspaceManager.SetRootPath(
+            Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
 
         try
         {
-            WorkspaceManager.Instance.LoadWorkspace();
+            WorkspaceManager.LoadWorkspace();
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Error when loading workspace: {e.Message}");
+            Tty.Error($"{e.Message}");
         }
-
-        PluginManager.Instance.NotifyLoadPlugins();
 
         var args = Environment.GetCommandLineArgs();
         Console.WriteLine($"Args: {string.Join(", ", args)}");
         //PluginManager.Instance.DumpPluginIdentities();
     }
 
-    public static void Run(string[] args)
+    internal static void Run(string[] args)
     {
-        CommandManager.Instance.ExecuteCommand(args);
+        CommandManager.ExecuteCommand(args);
     }
 
     private static bool InitImpl()
@@ -73,7 +70,7 @@ public static class Bootstrap
         var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateOnBuild = true,
-            ValidateScopes = true
+            ValidateScopes  = true
         });
 
         ActivateServices(provider);
@@ -102,7 +99,8 @@ public static class Bootstrap
 
     private static void ConfigureLogging(IServiceCollection services)
     {
-        const string consoleTemplate = "L [{Timestamp:MM/dd HH:mm:ss}] | {Level} | {SourceContext}{Scope} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
+        const string consoleTemplate =
+            "L [{Timestamp:MM/dd HH:mm:ss}] | {Level} | {SourceContext}{Scope} {NewLine}{Message:lj}{NewLine}{Exception}{NewLine}";
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .MinimumLevel.Verbose()
@@ -124,69 +122,66 @@ public static class Bootstrap
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        services.AddSingleton<InterfaceBridge>();
-        services.AddSingleton<IRuntimeInternal, Fundamental.Runtime>();
-        services.AddSingleton<IShareSystemInternal, ShareSystem>();
-        services.AddSingleton<IScriptManagerInternal, ScriptManager>();
-        services.AddSingleton<IPluginManagerInternal, PluginManager>();
-        services.AddSingleton<IWorkspaceManagerInternal, WorkspaceManager>();
-        services.AddSingleton<ITaskManagerInternal, TaskManager>();
-        services.AddSingleton<ICommandManagerInternal, CommandManager>();
+        services.AddSingleton<ApplicationHost>();
+        services.AddSingleton<InterfaceManager>();
+        services.AddSingleton<ScriptManager>();
+        services.AddSingleton<PluginManager>();
+        services.AddSingleton<WorkspaceManager>();
+        services.AddSingleton<TaskManager>();
+        services.AddSingleton<CommandManager>();
     }
 
     private static void ActivateServices(IServiceProvider provider)
     {
-        provider.GetRequiredService<IRuntimeInternal>();
-        provider.GetRequiredService<IShareSystemInternal>();
-        provider.GetRequiredService<IScriptManagerInternal>();
-        provider.GetRequiredService<IPluginManagerInternal>();
-        provider.GetRequiredService<IWorkspaceManagerInternal>();
-        provider.GetRequiredService<ITaskManagerInternal>();
-        provider.GetRequiredService<ICommandManagerInternal>();
+        provider.GetRequiredService<ApplicationHost>();
+        provider.GetRequiredService<InterfaceManager>();
+        provider.GetRequiredService<ScriptManager>();
+        provider.GetRequiredService<PluginManager>();
+        provider.GetRequiredService<WorkspaceManager>();
+        provider.GetRequiredService<TaskManager>();
+        provider.GetRequiredService<CommandManager>();
     }
 
     private static void InitComponents()
     {
-        if (!ShareSystem.Instance.Init())
+        if (!InterfaceManager.Init())
         {
-            throw new InvalidOperationException("Failed to init ShareSystem.");
+            throw new InvalidOperationException("Failed to init InterfaceManager.");
         }
 
-        if (!ScriptManager.Instance.Init())
+        if (!ScriptManager.Init())
         {
-            throw new InvalidOperationException("Failed to init ScriptManager.");
+            throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
         }
 
-        if (!PluginManager.Instance.Init())
+        if (!PluginManager.Init())
         {
-            throw new InvalidOperationException("Failed to init PluginManager.");
+            throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
         }
 
-        if (!WorkspaceManager.Instance.Init())
+        if (!WorkspaceManager.Init())
         {
-            throw new InvalidOperationException("Failed to init WorkspaceManager.");
+            throw new InvalidOperationException($"Failed to init {nameof(WorkspaceManager)}.");
         }
 
-        if (!TaskManager.Instance.Init())
+        if (!TaskManager.Init())
         {
-            throw new InvalidOperationException("Failed to init TaskManager");
+            throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
         }
 
-        if (!CommandManager.Instance.Init())
+        if (!CommandManager.Init())
         {
-            throw new InvalidOperationException("Failed to init C");
+            throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
         }
     }
 
     private static void ShutdownComponents()
     {
-        CommandManager.Instance.Shutdown();
-        TaskManager.Instance.Shutdown();
-        WorkspaceManager.Instance.Shutdown();
-        PluginManager.Instance.Shutdown();
-        ScriptManager.Instance.Shutdown();
-        ShareSystem.Instance.Shutdown();
+        CommandManager.Shutdown();
+        TaskManager.Shutdown();
+        WorkspaceManager.Shutdown();
+        PluginManager.Shutdown();
+        ScriptManager.Shutdown();
+        InterfaceManager.Shutdown();
     }
-
-
 }

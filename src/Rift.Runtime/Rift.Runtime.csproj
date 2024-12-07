@@ -6,30 +6,25 @@
 		<Nullable>enable</Nullable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+		<NeutralLanguage>en</NeutralLanguage>
+
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
-	  <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
-	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
-	  <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
-	  <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
-	  <PackageReference Include="Semver" Version="3.0.0" />
-	  <PackageReference Include="Serilog" Version="4.0.2" />
-	  <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
-	  <PackageReference Include="Serilog.Sinks.Async" Version="2.0.0" />
-	  <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
-	  <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
-	  <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
-	  <PackageReference Include="Tomlyn" Version="0.17.0" />
+		<PackageReference Include="Kokuban" Version="0.2.0" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+		<PackageReference Include="Semver" Version="3.0.0" />
+		<PackageReference Include="Serilog" Version="4.0.2" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+		<PackageReference Include="Serilog.Sinks.Async" Version="2.0.0" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+		<PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+		<PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+		<PackageReference Include="Tomlyn" Version="0.17.0" />
 	</ItemGroup>
-
-	<ItemGroup>
-	  <ProjectReference Include="..\Rift.Runtime.Abstractions\Rift.Runtime.Abstractions.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<AssemblyAttribute Include="Rift.Runtime.Abstractions.Scripting.ScriptShared" />
-	</ItemGroup>
-
 </Project>

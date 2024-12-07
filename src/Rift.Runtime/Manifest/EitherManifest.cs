@@ -4,8 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.Abstractions.Manifest;
-
 namespace Rift.Runtime.Manifest;
 
 internal enum EEitherManifest
@@ -49,9 +47,9 @@ internal record EitherManifest<T> : IEitherManifest
 
     public string Name => Value switch
     {
-        IManifest real => real.Name,
+        IManifest real                   => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,
-        IRiftManifest riftManifest => riftManifest.Name,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        IRiftManifest riftManifest       => riftManifest.Name,
+        _                                => throw new ArgumentException("Invalid manifest type.")
     };
 }

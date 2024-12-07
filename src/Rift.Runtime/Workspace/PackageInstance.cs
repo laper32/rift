@@ -5,20 +5,33 @@
 // ===========================================================================
 
 using System.Text.Json;
-using Rift.Runtime.Abstractions.Workspace;
-using Rift.Runtime.Plugin;
+using Rift.Runtime.Collections.Generic;
+using Rift.Runtime.Fundamental;
+using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Workspace;
+
+public interface IPackageInstance
+{
+    public string                               Name          { get; }
+    public string                               ManifestPath  { get; }
+    public Dictionary<string, PackageReference> Plugins       { get; }
+    public Dictionary<string, PackageReference> Dependencies  { get; }
+    public PackageConfiguration                 Configuration { get; }
+
+    JsonElement? GetExtensionField(string name);
+}
 
 internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {
     public IMaybePackage Value { get; init; } = package;
 
-    public Dictionary<string, object>           Metadata     { get; init; } = [];
-    public Dictionary<string, object>           Dependencies { get; init; } = [];
-    public Dictionary<string, Scripting.Plugin> Plugins      { get; init; } = [];
-    public string                               Name         => Value.Name;
-    public string                               ManifestPath => Value.ManifestPath;
+    public PackageConfiguration Configuration { get; init; } = new();
+
+    public Dictionary<string, PackageReference> Plugins { get; init; } = [];
+    public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
+    public string Name => Value.Name;
+    public string ManifestPath => Value.ManifestPath;
 
     public JsonElement? GetExtensionField(string name)
     {
@@ -28,6 +41,14 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
         }
 
         return null;
+    }
+}
+
+public static class PackageInstanceExtensions
+{
+    public static bool HasPlugin(this IPackageInstance self, string pluginName)
+    {
+        return self.Plugins.ContainsKey(pluginName);
     }
 }
 
@@ -79,13 +100,13 @@ internal class PackageInstances
 
     public void DumpInstancesMetadata()
     {
-        Console.WriteLine("DumpInstancesMetadata...");
+        Tty.WriteLine("DumpInstancesMetadata...");
         var str = JsonSerializer.Serialize(_value, new JsonSerializerOptions
         {
             WriteIndented = true
         });
-        Console.WriteLine(str);
-        Console.WriteLine("...End");
+        Tty.WriteLine(str);
+        Tty.WriteLine("...End");
     }
 
     public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
@@ -108,8 +129,7 @@ internal class PackageInstances
 
                 if (string.IsNullOrEmpty(trimmedPluginName))
                 {
-                    // TODO: Warning here, use workspaceManager's logger.
-                    Console.WriteLine($"Warning: found a plugin name is empty, the package: `{packageName}`");
+                    Tty.Warning($"Found a plugin name is empty, package: `{packageName}`");
                     continue;
                 }
 
@@ -122,5 +142,15 @@ internal class PackageInstances
                 yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
             }
         }
+    }
+
+    public void ForEach(Action<KeyValuePair<string, PackageInstance>> predicate)
+    {
+        _value.ForEach(predicate);
+    }
+
+    public void ForEach(Action<string, PackageInstance> predicate)
+    {
+        _value.ForEach(predicate);
     }
 }

@@ -28,6 +28,8 @@ internal interface IMaybePackage
 
 internal class MaybePackage<T>(T value) : IMaybePackage
 {
+    public T Value { get; init; } = value;
+
     public EMaybePackage Type { get; init; } = value switch
     {
         Package        => EMaybePackage.Package,
@@ -35,8 +37,6 @@ internal class MaybePackage<T>(T value) : IMaybePackage
         RiftPackage    => EMaybePackage.Rift,
         _              => throw new InvalidOperationException("Only accepts `Package` or `VirtualPackage`.")
     };
-
-    public T Value { get; init; } = value;
 
     public string ManifestPath => Value switch
     {

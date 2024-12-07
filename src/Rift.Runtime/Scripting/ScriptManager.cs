@@ -10,42 +10,18 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Scripting;
-using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Scripting;
 
-internal interface IScriptManagerInternal : IScriptManager, IInitializable
+public sealed class ScriptManager
 {
-    ScriptContext? ScriptContext { get; }
-}
+    private static ScriptManager _instance = null!;
 
-internal class ScriptManager : IScriptManagerInternal
-{
-    private enum Status
-    {
-        Unknown,
-        Init,
-        Ready,
-        Shutdown
-    }
-
-    public ScriptManager(InterfaceBridge bridge)
-    {
-        _bridge       = bridge;
-        Instance      = this;
-        ScriptContext = null;
-    }
-
-    internal static  ScriptManager   Instance { get; set; } = null!;
-    private readonly InterfaceBridge _bridge;
-
-    public  ScriptContext? ScriptContext { get; private set; }
-    private Status         _status = Status.Unknown;
+    private readonly List<string> _libraries  = [];
+    private readonly List<string> _namespaces = [];
 
     /// <summary>
-    /// Check <seealso cref="ScriptOptions"/> for more details. 
+    ///     Check <seealso cref="ScriptOptions" /> for more details.
     /// </summary>
     private readonly IEnumerable<string> _preImportedSdkLibraries =
     [
@@ -77,7 +53,7 @@ internal class ScriptManager : IScriptManagerInternal
     ];
 
     /// <summary>
-    /// Check .csproj file for the list of pre-imported namespaces
+    ///     Check .csproj file for the list of pre-imported namespaces
     /// </summary>
     private readonly IEnumerable<string> _preImportedSdkNamespaces =
     [
@@ -91,10 +67,72 @@ internal class ScriptManager : IScriptManagerInternal
         "System.Linq"
     ];
 
-    private readonly List<string> _importLibraries = [];
-    private readonly List<string> _importNamespaces = [];
+    private Status _status = Status.Unknown;
 
-    public bool Init()
+    public ScriptManager()
+    {
+        _instance     = this;
+        ScriptContext = null;
+    }
+
+    internal static ScriptContext? ScriptContext { get; private set; }
+
+    internal static bool Init()
+    {
+        return _instance.InitInternal();
+    }
+
+    internal static void Shutdown()
+    {
+        _instance.ShutdownInternal();
+    }
+
+    internal static void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
+    {
+        _instance.EvaluateScriptInternal(scriptPath, timedOutUnitSec);
+    }
+
+    public static void AddLibrary(string library)
+    {
+        _instance.AddLibraryInternal([library]);
+    }
+
+    public static void AddLibrary(IEnumerable<string> libraries)
+    {
+        _instance.AddLibraryInternal(libraries);
+    }
+
+    public static void RemoveLibrary(string library)
+    {
+        _instance.RemoveLibraryInternal([library]);
+    }
+
+    public static void RemoveLibrary(IEnumerable<string> libraries)
+    {
+        _instance.RemoveLibraryInternal(libraries);
+    }
+
+    public static void AddNamespace(string @namespace)
+    {
+        _instance.AddNamespaceInternal([@namespace]);
+    }
+
+    public static void AddNamespace(IEnumerable<string> namespaces)
+    {
+        _instance.AddNamespaceInternal(namespaces);
+    }
+
+    public static void RemoveNamespace(string @namespace)
+    {
+        _instance.RemoveNamespaceInternal([@namespace]);
+    }
+
+    public static void RemoveNamespace(IEnumerable<string> namespaces)
+    {
+        _instance.RemoveNamespaceInternal(namespaces);
+    }
+
+    internal bool InitInternal()
     {
         _status = Status.Init;
         AddLibrary(["Rift.Runtime"]);
@@ -103,101 +141,57 @@ internal class ScriptManager : IScriptManagerInternal
         return true;
     }
 
-    public void Shutdown()
+    internal void ShutdownInternal()
     {
         RemoveNamespace(["Rift.Runtime.Scripting"]);
         RemoveLibrary(["Rift.Runtime"]);
-
         _status = Status.Shutdown;
     }
 
-    public void AddLibrary(string library)
+    private void AddLibraryInternal(IEnumerable<string> libraries)
     {
         CheckAvailable();
 
-        _importLibraries.Add(library);
+        _libraries.AddRange(libraries);
     }
 
-    // 估计这里还要做额外处理。。因为还涉及到版本号的问题。
-    // 先不管他，之后再说
-    public void AddLibrary(IEnumerable<string> libraries)
-    {
-        CheckAvailable();
-
-        _importLibraries.AddRange(libraries);
-    }
-
-    public void RemoveLibrary(string library)
-    {
-        CheckAvailable();
-
-        _importLibraries.Remove(library);
-    }
-
-    public void RemoveLibrary(IEnumerable<string> libraries)
+    private void RemoveLibraryInternal(IEnumerable<string> libraries)
     {
         CheckAvailable();
 
         foreach (var library in libraries)
         {
-            _importLibraries.Remove(library);
+            _libraries.Remove(library);
         }
     }
 
-    public void AddNamespace(string @namespace)
+    private void AddNamespaceInternal(IEnumerable<string> namespaces)
     {
         CheckAvailable();
-
-        _importNamespaces.Add(@namespace);
+        _namespaces.AddRange(namespaces);
     }
 
-    public void AddNamespace(IEnumerable<string> namespaces)
+    private void RemoveNamespaceInternal(IEnumerable<string> namespaces)
     {
         CheckAvailable();
-
-        _importNamespaces.AddRange(namespaces);
-    }
-
-    public void RemoveNamespace(string @namespace)
-    {
-        CheckAvailable();
-
-        _importNamespaces.Remove(@namespace);
-    }
-
-    public void RemoveNamespace(IEnumerable<string> namespaces)
-    {
-        CheckAvailable();
-
         foreach (var @namespace in namespaces)
         {
-            _importNamespaces.Remove(@namespace);
+            _namespaces.Remove(@namespace);
         }
     }
 
-    public void EvaluateScript(string scriptPath, int timedOutUnitSec = 15)
+    internal void EvaluateScriptInternal(string scriptPath, int timedOutUnitSec = 15)
     {
         CheckAvailable();
 
         // make sure script context path passed in is canonicalized.
         ScriptContext = new ScriptContext(Path.GetFullPath(scriptPath));
 
-        using var loader = new InteractiveAssemblyLoader();
         var loadedAssemblies = CreateLoadedAssembliesMap();
 
-        var runtimeSharedLibraries = new List<Assembly>();
+        var runtimeReferences = new List<Assembly>();
 
-        _importLibraries.ForEach(fileName =>
-        {
-            var lib = loadedAssemblies.GetValueOrDefault(fileName);
-            if (lib is null)
-            {
-                return;
-            }
-            runtimeSharedLibraries.Add(lib);
-        });
-
-        runtimeSharedLibraries.ForEach(loader.RegisterDependency);
+        _libraries.ForEach(AddRuntimeReferences);
 
         // 脚本只应该考虑本地文件，不应该考虑跨包引用的情况，哪怕这些包在同一个workspace下。
         // 如果你有这个情况，你更应该思考项目组织是否合理。
@@ -207,14 +201,15 @@ internal class ScriptManager : IScriptManagerInternal
             // 相当于你不用额外写using 某个具体的包
             // 比如说你不用额外写using System;
             .AddImports(_preImportedSdkNamespaces)
-            .AddImports(_importNamespaces)
+            .AddImports(_namespaces)
             // 运行脚本需要加载的包。
             .AddReferences(_preImportedSdkLibraries)
-            .AddReferences(runtimeSharedLibraries)
+            .AddReferences(runtimeReferences)
+            //.AddReferences(pluginReferences)
             .WithSourceResolver(resolver)
             .WithLanguageVersion(LanguageVersion.Default)
             .WithOptimizationLevel(OptimizationLevel.Release);
-        var script = CSharpScript.Create(ScriptContext.Text, opts, assemblyLoader: loader);
+        var script  = CSharpScript.Create(ScriptContext.Text, opts, assemblyLoader: new InteractiveAssemblyLoader());
         var compile = script.Compile();
         if (compile.Any())
         {
@@ -230,6 +225,24 @@ internal class ScriptManager : IScriptManagerInternal
 
             // reset.
             ScriptContext = null;
+        }
+
+        return;
+
+        void AddRuntimeReferences(string fileName)
+        {
+            var lib = loadedAssemblies.GetValueOrDefault(fileName);
+            if (lib is null)
+            {
+                return;
+            }
+
+            if (runtimeReferences.Contains(lib))
+            {
+                return;
+            }
+
+            runtimeReferences.Add(lib);
         }
     }
 
@@ -261,5 +274,13 @@ internal class ScriptManager : IScriptManagerInternal
                 f => f.Name ?? throw new InvalidOperationException("Why your assembly name is empty?"),
                 f => f.ResolvedRuntimeAssembly, StringComparer.OrdinalIgnoreCase
             );
+    }
+
+    private enum Status
+    {
+        Unknown,
+        Init,
+        Ready,
+        Shutdown
     }
 }

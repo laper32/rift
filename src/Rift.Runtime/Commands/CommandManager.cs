@@ -1,55 +1,62 @@
-﻿using System.CommandLine;
-using System.Text.Json;
-using Rift.Runtime.Abstractions.Commands;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Fundamental;
+﻿// ===========================================================================
+// Rift
+// Copyright (C) 2024 - Present laper32.
+// All Rights Reserved
+// ===========================================================================
+
+using System.CommandLine;
+using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
 
-internal interface ICommandManagerInternal : ICommandManager, IInitializable;
-
-internal sealed class CommandManager : ICommandManagerInternal
+public sealed class CommandManager
 {
-    internal static  CommandManager  Instance { get; private set; } = null!;
-    private readonly InterfaceBridge _bridge;
-    private          RootCommand     _command     = null!;
-    private          bool            _initialized;
+    private RootCommand _command = null!;
+    private bool        _initialized;
 
-    public CommandManager(InterfaceBridge bridge)
+    public CommandManager()
     {
-        _bridge  = bridge;
         Instance = this;
     }
 
-    public void ExecuteCommand(string[] args)
+    public static CommandManager Instance { get; private set; } = null!;
+
+    public static void ExecuteCommand(string[] args)
     {
-        if (!_initialized)
+        if (!Instance._initialized)
         {
             BuildCli();
         }
-        _command.Invoke(args);
 
+        Instance.Invoke(args);
     }
 
-    public bool Init()
+    internal static bool Init()
     {
         return true;
     }
 
-    public void Shutdown()
+    internal static void Shutdown()
     {
     }
 
-    public void BuildCli()
+    private static void BuildCli()
     {
-        if (_initialized)
+        if (Instance._initialized)
         {
             return;
         }
-        var pendingCommands = _bridge.TaskManager.GetMarkedAsCommandTasks();
+
+        var pendingCommands = TaskManager.GetMarkedAsCommandTasks();
 
         var entries = UserCommand.Build(pendingCommands);
-        _command     = UserCommand.BuildCli(entries, _bridge);
-        _initialized = true;
+        Instance._command = UserCommand.BuildCli(entries);
+
+        Instance._initialized = true;
+    }
+
+    private void Invoke(string[] args)
+    {
+        _command.Invoke(args);
     }
 }

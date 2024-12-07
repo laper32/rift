@@ -4,10 +4,9 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.Manifest;
 using System.Text.Json;
-using Rift.Runtime.Abstractions.Fundamental;
-using Rift.Runtime.Abstractions.Manifest;
+using Rift.Runtime.Fundamental;
+using Rift.Runtime.Manifest;
 
 namespace Rift.Runtime.Workspace;
 
@@ -79,6 +78,7 @@ internal class Packages
                         {
                             throw new InvalidOperationException($"Package already exists: `{projectManifest.Name}`");
                         }
+
                         var package = new Package(projectManifest.Value, manifestPath);
                         if (projectManifest.Value.Value.Target is not null)
                         {
@@ -86,6 +86,7 @@ internal class Packages
                             var targetPackage = new Package(new Manifest<TargetManifest>(targetManifest), manifestPath);
                             Value.Add(targetPackage.Name, new MaybePackage<Package>(targetPackage));
                         }
+
                         Value.Add(package.Name, new MaybePackage<Package>(package));
                         break;
                     }
@@ -105,6 +106,7 @@ internal class Packages
                         throw new InvalidOperationException("Why you at here?");
                     }
                 }
+
                 break;
             }
             case EEitherManifest.Virtual:
@@ -138,6 +140,7 @@ internal class Packages
                         throw new InvalidOperationException("Why you at here?");
                     }
                 }
+
                 break;
             }
             case EEitherManifest.Rift:
@@ -170,7 +173,9 @@ internal class Packages
                         Load(manifestPath);
                         if (projectManifest.Value.Value.Members is { } members)
                         {
-                            foreach (var fullPath in members.Select(member => Path.Combine(Path.GetDirectoryName(manifestPath)!, member, Definitions.ManifestIdentifier)))
+                            foreach (var fullPath in members.Select(member =>
+                                         Path.Combine(Path.GetDirectoryName(manifestPath)!, member,
+                                             Definitions.ManifestIdentifier)))
                             {
                                 LoadRecursively(fullPath);
                             }
@@ -184,6 +189,7 @@ internal class Packages
                         {
                             return;
                         }
+
                         Load(manifestPath);
                         break;
                     }
@@ -192,6 +198,7 @@ internal class Packages
                         throw new InvalidOperationException("Why you at here?");
                     }
                 }
+
                 break;
             }
 
@@ -210,7 +217,9 @@ internal class Packages
 
                         if (folderManifest.Value.Value.Members is { } members)
                         {
-                            foreach (var fullPath in members.Select(member => Path.Combine(Path.GetDirectoryName(manifestPath)!, member, Definitions.ManifestIdentifier)))
+                            foreach (var fullPath in members.Select(member =>
+                                         Path.Combine(Path.GetDirectoryName(manifestPath)!, member,
+                                             Definitions.ManifestIdentifier)))
                             {
                                 LoadRecursively(fullPath);
                             }
@@ -230,7 +239,9 @@ internal class Packages
 
                         if (workspaceManifest.Value.Value.Members is { } members)
                         {
-                            foreach (var fullPath in members.Select(member => Path.Combine(Path.GetDirectoryName(manifestPath)!, member, Definitions.ManifestIdentifier)))
+                            foreach (var fullPath in members.Select(member =>
+                                         Path.Combine(Path.GetDirectoryName(manifestPath)!, member,
+                                             Definitions.ManifestIdentifier)))
                             {
                                 LoadRecursively(fullPath);
                             }
@@ -243,6 +254,7 @@ internal class Packages
                         throw new InvalidOperationException("Why you at here?");
                     }
                 }
+
                 break;
             }
             case EEitherManifest.Rift:
@@ -255,14 +267,15 @@ internal class Packages
             }
         }
     }
+
     public void DumpPackagesMetadata()
     {
-        Console.WriteLine("DumpPackagesMetadata...");
+        Tty.WriteLine("DumpPackagesMetadata...");
         var str = JsonSerializer.Serialize(Value, new JsonSerializerOptions
         {
             WriteIndented = true
         });
-        Console.WriteLine(str);
-        Console.WriteLine("...End");
+        Tty.WriteLine(str);
+        Tty.WriteLine("...End");
     }
 }
