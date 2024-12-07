@@ -32,6 +32,7 @@ internal class GolangGenerateService
             split.AddRange(goProxy.Split(','));
         }
 
+        // see https://go.dev/ref/mod#goproxy-protocol
         var proxyUrl = new Uri("https://proxy.golang.org"); // eg: https://proxy.golang.org or https://goproxy.cn
 
         if (split.Count > 0)
