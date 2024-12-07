@@ -5,20 +5,18 @@ using Rift.Go.Workspace;
 using Rift.Runtime.Interfaces;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
-using Rift.Runtime.Workspace;
 
 namespace Rift.Go;
 
 // ReSharper disable once UnusedMember.Global
 internal class Plugin : RiftPlugin
 {
-    private         IGenerateService    _generateService = null!;
-    internal static GolangConfiguration Configuration { get; set; } = null!;
-    private         IServiceProvider    _provider = null!;
-    private static  Plugin              _instance = null!;
+    private static Plugin           _instance        = null!;
+    private        IGenerateService _generateService = null!;
+    private        IServiceProvider _provider        = null!;
+
     public Plugin()
     {
-        Configuration = new GolangConfiguration();
         _instance     = this;
     }
 
@@ -33,8 +31,6 @@ internal class Plugin : RiftPlugin
         _provider.GetRequiredService<GolangWorkspaceService>();
         _provider.GetRequiredService<GolangGenerateService>();
 
-        WorkspaceManager.AddingReference  += GolangWorkspaceService.OnAddingReference;
-
         ScriptManager.AddLibrary("Rift.Go");
         ScriptManager.AddNamespace(["Rift.Go.Scripting", "Rift.Go.Workspace"]);
         return base.OnLoad();
@@ -44,21 +40,15 @@ internal class Plugin : RiftPlugin
     {
         _generateService          =  InterfaceManager.GetRequiredInterface<IGenerateService>(1);
         _generateService.Generate += GolangGenerateService.PerformGolangGenerate;
+        //GolangWorkspaceService.DumpGolangPackages();
     }
 
     public override void OnUnload()
     {
-        _generateService.Generate         -= GolangGenerateService.PerformGolangGenerate;
+        _generateService.Generate -= GolangGenerateService.PerformGolangGenerate;
 
-        WorkspaceManager.AddingReference  -= GolangWorkspaceService.OnAddingReference;
-
+        //WorkspaceManager.AddingReference  -= GolangWorkspaceService.OnAddingReference;
         ScriptManager.RemoveNamespace(["Rift.Go.Scripting", "Rift.Go.Workspace"]);
         ScriptManager.RemoveLibrary("Rift.Go");
-    }
-
-    internal static void HasSpecifiedServices()
-    {
-        var workspaceService = _instance._provider.GetService<GolangWorkspaceService>() is null;
-        Console.WriteLine($"GolangWorkspaceService == null: {workspaceService}");
     }
 }

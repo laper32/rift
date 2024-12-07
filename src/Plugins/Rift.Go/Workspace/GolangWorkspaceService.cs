@@ -3,41 +3,33 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Go.Workspace;
 
-internal class GolangWorkspaceService
+internal class GolangWorkspaceService : IWorkspaceListener
 {
-    private readonly List<GolangPackage> _packages = [];
+    private static   GolangWorkspaceService _instance = null!;
+    private readonly List<GolangPackage>    _packages = [];
 
-    private static GolangWorkspaceService _instance  = null!;
-
-    public GolangWorkspaceService()
+    public GolangWorkspaceService(Plugin instance)
     {
         CollectGolangPackages();
+        WorkspaceManager.AddListener(instance, this);
         _instance = this;
     }
 
-    internal static void OnAddingReference(IPackageInstance package, PackageReference reference) =>
-        _instance.OnAddingReferenceInternal(package, reference);
-
-    internal static void DumpGolangPackages()
-        => _instance.DumpGolangPackagesInternal();
-
-    private void DumpGolangPackagesInternal()
+    public void OnAllPackagesLoaded()
     {
-        Console.WriteLine(JsonSerializer.Serialize(_packages, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        }));
+        Console.WriteLine($"{Environment.GetEnvironmentVariable("GOPROXY")}");
     }
 
-
-    private void OnAddingReferenceInternal(IPackageInstance self, PackageReference reference)
+    internal static void DumpGolangPackages()
     {
-        if (_packages.FirstOrDefault(x => x.Instance.Equals(self)) is not { } package)
-        {
-            return;
-        }
-
-        package.Dependencies.Add(reference.Name, reference);
+        Console.WriteLine(
+            JsonSerializer.Serialize(_instance._packages,
+                new JsonSerializerOptions
+                {
+                    WriteIndented = true
+                }
+            )
+        );
     }
 
     private void CollectGolangPackages()

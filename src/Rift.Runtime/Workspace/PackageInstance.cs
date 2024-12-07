@@ -28,10 +28,10 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
 
     public PackageConfiguration Configuration { get; init; } = new();
 
-    public Dictionary<string, PackageReference> Plugins { get; init; } = [];
+    public Dictionary<string, PackageReference> Plugins      { get; init; } = [];
     public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
-    public string Name => Value.Name;
-    public string ManifestPath => Value.ManifestPath;
+    public string                               Name         => Value.Name;
+    public string                               ManifestPath => Value.ManifestPath;
 
     public JsonElement? GetExtensionField(string name)
     {
@@ -90,9 +90,9 @@ internal class PackageInstances
         var packageInstance = _value.Values.FirstOrDefault(x =>
         {
             var canonicalizedPath = Path.GetFullPath(scriptPath);
-            var isPlugin = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isDependency = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isConfigure = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isPlugin          = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isDependency      = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isConfigure       = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
             return isPlugin || isDependency || isConfigure;
         });
         return packageInstance;

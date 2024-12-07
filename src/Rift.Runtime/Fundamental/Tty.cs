@@ -20,6 +20,11 @@ public class Tty
         Console.WriteLine($"{Chalk.Bold.Red["error"]}: {message}");
     }
 
+    public static void Error(Exception e, string message = "")
+    {
+        Console.WriteLine($"{Chalk.Bold.Red["error"]}: {message}{Environment.NewLine}{e}");
+    }
+
     public static void WriteLine(string message = "")
     {
         Console.WriteLine(message);

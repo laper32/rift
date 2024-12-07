@@ -11,7 +11,6 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
-
 // ReSharper disable UnusedMember.Global
 public class Plugins
 {

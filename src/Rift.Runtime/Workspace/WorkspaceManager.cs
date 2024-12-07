@@ -15,15 +15,14 @@ using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
-
 public sealed class WorkspaceManager
 {
-    private static   WorkspaceManager _instance = null!;
-    private readonly PackageInstances _packageInstances;
-    private readonly Packages         _packages;
-    private          EWorkspaceStatus _status;
+    private static   WorkspaceManager         _instance  = null!;
+    private readonly List<PluginListenerInfo> _listeners = [];
+    private readonly PackageInstances         _packageInstances;
+    private readonly Packages                 _packages;
 
-    public static event Action<IPackageInstance, PackageReference>? AddingReference;
+    private EWorkspaceStatus _status;
 
     public WorkspaceManager()
     {
@@ -35,37 +34,29 @@ public sealed class WorkspaceManager
 
     public string Root { get; private set; } = "__Unknown__";
 
-    internal static bool Init() => _instance.InitInternal();
-
-    private bool InitInternal()
+    internal static bool Init()
     {
-        _status = EWorkspaceStatus.Init;
+        _instance._status          =  EWorkspaceStatus.Init;
+        PluginManager.PluginUnload += _instance.OnPluginUnload;
         ScriptManager.AddNamespace("Rift.Runtime.Workspace");
         return true;
     }
 
-
-    internal static void Shutdown() => _instance.ShutdownInternal();
-
-    private void ShutdownInternal()
+    internal static void Shutdown()
     {
+        PluginManager.PluginUnload -= _instance.OnPluginUnload;
         ScriptManager.RemoveNamespace("Rift.Runtime.Workspace");
-        _status = EWorkspaceStatus.Shutdown;
+        _instance._status = EWorkspaceStatus.Shutdown;
     }
 
     internal static void LoadWorkspace()
     {
-        _instance.LoadWorkspaceInternal();
-    }
+        var manifestPath = Path.Combine(_instance.Root, Definitions.ManifestIdentifier);
+        _instance._packages.LoadRecursively(manifestPath);
+        _instance.ValidateWorkspace();
+        _instance.ActivatePackage();
 
-    private void LoadWorkspaceInternal()
-    {
-        var manifestPath = Path.Combine(Root, Definitions.ManifestIdentifier);
-        _packages.LoadRecursively(manifestPath);
-        ValidateWorkspace();
-        ActivatePackage();
-        //_packageInstances.DumpInstancesMetadata();
-        _status = EWorkspaceStatus.Ready;
+        _instance._status = EWorkspaceStatus.Ready;
     }
 
     internal void ValidateWorkspace()
@@ -75,6 +66,45 @@ public sealed class WorkspaceManager
         // TODO:        多个field引用同一个脚本
         // TODO:        field引用非自身包的脚本
     }
+
+    #region Fundamental operations
+
+    internal static void SetRootPath(string path)
+    {
+        // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
+        // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
+        var rootManifest = _instance.GetRootManifest(path);
+        if (rootManifest.EndsWith(Definitions.ManifestIdentifier))
+        {
+            rootManifest = Path.GetDirectoryName(rootManifest)!;
+        }
+
+        _instance.Root = rootManifest;
+    }
+
+    #endregion
+
+    #region PluginManager
+
+    private void OnPluginUnload(PluginInstance instance)
+    {
+        if (instance.Instance is not { } internalInstance)
+        {
+            return;
+        }
+
+        var listeners = _listeners.FindAll(x => x.Instance == internalInstance).ToArray();
+        foreach (var info in listeners)
+        {
+            RemoveListener(info.Instance, info.Listener);
+        }
+    }
+
+    #endregion
+
+    private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
+
+    #region Package Operations
 
     internal void ActivatePackage()
     {
@@ -89,35 +119,25 @@ public sealed class WorkspaceManager
 
         RunWorkspaceDependenciesScript();
         RunWorkspaceConfigurationScript();
+
+        OnAllPackageLoaded();
     }
 
-    public static IPackageInstance? FindPackage(string name) => _instance.FindPackageInternal(name);
-
-    private IPackageInstance? FindPackageInternal(string name)
+    public static IPackageInstance? FindPackage(string name)
     {
-        return _packageInstances.FindInstance(name);
+        return _instance._packageInstances.FindInstance(name);
     }
 
     public static IEnumerable<IPackageInstance> GetAllPackages()
     {
-        return _instance.GetAllPackagesInternal();
-    }
-
-    private IEnumerable<IPackageInstance> GetAllPackagesInternal()
-    {
-        return _packageInstances.GetAllInstances();
+        return _instance._packageInstances.GetAllInstances();
     }
 
     internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
     {
-        return _instance.CollectPluginsForLoadInternal();
-    }
+        _instance.CheckAvailable();
 
-    private IEnumerable<PluginDescriptor> CollectPluginsForLoadInternal()
-    {
-        CheckAvailable();
-
-        return _packageInstances.CollectPluginsForLoad();
+        return _instance._packageInstances.CollectPluginsForLoad();
     }
 
     private void CheckAvailable()
@@ -128,24 +148,42 @@ public sealed class WorkspaceManager
         }
     }
 
-    #region Fundamental operations
+    #endregion
 
-    internal static void SetRootPath(string path)
-    {
-        _instance.SetRootPathInternal(path);
-    }
+    #region Listeners Operation
 
-    private void SetRootPathInternal(string path)
+    /// <summary>
+    ///     Adding a listener <br />
+    ///     Plugin system is unnecessary to consider when remove the listener, PluginManager will automatically remove it when
+    ///     plugin unloads.
+    /// </summary>
+    /// <param name="instance"> Plugin instance. </param>
+    /// <param name="listener"> Workspace Listener </param>
+    public static void AddListener(RiftPlugin instance, IWorkspaceListener listener)
     {
-        // NOTE: 现在只考虑根目录的情况，不考虑从下往上搜的情况（因为从下到上需要带Context。）
-        // 现在我们没办法处理这个问题，得先自顶向下正确解析了才能处理自底向上的问题。
-        var rootManifest = GetRootManifest(path);
-        if (rootManifest.EndsWith(Definitions.ManifestIdentifier))
+        if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) != null)
         {
-            rootManifest = Path.GetDirectoryName(rootManifest)!;
+            Tty.Warning($"You have already installed same listener!{Environment.NewLine}{Environment.StackTrace}");
+            return;
         }
 
-        Root = rootManifest;
+        _instance._listeners.Add(new PluginListenerInfo(instance, listener));
+    }
+
+    public static void RemoveListener(RiftPlugin instance, IWorkspaceListener listener)
+    {
+        if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) is not { } data)
+        {
+            return;
+        }
+
+        _instance._listeners.Remove(data);
+    }
+
+    private void OnAllPackageLoaded()
+    {
+        _listeners.ForEachCatchException(x => x.Listener.OnAllPackagesLoaded(),
+            e => { Tty.Error(e, $"An error occured when calling {nameof(OnAllPackageLoaded)}"); });
     }
 
     #endregion
@@ -267,20 +305,7 @@ public sealed class WorkspaceManager
                         "`project.members` and `project.exclude` cannot occur when `[target]` field exists.");
                 }
 
-                //if (sameLayeredTarget.Dependencies is not null)
-                //{
-                //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s dependency script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
-                //}
-
-                //if (sameLayeredTarget.Plugins is not null)
-                //{
-                //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s plugins script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
-                //}
-
-                //if (sameLayeredTarget.Configure is not null)
-                //{
-                //    Console.WriteLine($"Warning: Target `{sameLayeredTarget.Name}`'s metadata script will be shadowed, because it is at the same layer of the project `{schema.Project.Name}`.");
-                //}
+                // NOTE: 需要做额外检查吗？比如说A包的脚本路径和在B包里面之类的
 
                 var targetManifest = new TargetManifest(
                     sameLayeredTarget.Name,
@@ -461,6 +486,7 @@ public sealed class WorkspaceManager
             {
                 return;
             }
+
             ScriptManager.EvaluateScript(dependencies);
         });
     }
@@ -473,6 +499,7 @@ public sealed class WorkspaceManager
             {
                 return;
             }
+
             ScriptManager.EvaluateScript(configure);
         });
     }
@@ -485,16 +512,17 @@ public sealed class WorkspaceManager
             {
                 return;
             }
+
             ScriptManager.EvaluateScript(plugins);
         });
     }
 
     internal static void ConfigurePackage(Action<PackageConfiguration> predicate)
     {
-        _instance.ConfigurePackageInternal(predicate);
+        _instance.ConfigurePackageCanonicalized(predicate);
     }
 
-    private void ConfigurePackageInternal(Action<PackageConfiguration> predicate)
+    private void ConfigurePackageCanonicalized(Action<PackageConfiguration> predicate)
     {
         if (GetPackageInstance() is not { } instance)
         {
@@ -503,45 +531,44 @@ public sealed class WorkspaceManager
 
         var configuration = new PackageConfiguration();
         predicate(configuration);
-        configuration.Attributes.ForEach(kv =>
-        {
-            instance.Configuration.Attributes.Add(kv.Key, kv.Value);
-        });
+        configuration.Attributes.ForEach(kv => { instance.Configuration.Attributes.Add(kv.Key, kv.Value); });
     }
 
-    internal static bool AddDependencyForPackage(PackageReference declarator) =>
-        _instance.AddDependencyForPackageInternal([declarator]);
-
-    internal static bool AddDependencyForPackage(IEnumerable<PackageReference> declarators)
+    internal static bool AddDependencyForPackage(PackageReference reference)
     {
-        return _instance.AddDependencyForPackageInternal(declarators);
+        return _instance.AddDependencyForPackageCanonicalized([reference]);
     }
 
-    private bool AddDependencyForPackageInternal(IEnumerable<PackageReference> declarators)
+    internal static bool AddDependencyForPackage(IEnumerable<PackageReference> references)
+    {
+        return _instance.AddDependencyForPackageCanonicalized(references);
+    }
+
+    private bool AddDependencyForPackageCanonicalized(IEnumerable<PackageReference> references)
     {
         if (GetPackageInstance() is not { } instance)
         {
             return false;
         }
-
-        foreach (var declarator in declarators)
+        foreach (var reference in references)
         {
-            instance.Dependencies.Add(declarator.Name, declarator);
-            AddingReference?.Invoke(instance, declarator);
+            instance.Dependencies.Add(reference.Name, reference);
         }
 
         return true;
     }
 
-    internal static bool AddPluginForPackage(PackageReference plugin) =>
-        _instance.AddPluginForPackageInternal([plugin]);
+    internal static bool AddPluginForPackage(PackageReference plugin)
+    {
+        return _instance.AddPluginForPackageCanonicalized([plugin]);
+    }
 
     internal static bool AddPluginForPackage(IEnumerable<PackageReference> plugins)
     {
-        return _instance.AddPluginForPackageInternal(plugins);
+        return _instance.AddPluginForPackageCanonicalized(plugins);
     }
 
-    private bool AddPluginForPackageInternal(IEnumerable<PackageReference> plugins)
+    private bool AddPluginForPackageCanonicalized(IEnumerable<PackageReference> plugins)
     {
         if (GetPackageInstance() is not { } packageInstance)
         {

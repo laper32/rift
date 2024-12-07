@@ -35,6 +35,5 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
 
     public void SetPackageReferenceRefWorkspace()
     {
-
     }
 }
