@@ -4,7 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Collections;
 using System.Text.Json;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Fundamental;
@@ -14,92 +13,25 @@ namespace Rift.Runtime.Workspace;
 
 public interface IPackageInstance
 {
-    public string Name         { get; }
-    public string ManifestPath { get; }
+    public string                               Name          { get; }
+    public string                               ManifestPath  { get; }
+    public Dictionary<string, PackageReference> Plugins       { get; }
+    public Dictionary<string, PackageReference> Dependencies  { get; }
+    public PackageConfiguration                 Configuration { get; }
 
     JsonElement? GetExtensionField(string name);
-
-    bool HasPlugin(string name);
-
-    PackageReference? FindPlugin(string name);
-
-    bool HasDependency(string name);
-
-    PackageReference? FindDependency(string name);
-
-    void ForEachDependencies(Action<KeyValuePair<string, PackageReference>> action);
-
-    void ForEachDependencies(Action<string, PackageReference> action);
-
-    bool HasMetadata(string name);
-
-    object? FindMetadata(string name);
-
-    void ForEachMetadata(Action<string, object> action);
-
-    void ForEachMetadata(Action<KeyValuePair<string, object>> action);
 }
 
 internal class PackageInstance(IMaybePackage package) : IPackageInstance
 {
     public IMaybePackage Value { get; init; } = package;
 
-    public Dictionary<string, object>           Metadata     { get; init; } = [];
-    public Dictionary<string, PackageReference> Plugins      { get; init; } = [];
+    public PackageConfiguration Configuration { get; init; } = new();
+
+    public Dictionary<string, PackageReference> Plugins { get; init; } = [];
     public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
-    public string                               Name         => Value.Name;
-    public string                               ManifestPath => Value.ManifestPath;
-
-    public bool HasMetadata(string name)
-    {
-        return Metadata.ContainsKey(name);
-    }
-
-    public object? FindMetadata(string name)
-    {
-        return Metadata.GetValueOrDefault(name);
-    }
-
-    public bool HasPlugin(string name)
-    {
-        return Plugins.Any(x => x.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
-    }
-
-    public PackageReference? FindPlugin(string name)
-    {
-        return Plugins.GetValueOrDefault(name);
-    }
-
-    public bool HasDependency(string name)
-    {
-        return Dependencies.Any(x => x.Key.Equals(name, StringComparison.OrdinalIgnoreCase));
-    }
-
-
-    public PackageReference? FindDependency(string name)
-    {
-        return Plugins.GetValueOrDefault(name);
-    }
-
-    public void ForEachDependencies(Action<KeyValuePair<string, PackageReference>> action)
-    {
-        Dependencies.ForEach(action);
-    }
-
-    public void ForEachDependencies(Action<string, PackageReference> action)
-    {
-        Dependencies.ForEach(action);
-    }
-
-    public void ForEachMetadata(Action<KeyValuePair<string, object>> action)
-    {
-        Metadata.ForEach(action);
-    }
-
-    public void ForEachMetadata(Action<string, object> action)
-    {
-        Metadata.ForEach(action);
-    }
+    public string Name => Value.Name;
+    public string ManifestPath => Value.ManifestPath;
 
     public JsonElement? GetExtensionField(string name)
     {
@@ -109,6 +41,14 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
         }
 
         return null;
+    }
+}
+
+public static class PackageInstanceExtensions
+{
+    public static bool HasPlugin(this IPackageInstance self, string pluginName)
+    {
+        return self.Plugins.ContainsKey(pluginName);
     }
 }
 
@@ -150,9 +90,9 @@ internal class PackageInstances
         var packageInstance = _value.Values.FirstOrDefault(x =>
         {
             var canonicalizedPath = Path.GetFullPath(scriptPath);
-            var isPlugin          = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isDependency      = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
-            var isConfigure       = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isPlugin = x.Value.Plugins?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isDependency = x.Value.Dependencies?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
+            var isConfigure = x.Value.Configure?.Equals(canonicalizedPath, StringComparison.Ordinal) ?? false;
             return isPlugin || isDependency || isConfigure;
         });
         return packageInstance;

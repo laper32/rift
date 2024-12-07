@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.Text.Json;
+using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Fundamental;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugins;
@@ -14,6 +15,7 @@ using Tomlyn;
 
 namespace Rift.Runtime.Workspace;
 
+
 public sealed class WorkspaceManager
 {
     private static   WorkspaceManager _instance = null!;
@@ -22,7 +24,6 @@ public sealed class WorkspaceManager
     private          EWorkspaceStatus _status;
 
     public static event Action<IPackageInstance, PackageReference>? AddingReference;
-    public static event Action<IPackageInstance>?                   ConfigurePackage;
 
     public WorkspaceManager()
     {
@@ -470,12 +471,9 @@ public sealed class WorkspaceManager
         {
             if (instance.Value.Configure is not { } configure)
             {
-                ConfigurePackage?.Invoke(instance);
                 return;
             }
-            Console.WriteLine($"Running: {configure}");
             ScriptManager.EvaluateScript(configure);
-            ConfigurePackage?.Invoke(instance);
         });
     }
 
@@ -491,19 +489,24 @@ public sealed class WorkspaceManager
         });
     }
 
-    internal static bool AddMetadataForPackage(string key, object value)
+    internal static void ConfigurePackage(Action<PackageConfiguration> predicate)
     {
-        return _instance.AddMetadataForPackageInternal(key, value);
+        _instance.ConfigurePackageInternal(predicate);
     }
 
-    private bool AddMetadataForPackageInternal(string key, object value)
+    private void ConfigurePackageInternal(Action<PackageConfiguration> predicate)
     {
         if (GetPackageInstance() is not { } instance)
         {
-            return false;
+            return;
         }
-        instance.Metadata.Add(key, value);
-        return true;
+
+        var configuration = new PackageConfiguration();
+        predicate(configuration);
+        configuration.Attributes.ForEach(kv =>
+        {
+            instance.Configuration.Attributes.Add(kv.Key, kv.Value);
+        });
     }
 
     internal static bool AddDependencyForPackage(PackageReference declarator) =>

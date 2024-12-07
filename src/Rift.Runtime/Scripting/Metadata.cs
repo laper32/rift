@@ -14,15 +14,15 @@ using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Scripting;
 
-public class Metadata
-{
-    public static void Add(string key, object value)
-    {
-        if (WorkspaceManager.AddMetadataForPackage(key, value))
-        {
-            return;
-        }
+//public class Metadata
+//{
+//    public static void Add(string key, object value)
+//    {
+//        if (WorkspaceManager.AddMetadataForPackage(key, value))
+//        {
+//            return;
+//        }
 
-        PluginManager.AddMetadataForPlugin(key, value);
-    }
-}
+//        PluginManager.AddMetadataForPlugin(key, value);
+//    }
+//}

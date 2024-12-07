@@ -18,8 +18,6 @@ internal class GolangWorkspaceService
     internal static void OnAddingReference(IPackageInstance package, PackageReference reference) =>
         _instance.OnAddingReferenceInternal(package, reference);
 
-    internal static void OnConfigurePackage(IPackageInstance package) => _instance.OnConfigurePackageInternal(package);
-
     internal static void DumpGolangPackages()
         => _instance.DumpGolangPackagesInternal();
 
@@ -31,15 +29,6 @@ internal class GolangWorkspaceService
         }));
     }
 
-    private void OnConfigurePackageInternal(IPackageInstance self)
-    {
-        if (_packages.FirstOrDefault(x => x.Instance.Equals(self)) is not { } package)
-        {
-            return;
-        }
-
-        self.ForEachMetadata(package.Metadata.Add);
-    }
 
     private void OnAddingReferenceInternal(IPackageInstance self, PackageReference reference)
     {

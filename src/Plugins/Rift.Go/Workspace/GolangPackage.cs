@@ -23,6 +23,6 @@ internal class GolangPackage(IPackageInstance package)
     // (环境变量行不行？不行，因为不管怎么样还是会回到这个问题上：环境变量）
     // 现在还是草稿，会持续更新，直到定稿为止。
 
-    public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
-    public Dictionary<string, object>           Metadata     { get; init; } = [];
+    public Dictionary<string, PackageReference> Dependencies  => package.Dependencies;
+    public PackageConfiguration                 Configuration => package.Configuration;
 }

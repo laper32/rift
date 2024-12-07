@@ -34,7 +34,6 @@ internal class Plugin : RiftPlugin
         _provider.GetRequiredService<GolangGenerateService>();
 
         WorkspaceManager.AddingReference  += GolangWorkspaceService.OnAddingReference;
-        WorkspaceManager.ConfigurePackage += GolangWorkspaceService.OnConfigurePackage;
 
         ScriptManager.AddLibrary("Rift.Go");
         ScriptManager.AddNamespace(["Rift.Go.Scripting", "Rift.Go.Workspace"]);
@@ -51,7 +50,6 @@ internal class Plugin : RiftPlugin
     {
         _generateService.Generate         -= GolangGenerateService.PerformGolangGenerate;
 
-        WorkspaceManager.ConfigurePackage -= GolangWorkspaceService.OnConfigurePackage;
         WorkspaceManager.AddingReference  -= GolangWorkspaceService.OnAddingReference;
 
         ScriptManager.RemoveNamespace(["Rift.Go.Scripting", "Rift.Go.Workspace"]);
