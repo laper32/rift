@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace Rift.Runtime.Manifest;
 
-public sealed record WorkspaceManifest(
+internal sealed record WorkspaceManifest(
     string                          Name,
     List<string>                    Members,
     List<string>                    Exclude,

@@ -8,14 +8,14 @@ internal class GolangWorkspaceService : IWorkspaceListener
     private static   GolangWorkspaceService _instance = null!;
     private readonly List<GolangPackage>    _packages = [];
 
-    internal static List<GolangPackage> Packages => _instance._packages;
-
     public GolangWorkspaceService(Plugin instance)
     {
         CollectGolangPackages();
         WorkspaceManager.AddListener(instance, this);
         _instance = this;
     }
+
+    internal static List<GolangPackage> Packages => _instance._packages;
 
     public void OnAllPackagesLoaded()
     {

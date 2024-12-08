@@ -11,9 +11,9 @@ namespace Rift.Runtime.Workspace;
 
 internal class RiftPackage(IRiftManifest riftManifest, string manifestPath)
 {
-    public string Name         => riftManifest.Name;
-    public string ManifestPath => manifestPath;
-    public string Root         => Directory.GetParent(ManifestPath)!.FullName;
+    public string        Name         => riftManifest.Name;
+    public string        ManifestPath => manifestPath;
+    public string        Root         => Directory.GetParent(ManifestPath)!.FullName;
     public IRiftManifest Value        => riftManifest;
 
     public string? Dependencies

@@ -32,6 +32,9 @@ public sealed class WorkspaceManager
         _instance         = this;
     }
 
+    /// <summary>
+    ///     Workspace根目录
+    /// </summary>
     public string Root { get; private set; } = "__Unknown__";
 
     internal static bool Init()
@@ -123,11 +126,20 @@ public sealed class WorkspaceManager
         OnAllPackageLoaded();
     }
 
+    /// <summary>
+    ///     根据包名找某个包
+    /// </summary>
+    /// <param name="name"> </param>
+    /// <returns> </returns>
     public static IPackageInstance? FindPackage(string name)
     {
         return _instance._packageInstances.FindInstance(name);
     }
 
+    /// <summary>
+    ///     列出所有的包
+    /// </summary>
+    /// <returns> </returns>
     public static IEnumerable<IPackageInstance> GetAllPackages()
     {
         return _instance._packageInstances.GetAllInstances();
@@ -170,6 +182,13 @@ public sealed class WorkspaceManager
         _instance._listeners.Add(new PluginListenerInfo(instance, listener));
     }
 
+    /// <summary>
+    ///     Removing a listener <br />
+    ///     Plugin system is unnecessary to consider when remove the listener, PluginManager will automatically remove it when
+    ///     plugin unloads.
+    /// </summary>
+    /// <param name="instance"> Plugin instance. </param>
+    /// <param name="listener"> Workspace Listener </param>
     public static void RemoveListener(RiftPlugin instance, IWorkspaceListener listener)
     {
         if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) is not { } data)
@@ -550,6 +569,7 @@ public sealed class WorkspaceManager
         {
             return false;
         }
+
         foreach (var reference in references)
         {
             instance.Dependencies.Add(reference.Name, reference);

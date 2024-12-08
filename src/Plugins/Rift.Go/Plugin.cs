@@ -18,7 +18,7 @@ internal class Plugin : RiftPlugin
 
     public Plugin()
     {
-        _instance     = this;
+        _instance = this;
     }
 
     public override bool OnLoad()

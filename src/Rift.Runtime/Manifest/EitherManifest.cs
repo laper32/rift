@@ -6,6 +6,10 @@
 
 namespace Rift.Runtime.Manifest;
 
+/// <summary>
+///     所有可能的Manifest类型。 <br />
+///     没有Enum class的情况下所做的模拟
+/// </summary>
 internal enum EEitherManifest
 {
     Virtual,

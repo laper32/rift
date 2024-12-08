@@ -5,6 +5,11 @@ namespace Rift.Go.Fundamental;
 
 public class GolangEnvironment
 {
+    private static GolangEnvironment _instance = null!;
+
+    // Unix: /bin/go, Windows: $PATH/go.exe
+    private readonly string _goExe;
+    private readonly string _goVersion;
 
     public GolangEnvironment()
     {
@@ -20,16 +25,16 @@ public class GolangEnvironment
             {
                 StartInfo = new ProcessStartInfo
                 {
-                    FileName = _goExe,
-                    Arguments = "env GOVERSION",
+                    FileName               = _goExe,
+                    Arguments              = "env GOVERSION",
                     RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
+                    RedirectStandardError  = true,
+                    UseShellExecute        = false,
+                    CreateNoWindow         = true
                 }
             };
             process.Start();
-            
+
             _goVersion = process.StandardError.ReadToEnd().Length > 0
                 ? ""
                 :
@@ -38,14 +43,10 @@ public class GolangEnvironment
                 process.StandardOutput.ReadToEnd().TrimStart(['g', 'o']);
             process.WaitForExit();
         }
+
         _instance = this;
     }
 
-    // Unix: /bin/go, Windows: $PATH/go.exe
-    private readonly string _goExe;
-    private readonly string _goVersion;
-
-    private static GolangEnvironment _instance = null!;
     public static string ExecutablePath => _instance._goExe;
-    public static string Version => _instance._goVersion;
+    public static string Version        => _instance._goVersion;
 }

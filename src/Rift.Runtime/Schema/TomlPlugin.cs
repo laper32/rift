@@ -9,7 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Schema;
 
-public sealed class TomlPlugin
+internal sealed class TomlPlugin
 {
     [JsonPropertyName("name")]
     public required string Name { get; set; }

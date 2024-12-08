@@ -9,13 +9,13 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Manifest;
 
-public enum EVirtualManifest
+internal enum EVirtualManifest
 {
     Folder,
     Workspace
 }
 
-public interface IVirtualManifest
+internal interface IVirtualManifest
 {
     public EVirtualManifest                Type         { get; }
     public string                          Name         { get; }

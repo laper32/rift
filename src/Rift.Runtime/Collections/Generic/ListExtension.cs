@@ -4,8 +4,8 @@ public static class ListExtension
 {
     public static void ForEachCatchException<T>(
         this IReadOnlyCollection<T> list,
-        Action<T> action,
-        Action<Exception> ex)
+        Action<T>                   action,
+        Action<Exception>           ex)
     {
         foreach (var item in list)
         {

@@ -9,6 +9,9 @@ using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Interfaces;
 
+/// <summary>
+///     用于处理插件之间的接口共享
+/// </summary>
 public sealed class InterfaceManager
 {
     private static   InterfaceManager           _instance   = null!;
@@ -21,12 +24,13 @@ public sealed class InterfaceManager
 
     internal static bool Init()
     {
-        return _instance.InitInternal();
+        PluginManager.PluginUnload += _instance.OnPluginUnload;
+        return true;
     }
 
     internal static void Shutdown()
     {
-        _instance.ShutdownInternal();
+        PluginManager.PluginUnload -= _instance.OnPluginUnload;
     }
 
     /// <summary>
@@ -38,7 +42,14 @@ public sealed class InterfaceManager
     /// <exception cref="InterfaceAlreadyExistsException"> 如果接口已经存在则抛出异常 </exception>
     public static void AddInterface<T>(T @interface, IPlugin plugin) where T : class, IInterface
     {
-        _instance.AddInterfaceInternal(@interface, plugin);
+        var version = @interface.InterfaceVersion;
+        if (_instance._interfaces.Any(x => x.Instance.InterfaceVersion.Equals(version)))
+        {
+            throw new InterfaceAlreadyExistsException(
+                $"Interface `{typeof(T).Name}(version: {version})` already exists");
+        }
+
+        _instance._interfaces.Add(new InterfaceInformation(@interface, plugin));
     }
 
     /// <summary>
@@ -48,102 +59,6 @@ public sealed class InterfaceManager
     /// <param name="version"> 版本号 </param>
     /// <returns> 期望的接口, 为空说明没有 </returns>
     public static T? GetInterface<T>(uint version) where T : class, IInterface
-    {
-        return _instance.GetInterfaceInternal<T>(version);
-    }
-
-    /// <summary>
-    ///     查询是否有接口 <br />
-    ///     <remarks>
-    ///         该函数只用于确认是否有, 不涉及到具体的版本号, 如果你想获取, 或知道是否有某个特定版本号的接口, 请用 <br />
-    ///         - <see cref="GetInterface{T}" /> <br />
-    ///         - <see cref="GetRequiredInterface{T}" /> <br />
-    ///         - <see cref="TryGetInterface{T}" /> <br />
-    ///         - <see cref="HasInterface{T}(uint)" /> <br />
-    ///     </remarks>
-    /// </summary>
-    /// <typeparam name="T"> 继承自<see cref="IInterface" />的接口 </typeparam>
-    /// <returns> True if interface exists, false otherwise. </returns>
-    public static bool HasInterface<T>() where T : class, IInterface
-    {
-        return _instance.HasInterfaceInternal<T>();
-    }
-
-    /// <summary>
-    ///     根据传入的类型和版本号查询是否有该接口。 <br />
-    ///     <remarks>
-    ///         如果你需要进行进一步的操作，用<br />
-    ///         - <see cref="GetInterface{T}" /> <br />
-    ///         - <see cref="GetRequiredInterface{T}" /> <br />
-    ///         - <see cref="TryGetInterface{T}" /> <br />
-    ///     </remarks>
-    /// </summary>
-    /// <typeparam name="T"> 继承自<see cref="IInterface" />的接口 </typeparam>
-    /// <param name="version"> 接口版本号 </param>
-    /// <returns> True if interface exists, false otherwise. </returns>
-    public static bool HasInterface<T>(uint version) where T : class, IInterface
-    {
-        return _instance.HasInterfaceInternal<T>(version);
-    }
-
-    /// <summary>
-    ///     获取必须的接口, 如果不存在则抛出异常.
-    /// </summary>
-    /// <typeparam name="T"> 你期望的类型 </typeparam>
-    /// <param name="version"> 接口版本号 </param>
-    /// <returns> 期望的接口 </returns>
-    /// <exception cref="InterfaceNotFoundException">
-    ///     如果查不到这个接口就说明这个接口没有实现. <br />
-    ///     你需要自行处理异常. <br />
-    ///     使用该函数之前请确保你的运行环境确实存在该接口!
-    /// </exception>
-    public static T GetRequiredInterface<T>(uint version) where T : class, IInterface
-    {
-        return _instance.GetRequiredInterfaceInternal<T>(version);
-    }
-
-    /// <summary>
-    ///     根据接口名和版本号, 尝试获取某个接口
-    /// </summary>
-    /// <typeparam name="T"> 期望的接口类型 </typeparam>
-    /// <param name="version"> 接口版本号 </param>
-    /// <param name="ret"> 返回值 </param>
-    /// <returns> True说明有, 否则没有 </returns>
-    public static bool TryGetInterface<T>(uint version, [MaybeNullWhen(false)] out T ret)
-        where T : class, IInterface
-    {
-        return _instance.TryGetInterfaceInternal(version, out ret);
-    }
-
-    internal static void RemoveInterface<T>(T @interface) where T : class, IInterface
-    {
-        _instance.RemoveInterfaceInternal(@interface);
-    }
-
-    private bool InitInternal()
-    {
-        PluginManager.PluginUnload += OnPluginUnload;
-        return true;
-    }
-
-    private void ShutdownInternal()
-    {
-        PluginManager.PluginUnload -= OnPluginUnload;
-    }
-
-    private void AddInterfaceInternal<T>(T @interface, IPlugin plugin) where T : class, IInterface
-    {
-        var version = @interface.InterfaceVersion;
-        if (_interfaces.Any(x => x.Instance.InterfaceVersion.Equals(version)))
-        {
-            throw new InterfaceAlreadyExistsException(
-                $"Interface `{typeof(T).Name}(version: {version})` already exists");
-        }
-
-        _interfaces.Add(new InterfaceInformation(@interface, plugin));
-    }
-
-    private T? GetInterfaceInternal<T>(uint version) where T : class, IInterface
     {
         // 传入进来的版本号, 和InterfaceManager里面存着的版本号的对应关系
         //  InterfaceVersion        ParamVersion        ResultVersion
@@ -161,7 +76,7 @@ public sealed class InterfaceManager
         // N.B.: 未来可以扩展成如果找不到就去nuget上下，连nuget都找不到就直接挂掉
 
         var interfaces =
-            _interfaces
+            _instance._interfaces
                 .Where(instance =>
                     instance
                         .Instance
@@ -183,20 +98,55 @@ public sealed class InterfaceManager
         return (T)@interface.Instance;
     }
 
-    private bool HasInterfaceInternal<T>() where T : class, IInterface
+    /// <summary>
+    ///     查询是否有接口 <br />
+    ///     <remarks>
+    ///         该函数只用于确认是否有, 不涉及到具体的版本号, 如果你想获取, 或知道是否有某个特定版本号的接口, 请用 <br />
+    ///         - <see cref="GetInterface{T}" /> <br />
+    ///         - <see cref="GetRequiredInterface{T}" /> <br />
+    ///         - <see cref="TryGetInterface{T}" /> <br />
+    ///         - <see cref="HasInterface{T}(uint)" /> <br />
+    ///     </remarks>
+    /// </summary>
+    /// <typeparam name="T"> 继承自<see cref="IInterface" />的接口 </typeparam>
+    /// <returns> True if interface exists, false otherwise. </returns>
+    public static bool HasInterface<T>() where T : class, IInterface
     {
-        return _interfaces
+        return _instance._interfaces
             .Any(instance => instance.Instance.GetType()
                 .GetInterfaces()
                 .Any(@interface => @interface == typeof(T)));
     }
 
-    private bool HasInterfaceInternal<T>(uint version) where T : class, IInterface
+    /// <summary>
+    ///     根据传入的类型和版本号查询是否有该接口。 <br />
+    ///     <remarks>
+    ///         如果你需要进行进一步的操作，用<br />
+    ///         - <see cref="GetInterface{T}" /> <br />
+    ///         - <see cref="GetRequiredInterface{T}" /> <br />
+    ///         - <see cref="TryGetInterface{T}" /> <br />
+    ///     </remarks>
+    /// </summary>
+    /// <typeparam name="T"> 继承自<see cref="IInterface" />的接口 </typeparam>
+    /// <param name="version"> 接口版本号 </param>
+    /// <returns> True if interface exists, false otherwise. </returns>
+    public static bool HasInterface<T>(uint version) where T : class, IInterface
     {
-        return GetInterfaceInternal<T>(version) is not null;
+        return GetInterface<T>(version) is not null;
     }
 
-    private T GetRequiredInterfaceInternal<T>(uint version) where T : class, IInterface
+    /// <summary>
+    ///     获取必须的接口, 如果不存在则抛出异常.
+    /// </summary>
+    /// <typeparam name="T"> 你期望的类型 </typeparam>
+    /// <param name="version"> 接口版本号 </param>
+    /// <returns> 期望的接口 </returns>
+    /// <exception cref="InterfaceNotFoundException">
+    ///     如果查不到这个接口就说明这个接口没有实现. <br />
+    ///     你需要自行处理异常. <br />
+    ///     使用该函数之前请确保你的运行环境确实存在该接口!
+    /// </exception>
+    public static T GetRequiredInterface<T>(uint version) where T : class, IInterface
     {
         // 传入进来的版本号, 和InterfaceManager里面存着的版本号的对应关系
         //  InterfaceVersion        ParamVersion        ResultVersion
@@ -214,7 +164,7 @@ public sealed class InterfaceManager
         // N.B.: 未来可以扩展成如果找不到就去nuget上下，连nuget都找不到就直接挂掉
 
         var interfaces =
-            _interfaces
+            _instance._interfaces
                 .Where(instance =>
                     instance
                         .Instance
@@ -246,10 +196,17 @@ public sealed class InterfaceManager
         throw new InterfaceNotFoundException($"Interface <{typeof(T).Name}> not found.");
     }
 
-    private bool TryGetInterfaceInternal<T>(uint version, [MaybeNullWhen(false)] out T ret)
+    /// <summary>
+    ///     根据接口名和版本号, 尝试获取某个接口
+    /// </summary>
+    /// <typeparam name="T"> 期望的接口类型 </typeparam>
+    /// <param name="version"> 接口版本号 </param>
+    /// <param name="ret"> 返回值 </param>
+    /// <returns> True说明有, 否则没有 </returns>
+    public static bool TryGetInterface<T>(uint version, [MaybeNullWhen(false)] out T ret)
         where T : class, IInterface
     {
-        if (GetInterfaceInternal<T>(version) is { } result)
+        if (GetInterface<T>(version) is { } result)
         {
             ret = result;
             return true;
@@ -259,20 +216,20 @@ public sealed class InterfaceManager
         return false;
     }
 
+    internal static void RemoveInterface<T>(T @interface) where T : class, IInterface
+    {
+        var instance = _instance._interfaces.FirstOrDefault(x => x.Instance == @interface);
+        if (instance != null)
+        {
+            _instance._interfaces.Remove(instance);
+        }
+    }
+
     private IEnumerable<IInterface> GetPluginInterfaces(IPlugin plugin)
     {
         return _interfaces
             .Where(x => x.Plugin == plugin)
             .Select(x => x.Instance);
-    }
-
-    private void RemoveInterfaceInternal<T>(T @interface) where T : class, IInterface
-    {
-        var instance = _interfaces.FirstOrDefault(x => x.Instance == @interface);
-        if (instance != null)
-        {
-            _interfaces.Remove(instance);
-        }
     }
 
     private void OnPluginUnload(PluginInstance instance)
