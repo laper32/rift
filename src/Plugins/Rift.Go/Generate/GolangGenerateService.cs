@@ -1,12 +1,17 @@
-﻿using Rift.Go.Workspace;
+﻿using System.Data;
+using Rift.Go.Workspace;
 using System.Net;
 using System.Net.Http.Json;
+using Rift.Go.Fundamental;
+using Rift.Go.Scripting;
 
 namespace Rift.Go.Generate;
 
 internal class GolangGenerateService
 {
     private readonly SocketsHttpHandler _httpHandler;
+
+    private record PackageVersionInfo(string Version, string Time);
 
     public GolangGenerateService()
     {
@@ -57,49 +62,84 @@ internal class GolangGenerateService
         {
             foreach (var reference in pkg.Dependencies.Values)
             {
-                Console.WriteLine($"ref version: {reference.Version}");
-                //var actualVersion = Task.Run(async () =>
-                //{
-                //    const string url
-                //}).Result;
+                // 有没有标latest的API是完全不一样的，但目前我们只需要看latest所在的版本号就行。
+                // 至于非latest版本号后续怎么处理，目前不管，后续再搞。
+                // TODO: 这玩意肯定要搞缓存的
+                string actualVersion;
+                if (reference.Version.Equals("latest", StringComparison.OrdinalIgnoreCase))
+                {
+                    actualVersion = Task.Run(async () =>
+                    {
+                        var query = $"{reference.Name}/@latest";
+                        var response = await httpClient.GetAsync(query);
+                        response.EnsureSuccessStatusCode();
+                        var result = await response.Content.ReadFromJsonAsync<PackageVersionInfo>() ??
+                                     throw new InvalidDataException("Invalid upstream data");
+                        return result.Version.TrimStart('v');
+                    }).Result;
+                }
+                else
+                {
+                    actualVersion = reference.Version;
+                }
+
+                reference.Version = actualVersion;
             }
+
+            var ret = Instance.GenerateGoModString(pkg);
+
+            var targetGoModPath = pkg.Configuration.GetWriteModToPath();
+            if (string.IsNullOrEmpty(targetGoModPath))
+            {
+                targetGoModPath = pkg.Root;
+            }
+
+            targetGoModPath = Path.Join(targetGoModPath, "go.mod");
+            File.WriteAllText(targetGoModPath, Instance.GenerateGoModString(pkg));
         });
-
-
-        //var queryResult = Task.Run(async () =>
-        //{
-        //    // goproxy.cn: {"Version":"v0.1.0","Time":"2024-12-05T08:59:34Z"}
-        //    // https://proxy.golang.org/github.com/laper32/goose/@v0.1.0
-        //    // https://proxy.golang.org/github.com/laper32/goose/@latest
-        //    const string url = $"github.com/laper32/goose/@latest";
-
-        //    var response = await httpClient.GetAsync(url);
-        //    response.EnsureSuccessStatusCode();
-        //    var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object?>>() ??
-        //                 throw new InvalidDataException("Invalid upstream data");
-        //    return result;
-        //}).Result;
-
-        //Console.WriteLine($"Version: {queryResult["Version"]}");
     }
 
-    private void ResolveActualReferenceVersion()
+    internal string GenerateGoModString(GolangPackage package)
     {
+        var goExeVersion = GolangEnvironment.Version;
+        var packageGoVersion = package.Configuration.GetGolangVersion();
+        var globalEnvGoVersion = Environment.GetEnvironmentVariable("Go.Version") ?? "";
+        if (string.IsNullOrEmpty(goExeVersion) && string.IsNullOrEmpty(packageGoVersion) &&
+            string.IsNullOrEmpty(globalEnvGoVersion))
+        {
+            throw new DataException("Must specify go version first!");
+        }
 
-    }
+        string goVersion;
+        // 如果包里面规定了go的版本，就直接用，其为最高优先级
+        if (!string.IsNullOrEmpty(packageGoVersion))
+        {
+            goVersion = packageGoVersion;
+        }
+        // 如果没有规定，看全局变量
+        else if (!string.IsNullOrEmpty(globalEnvGoVersion))
+        {
+            goVersion = globalEnvGoVersion;
+        }
+        // 都没有，就看系统默认的go版本
+        else
+        {
+            goVersion = goExeVersion;
+        }
 
-    internal string GenerateGoModString()
-    {
-        return """
+        var goReferences = package.Dependencies.Values.Select(dependency => $"{dependency.Name} v{dependency.Version}").ToList();
 
-               module <Workspace.Name>
+        var goReferencesStr = string.Join($"{Environment.NewLine}", goReferences);
 
-               go <Go.Version>
+        return $"""
+                module {package.Name}
 
-               require (
-               	<DirectRequires>
-               )
-               """;
+                go {goVersion}
+                
+                require (
+                	{goReferencesStr}
+                )
+                """;
     }
 
     internal string GenerateGoWorkString()
@@ -113,4 +153,6 @@ internal class GolangGenerateService
 
                """;
     }
+
+    
 }

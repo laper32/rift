@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Rift.Generate.Services;
+using Rift.Go.Fundamental;
 using Rift.Go.Generate;
 using Rift.Go.Workspace;
 using Rift.Runtime.Interfaces;
@@ -24,10 +25,12 @@ internal class Plugin : RiftPlugin
     {
         var services = new ServiceCollection();
         services.AddSingleton(this);
+        services.AddSingleton<GolangEnvironment>();
         services.AddSingleton<GolangWorkspaceService>();
         services.AddSingleton<GolangGenerateService>();
 
         _provider = services.BuildServiceProvider();
+        _provider.GetRequiredService<GolangEnvironment>();
         _provider.GetRequiredService<GolangWorkspaceService>();
         _provider.GetRequiredService<GolangGenerateService>();
 

@@ -23,6 +23,7 @@ internal interface IMaybePackage
     public string?                         Plugins      { get; }
     public string?                         Configure    { get; }
     public string                          ManifestPath { get; }
+    public string                          Root         { get; }
     public Dictionary<string, JsonElement> Others       { get; }
 }
 
@@ -43,6 +44,14 @@ internal class MaybePackage<T>(T value) : IMaybePackage
         Package package        => package.ManifestPath,
         VirtualPackage package => package.ManifestPath,
         RiftPackage package    => package.ManifestPath,
+        _                      => throw new InvalidOperationException("Why you at here?")
+    };
+
+    public string Root => Value switch
+    {
+        Package package        => package.Root,
+        VirtualPackage package => package.Root,
+        RiftPackage package    => package.Root,
         _                      => throw new InvalidOperationException("Why you at here?")
     };
 
