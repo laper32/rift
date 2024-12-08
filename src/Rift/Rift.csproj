@@ -7,7 +7,10 @@
 		<Nullable>enable</Nullable>
 		<AssemblyName>rift</AssemblyName>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
-
+		<VersionMajor>1</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>0</VersionBuild>
+		<Version>$(VersionMajor).$(VersionMinor).$(VersionBuild)</Version>
 	</PropertyGroup>
 
 	<ItemGroup>

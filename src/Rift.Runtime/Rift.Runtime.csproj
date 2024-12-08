@@ -5,10 +5,12 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<EnableDynamicLoading>true</EnableDynamicLoading>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 		<NeutralLanguage>en</NeutralLanguage>
-
+		<VersionMajor>1</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>0</VersionBuild>
+		<Version>$(VersionMajor).$(VersionMinor).$(VersionBuild)</Version>
 	</PropertyGroup>
 
 	<ItemGroup>
