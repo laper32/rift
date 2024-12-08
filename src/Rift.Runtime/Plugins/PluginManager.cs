@@ -4,7 +4,6 @@
 // All Rights Reserved
 // ===========================================================================
 
-using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Plugins;

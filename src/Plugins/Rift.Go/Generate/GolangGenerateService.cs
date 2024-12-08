@@ -1,74 +1,158 @@
-﻿using System.Text.Json;
+﻿using System.Data;
 using Rift.Go.Workspace;
+using System.Net;
+using System.Net.Http.Json;
+using Rift.Go.Fundamental;
+using Rift.Go.Scripting;
 
 namespace Rift.Go.Generate;
 
 internal class GolangGenerateService
 {
+    private readonly SocketsHttpHandler _httpHandler;
+
+    private record PackageVersionInfo(string Version, string Time);
+
     public GolangGenerateService()
     {
+        _httpHandler = new SocketsHttpHandler
+        {
+            AllowAutoRedirect              = true,
+            AutomaticDecompression         = DecompressionMethods.All,
+            EnableMultipleHttp2Connections = true,
+            ConnectTimeout                 = TimeSpan.FromSeconds(10),
+        };
         Instance = this;
     }
 
     internal static GolangGenerateService Instance { get; private set; } = null!;
 
+    
     public static void PerformGolangGenerate()
     {
-        //var packages = WorkspaceManager.GetAllPackages();
-        //foreach (var package in packages)
-        //{
-        //    if (package.FindPlugin("Rift.Go") is not { } goPlugin)
-        //    {
-        //        continue;
-        //    }
-        //    // https://stackoverflow.com/a/73245455
-        //    Console.WriteLine($"Inspecting {package.Name}");
-        //    package.ForEachDependencies((_, reference) =>
-        //    {
-        //        Console.WriteLine($"{reference.Name}, version: {reference.Version}");
-        //    });
-        //}
+        var          goProxy = Environment.GetEnvironmentVariable("GOPROXY") ?? "";
+        List<string> split   = [];
+        if (!string.IsNullOrEmpty(goProxy))
+        {
+            split.AddRange(goProxy.Split(','));
+        }
 
-        //Console.WriteLine("Now we generate go projects");
-        //try
-        //{
-        //    Console.WriteLine(JsonSerializer.Serialize(GolangWorkspaceService._instance.GetConfiguration(),
-        //        new JsonSerializerOptions
-        //        {
-        //            WriteIndented = true
-        //        }));
-        //}
-        //catch (Exception e)
-        //{
-        //    Console.WriteLine(e);
-        //}
-        //GolangWorkspaceService.DumpGolangPackages();
+        // see https://go.dev/ref/mod#goproxy-protocol
+        var proxyUrl = new Uri("https://proxy.golang.org"); // eg: https://proxy.golang.org or https://goproxy.cn
+
+        if (split.Count > 0)
+        {
+            var proxySiteRaw = split[0];
+            if (!string.IsNullOrEmpty(proxySiteRaw))
+            {
+                proxyUrl = new Uri(proxySiteRaw);
+            }
+        }
+
+        var httpClient = new HttpClient(Instance._httpHandler, false)
+        {
+            BaseAddress = proxyUrl,
+            Timeout = TimeSpan.FromSeconds(10),
+            DefaultRequestVersion = HttpVersion.Version20,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+        };
+        httpClient.DefaultRequestHeaders.Add("User-Agent", "Rift.Go.Generate");
+
+        GolangWorkspaceService.Packages.ForEach(pkg =>
+        {
+            foreach (var reference in pkg.Dependencies.Values)
+            {
+                // 有没有标latest的API是完全不一样的，但目前我们只需要看latest所在的版本号就行。
+                // 至于非latest版本号后续怎么处理，目前不管，后续再搞。
+                // TODO: 这玩意肯定要搞缓存的
+                string actualVersion;
+                if (reference.Version.Equals("latest", StringComparison.OrdinalIgnoreCase))
+                {
+                    actualVersion = Task.Run(async () =>
+                    {
+                        var query = $"{reference.Name}/@latest";
+                        var response = await httpClient.GetAsync(query);
+                        response.EnsureSuccessStatusCode();
+                        var result = await response.Content.ReadFromJsonAsync<PackageVersionInfo>() ??
+                                     throw new InvalidDataException("Invalid upstream data");
+                        return result.Version.TrimStart('v');
+                    }).Result;
+                }
+                else
+                {
+                    actualVersion = reference.Version;
+                }
+
+                reference.Version = actualVersion;
+            }
+
+            var ret = Instance.GenerateGoModString(pkg);
+
+            var targetGoModPath = pkg.Configuration.GetWriteModToPath();
+            if (string.IsNullOrEmpty(targetGoModPath))
+            {
+                targetGoModPath = pkg.Root;
+            }
+
+            targetGoModPath = Path.Join(targetGoModPath, "go.mod");
+            File.WriteAllText(targetGoModPath, Instance.GenerateGoModString(pkg));
+        });
     }
 
-    internal string GenerateGoModString()
+    internal string GenerateGoModString(GolangPackage package)
     {
+        var goExeVersion = GolangEnvironment.Version;
+        var packageGoVersion = package.Configuration.GetGolangVersion();
+        var globalEnvGoVersion = Environment.GetEnvironmentVariable("Go.Version") ?? "";
+        if (string.IsNullOrEmpty(goExeVersion) && string.IsNullOrEmpty(packageGoVersion) &&
+            string.IsNullOrEmpty(globalEnvGoVersion))
+        {
+            throw new DataException("Must specify go version first!");
+        }
 
-        return """
-               
-               module <Workspace.Name>
-               
-               go <Go.Version>
-               
-               require (
-               	<DirectRequires>
-               )
-               """;
+        string goVersion;
+        // 如果包里面规定了go的版本，就直接用，其为最高优先级
+        if (!string.IsNullOrEmpty(packageGoVersion))
+        {
+            goVersion = packageGoVersion;
+        }
+        // 如果没有规定，看全局变量
+        else if (!string.IsNullOrEmpty(globalEnvGoVersion))
+        {
+            goVersion = globalEnvGoVersion;
+        }
+        // 都没有，就看系统默认的go版本
+        else
+        {
+            goVersion = goExeVersion;
+        }
+
+        var goReferences = package.Dependencies.Values.Select(dependency => $"{dependency.Name} v{dependency.Version}").ToList();
+
+        var goReferencesStr = string.Join($"{Environment.NewLine}", goReferences);
+
+        return $"""
+                module {package.Name}
+
+                go {goVersion}
+                
+                require (
+                	{goReferencesStr}
+                )
+                """;
     }
 
     internal string GenerateGoWorkString()
     {
         return """
                go <Go.Version>
-               
+
                use (
                	<LocalPackages>
                )
-               
+
                """;
     }
+
+    
 }

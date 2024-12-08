@@ -29,7 +29,6 @@ public class Dependencies
 
     public static void Add(IEnumerable<PackageReference> dependencies)
     {
-        
         if (WorkspaceManager.AddDependencyForPackage(dependencies))
         {
             return;
