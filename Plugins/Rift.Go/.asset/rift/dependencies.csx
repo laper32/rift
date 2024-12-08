@@ -1,0 +1,1 @@
+Dependencies.Add([new PackageReference("Rift.Generate")]);

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+		<VersionMajor>1</VersionMajor>
+		<VersionMinor>0</VersionMinor>
+		<VersionBuild>0</VersionBuild>
+		<Version>$(VersionMajor).$(VersionMinor).$(VersionBuild)</Version>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\src\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime"/>
+	</ItemGroup>
+
+
+</Project>

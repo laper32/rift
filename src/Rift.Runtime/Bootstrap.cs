@@ -42,6 +42,7 @@ internal static class Bootstrap
         WorkspaceManager.SetRootPath(
             Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
 
+        // TODO: 需要放行特定的参数，比如说--version的时候不走workspace解析
         try
         {
             WorkspaceManager.LoadWorkspace();
@@ -50,10 +51,6 @@ internal static class Bootstrap
         {
             Tty.Error($"{e.Message}");
         }
-
-        var args = Environment.GetCommandLineArgs();
-        Console.WriteLine($"Args: {string.Join(", ", args)}");
-        //PluginManager.Instance.DumpPluginIdentities();
     }
 
     internal static void Run(string[] args)
