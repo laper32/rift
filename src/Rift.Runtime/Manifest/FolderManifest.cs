@@ -6,7 +6,7 @@
 
 namespace Rift.Runtime.Manifest;
 
-public sealed record FolderManifest(
+internal sealed record FolderManifest(
     string       Name,
     List<string> Members,
     List<string> Exclude

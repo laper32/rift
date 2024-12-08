@@ -1,5 +1,8 @@
 ﻿namespace Rift.Runtime.Workspace;
 
+/// <summary>
+///     包引用
+/// </summary>
 public class PackageReference
 {
     public PackageReference(string name) : this(name, "")
@@ -13,8 +16,22 @@ public class PackageReference
         Version = string.IsNullOrEmpty(version) ? "latest" : version;
     }
 
-    public string                     Name       { get; init; }
-    public string                     Version    { get; set; }
+    /// <summary>
+    ///     名字
+    /// </summary>
+    public string Name { get; init; }
+
+    /// <summary>
+    ///     版本
+    /// </summary>
+    public string Version { get; set; }
+
+    /// <summary>
+    ///     额外信息 <br />
+    ///     <remarks>
+    ///         如果你有额外的信息，请写扩展函数操作该字段。
+    ///     </remarks>
+    /// </summary>
     public Dictionary<string, object> Attributes { get; init; } = [];
 }
 

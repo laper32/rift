@@ -9,12 +9,12 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Manifest;
 
-public enum ERiftManifest
+internal enum ERiftManifest
 {
     Plugin
 }
 
-public interface IRiftManifest
+internal interface IRiftManifest
 {
     public ERiftManifest            Type         { get; }
     string                          Name         { get; }

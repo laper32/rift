@@ -10,7 +10,7 @@ namespace Rift.Runtime.Schema;
 
 // ReSharper disable IdentifierTypo
 // ReSharper disable StringLiteralTypo
-public class TomlFolder
+internal class TomlFolder
 {
     [JsonPropertyName("name")]
     public string? Name { get; set; }

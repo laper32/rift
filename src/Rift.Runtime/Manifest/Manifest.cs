@@ -9,13 +9,13 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Manifest;
 
-public enum EManifest
+internal enum EManifest
 {
     Target,
     Project
 }
 
-public interface IManifest
+internal interface IManifest
 {
     public EManifest Type { get; }
     public string    Name { get; }

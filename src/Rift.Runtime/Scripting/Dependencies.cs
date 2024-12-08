@@ -16,6 +16,13 @@ namespace Rift.Runtime.Scripting;
 
 public class Dependencies
 {
+    /// <summary>
+    ///     添加一个依赖 <br />
+    ///     <remarks>
+    ///         该函数只允许脚本调用！
+    ///     </remarks>
+    /// </summary>
+    /// <param name="dependency"> </param>
     public static void Add(PackageReference dependency)
     {
         // 如果是false的话，就会去尝试插件那找
@@ -27,6 +34,13 @@ public class Dependencies
         PluginManager.AddDependencyForPlugin(dependency);
     }
 
+    /// <summary>
+    ///     添加多个依赖 <br />
+    ///     <remarks>
+    ///         该函数只允许脚本调用！
+    ///     </remarks>
+    /// </summary>
+    /// <param name="dependencies"> </param>
     public static void Add(IEnumerable<PackageReference> dependencies)
     {
         if (WorkspaceManager.AddDependencyForPackage(dependencies))

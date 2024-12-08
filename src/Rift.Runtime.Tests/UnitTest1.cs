@@ -1,11 +1,6 @@
 ﻿using System.Collections.ObjectModel;
-using System.Data;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Text;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Commands;
-using Rift.Runtime.Fundamental;
 using Rift.Runtime.Tasks;
 using Semver;
 using Xunit.Abstractions;
@@ -20,7 +15,7 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
         TaskManager.RegisterTask("rift.new", config => { config.SetIsCommand(true); });
         TaskManager.RegisterTask("rift.new.classlib", config => { config.SetIsCommand(true); });
         var commands = TaskManager.GetMarkedAsCommandTasks();
-        var entries = UserCommand.Build(commands);
+        var entries  = UserCommand.Build(commands);
 
         //CommandManager.Instance.ExecuteCommand(Environment.GetCommandLineArgs());
     }
@@ -51,17 +46,11 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
         }.Where(x => !string.IsNullOrEmpty(x)).ToList();
 
         var goVersions = new List<SemVersion>();
-        possibleGoVersions.ForEach(x =>
-        {
-            goVersions.Add(SemVersion.Parse(x));
-        });
+        possibleGoVersions.ForEach(x => { goVersions.Add(SemVersion.Parse(x)); });
 
         goVersions.Sort(SemVersion.SortOrderComparer);
         goVersions.Reverse();
-        goVersions.ForEach(x =>
-        {
-            testOutputHelper.WriteLine($"{x}");
-        });
+        goVersions.ForEach(x => { testOutputHelper.WriteLine($"{x}"); });
 
         //possibleGoVersions.ForEach(x =>
         //{

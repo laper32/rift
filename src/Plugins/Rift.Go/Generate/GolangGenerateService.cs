@@ -1,17 +1,15 @@
 ﻿using System.Data;
-using Rift.Go.Workspace;
 using System.Net;
 using System.Net.Http.Json;
 using Rift.Go.Fundamental;
 using Rift.Go.Scripting;
+using Rift.Go.Workspace;
 
 namespace Rift.Go.Generate;
 
 internal class GolangGenerateService
 {
     private readonly SocketsHttpHandler _httpHandler;
-
-    private record PackageVersionInfo(string Version, string Time);
 
     public GolangGenerateService()
     {
@@ -20,14 +18,14 @@ internal class GolangGenerateService
             AllowAutoRedirect              = true,
             AutomaticDecompression         = DecompressionMethods.All,
             EnableMultipleHttp2Connections = true,
-            ConnectTimeout                 = TimeSpan.FromSeconds(10),
+            ConnectTimeout                 = TimeSpan.FromSeconds(10)
         };
         Instance = this;
     }
 
     internal static GolangGenerateService Instance { get; private set; } = null!;
 
-    
+
     public static void PerformGolangGenerate()
     {
         var          goProxy = Environment.GetEnvironmentVariable("GOPROXY") ?? "";
@@ -51,10 +49,10 @@ internal class GolangGenerateService
 
         var httpClient = new HttpClient(Instance._httpHandler, false)
         {
-            BaseAddress = proxyUrl,
-            Timeout = TimeSpan.FromSeconds(10),
+            BaseAddress           = proxyUrl,
+            Timeout               = TimeSpan.FromSeconds(10),
             DefaultRequestVersion = HttpVersion.Version20,
-            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+            DefaultVersionPolicy  = HttpVersionPolicy.RequestVersionOrLower
         };
         httpClient.DefaultRequestHeaders.Add("User-Agent", "Rift.Go.Generate");
 
@@ -70,7 +68,7 @@ internal class GolangGenerateService
                 {
                     actualVersion = Task.Run(async () =>
                     {
-                        var query = $"{reference.Name}/@latest";
+                        var query    = $"{reference.Name}/@latest";
                         var response = await httpClient.GetAsync(query);
                         response.EnsureSuccessStatusCode();
                         var result = await response.Content.ReadFromJsonAsync<PackageVersionInfo>() ??
@@ -101,8 +99,8 @@ internal class GolangGenerateService
 
     internal string GenerateGoModString(GolangPackage package)
     {
-        var goExeVersion = GolangEnvironment.Version;
-        var packageGoVersion = package.Configuration.GetGolangVersion();
+        var goExeVersion       = GolangEnvironment.Version;
+        var packageGoVersion   = package.Configuration.GetGolangVersion();
         var globalEnvGoVersion = Environment.GetEnvironmentVariable("Go.Version") ?? "";
         if (string.IsNullOrEmpty(goExeVersion) && string.IsNullOrEmpty(packageGoVersion) &&
             string.IsNullOrEmpty(globalEnvGoVersion))
@@ -127,7 +125,8 @@ internal class GolangGenerateService
             goVersion = goExeVersion;
         }
 
-        var goReferences = package.Dependencies.Values.Select(dependency => $"{dependency.Name} v{dependency.Version}").ToList();
+        var goReferences = package.Dependencies.Values.Select(dependency => $"{dependency.Name} v{dependency.Version}")
+            .ToList();
 
         var goReferencesStr = string.Join($"{Environment.NewLine}", goReferences);
 
@@ -135,7 +134,7 @@ internal class GolangGenerateService
                 module {package.Name}
 
                 go {goVersion}
-                
+
                 require (
                 	{goReferencesStr}
                 )
@@ -154,5 +153,5 @@ internal class GolangGenerateService
                """;
     }
 
-    
+    private record PackageVersionInfo(string Version, string Time);
 }

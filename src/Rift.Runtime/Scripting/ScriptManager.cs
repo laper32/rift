@@ -10,6 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.CodeAnalysis.Scripting.Hosting;
+using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Scripting;
 
@@ -92,41 +93,101 @@ public sealed class ScriptManager
         _instance.EvaluateScriptInternal(scriptPath, timedOutUnitSec);
     }
 
+    /// <summary>
+    ///     为脚本系统添加依赖库 <br />
+    ///     <remarks>
+    ///         如果你的插件需要对脚本系统进行扩展，必须在<see cref="IPlugin.OnLoad" /> 或 <see cref="IPlugin.OnAllLoaded" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="library"> </param>
     public static void AddLibrary(string library)
     {
         _instance.AddLibraryInternal([library]);
     }
 
+    /// <summary>
+    ///     为脚本系统添加依赖库 <br />
+    ///     <remarks>
+    ///         如果你的插件需要对脚本系统进行扩展，必须在<see cref="IPlugin.OnLoad" /> 或 <see cref="IPlugin.OnAllLoaded" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="libraries"> </param>
     public static void AddLibrary(IEnumerable<string> libraries)
     {
         _instance.AddLibraryInternal(libraries);
     }
 
+    /// <summary>
+    ///     为脚本系统移除依赖库 <br />
+    ///     <remarks>
+    ///         如果你在插件中使用了<see cref="AddLibrary(string)" /> 或者<see cref="AddLibrary(IEnumerable{string})" />，则你需要在
+    ///         <see cref="IPlugin.OnUnload" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="library"> </param>
     public static void RemoveLibrary(string library)
     {
         _instance.RemoveLibraryInternal([library]);
     }
 
+    /// <summary>
+    ///     为脚本系统移除依赖库 <br />
+    ///     <remarks>
+    ///         如果你在插件中使用了<see cref="AddLibrary(string)" /> 或者<see cref="AddLibrary(IEnumerable{string})" />，则你需要在
+    ///         <see cref="IPlugin.OnUnload" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="libraries"> </param>
     public static void RemoveLibrary(IEnumerable<string> libraries)
     {
         _instance.RemoveLibraryInternal(libraries);
     }
 
+    /// <summary>
+    ///     为脚本系统添加Namespace <br />
+    ///     <remarks>
+    ///         如果你的插件需要对脚本系统进行扩展，必须在<see cref="IPlugin.OnLoad" /> 或 <see cref="IPlugin.OnAllLoaded" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="namespace"> </param>
     public static void AddNamespace(string @namespace)
     {
         _instance.AddNamespaceInternal([@namespace]);
     }
 
+    /// <summary>
+    ///     为脚本系统添加Namespace <br />
+    ///     <remarks>
+    ///         如果你的插件需要对脚本系统进行扩展，必须在<see cref="IPlugin.OnLoad" /> 或 <see cref="IPlugin.OnAllLoaded" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="namespaces"> </param>
     public static void AddNamespace(IEnumerable<string> namespaces)
     {
         _instance.AddNamespaceInternal(namespaces);
     }
 
+    /// <summary>
+    ///     为脚本系统移除Namespace <br />
+    ///     <remarks>
+    ///         如果你在插件中使用了<see cref="AddNamespace(string)" /> 或者<see cref="AddNamespace(IEnumerable{string})" />，则你需要在
+    ///         <see cref="IPlugin.OnUnload" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="namespace"> </param>
     public static void RemoveNamespace(string @namespace)
     {
         _instance.RemoveNamespaceInternal([@namespace]);
     }
 
+    /// <summary>
+    ///     为脚本系统移除Namespace <br />
+    ///     <remarks>
+    ///         如果你在插件中使用了<see cref="AddNamespace(string)" /> 或者<see cref="AddNamespace(IEnumerable{string})" />，则你需要在
+    ///         <see cref="IPlugin.OnUnload" />中调用该函数
+    ///     </remarks>
+    /// </summary>
+    /// <param name="namespaces"> </param>
     public static void RemoveNamespace(IEnumerable<string> namespaces)
     {
         _instance.RemoveNamespaceInternal(namespaces);
