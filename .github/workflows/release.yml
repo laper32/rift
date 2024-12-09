@@ -5,9 +5,9 @@ on:
   push:
     paths-ignore:
       - "docfx/**"
-    branches: ["main"]
+    branches: ["main", "fix-ci2"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "fix-ci2"]
 
 jobs:
   setup:
@@ -116,7 +116,7 @@ jobs:
       - name: Zip Package
         run: |
           pushd ./build
-          zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
+          zip -qq -r ../rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip .rift
           popd
       - name: Upload package
         if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
