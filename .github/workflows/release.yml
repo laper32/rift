@@ -115,7 +115,7 @@ jobs:
           cp -r Plugins/Rift.Go/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.go
       - name: Zip Package
         run: |
-          pushd ./build/.rift
+          pushd ./build
           zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
           popd
       - name: Upload package
