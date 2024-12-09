@@ -124,7 +124,7 @@ jobs:
           name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
   upload:
     # if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
-    # needs: ["setup", "build"]
+    needs: ["setup", "build_windows", "build_linux"]
     permissions:
       contents: write
     runs-on: ubuntu-latest
