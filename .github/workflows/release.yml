@@ -5,9 +5,9 @@ on:
   push:
     paths-ignore:
       - "docfx/**"
-    branches: ["main", "fix-ci2", "macos-ci-update"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "fix-ci2", "macos-ci-update"]
+    branches: ["main"]
 
 jobs:
   setup:
