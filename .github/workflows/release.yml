@@ -121,6 +121,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+          path: '.'
   upload:
     if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
     needs: ["setup", "build_windows", "build_linux"]
