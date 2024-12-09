@@ -73,57 +73,75 @@ jobs:
           dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/rift/bin -p:Version=$VERSION
           dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
           dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+      - name: Copy Assets
+        shell: pwsh
+        run: |
+          $PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
+          Copy-Item -Path Plugins/Rift.Generate/.assets/$PLUGIN_VERSION -Destination ~/.rift/plugins/rift.generate -Recurse -Force
+      - name: Zip Package
+        shell: pwsh
+        run: |
+          pushd ./build/rift
+          zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
+          popd
+      - name: Upload package
+        if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+          path: '.'
+  build_linux:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+      - name: Make directories
+        run: |
+          mkdir -p ./build/rift
+      - name: Build Rift
+        run: |
+          VERSION="${{ needs.setup.outputs.version_full }}"
+          dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/rift/bin -p:Version=$VERSION
+          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+      - name: Copy Assets
+        run: |
+          PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
+          cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION ~/.rift/plugins/rift.generate
+      - name: Zip Package
+        run: |
+          pushd ./build/rift
+          zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
+          popd
+      - name: Upload package
+        if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+  upload:
+    # if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
+    # needs: ["setup", "build"]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+      - uses: actions/download-artifact@v3
+        with:
+          name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
       - name: List files
         run: |
-          ls -R ./build/rift/bin
-  # build:
-  #   needs: setup
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Install .NET Core
-  #       uses: actions/setup-dotnet@v4
-  #       with:
-  #         dotnet-version: "9.0.x"
-  #     - name: Make directories
-  #       run: |
-  #         mkdir -p ./build/rift
-  #     - name: Build Rift
-  #       run: |
-  #         VERSION="${{ needs.setup.outputs.version_full }}"
-  #         dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/rift/bin -p:Version=$VERSION
-  #         dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
-  #         dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
-  #     - name: Copy Assets
-  #       run: |
-  #         cp -r Plugins/Rift.Generate/.assets/$VERSION ./build/rift/plugins/rift.generate
-  #         cp -r Plugins/Rift.Go/.assets/$VERSION ./build/rift/plugins/rift.go
-  #     - name: Zip package
-  #       if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
-  #       run: |
-  #         pushd ./build/rift
-  #         zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
-  #         popd
-  #     - name: Upload package
-  #       if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: rift-${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #         path: '.'
-  # upload:
-  #   if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
-  #   needs: ["setup", "build"]
-  #   permissions:
-  #     contents: write
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: rift-${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #     - name: Release
-  #       id: release
-  #       uses: softprops/action-gh-release@v1
-  #       with:
-  #         tag_name: ${{ needs.setup.outputs.version_full }}
-  #         files: |
-  #           rift-${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+          ls -al
+      # - name: Release
+      #   id: release
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ needs.setup.outputs.version_full }}
+      #     files: |
+      #       rift-${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
