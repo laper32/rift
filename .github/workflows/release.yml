@@ -5,9 +5,9 @@ on:
   push:
     paths-ignore:
       - "docfx/**"
-    branches: ["main", "fix/ci"]
+    branches: ["main"]
   pull_request:
-    branches: ["main", "fix/ci"]
+    branches: ["main"]
 
 jobs:
   setup:
@@ -77,12 +77,11 @@ jobs:
         shell: pwsh
         run: |
           $PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
-          Copy-Item -Path Plugins/Rift.Generate/.assets/$PLUGIN_VERSION -Destination .build/rift/plugins/rift.generate -Recurse -Force
+          Copy-Item -Path Plugins/Rift.Generate/.assets/$PLUGIN_VERSION -Destination .build/rift/plugins/rift.generate -Recurse
       - name: Zip Package
         run: |
           pushd ./build/rift
-          Compress-Archive -Path . -DestinationPath ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip -Force
-          # zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
+          Compress-Archive -Path . -DestinationPath ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
           popd
       - name: Upload package
         if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
@@ -111,39 +110,35 @@ jobs:
       - name: Copy Assets
         run: |
           PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
-          ls -al ./build/rift/plugins
-          # cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION .build/rift/plugins/rift.generate
+          cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION ./build/rift/plugins/rift.generate
       - name: Zip Package
         run: |
-          ls -al ./build/rift/plugins
-          # pushd ./build/rift
-          # zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
-          # popd
+          pushd ./build/rift
+          zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
+          popd
       - name: Upload package
         if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
         uses: actions/upload-artifact@v3
         with:
           name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  # upload:
-  #   # if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
-  #   needs: ["setup", "build_windows", "build_linux"]
-  #   permissions:
-  #     contents: write
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #     - name: List files
-  #       run: |
-  #         ls -al
-      # - name: Release
-      #   id: release
-      #   uses: softprops/action-gh-release@v1
-      #   with:
-      #     tag_name: ${{ needs.setup.outputs.version_full }}
-      #     files: |
-      #       rift-${{ needs.setup.outputs.version }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+  upload:
+    if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
+    needs: ["setup", "build_windows", "build_linux"]
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v3
+        with:
+          name: rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+      - uses: actions/download-artifact@v3
+        with:
+          name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+      - name: Release
+        id: release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.setup.outputs.version_full }}
+          files: |
+            rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+            rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
