@@ -143,11 +143,11 @@ jobs:
       - name: Build Rift.Generate Plugin
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish Plugins/Rift.Generate/Rift.Generate.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Build Rift.Go Plugin
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish Plugins/Rift.Go/Rift.Go.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Copy Assets
         run: |
           PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
