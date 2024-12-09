@@ -79,7 +79,6 @@ jobs:
           $PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
           Copy-Item -Path Plugins/Rift.Generate/.assets/$PLUGIN_VERSION -Destination .build/rift/plugins/rift.generate -Recurse -Force
       - name: Zip Package
-        shell: pwsh
         run: |
           pushd ./build/rift
           zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
