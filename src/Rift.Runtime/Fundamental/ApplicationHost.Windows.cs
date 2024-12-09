@@ -6,6 +6,7 @@ namespace Rift.Runtime.Fundamental;
 
 public sealed partial class ApplicationHost
 {
+    private const int MaxPath = 260;
     // https://learn.microsoft.com/en-us/windows/desktop/api/shlwapi/nf-shlwapi-pathfindonpathw
     // https://www.pinvoke.net/default.aspx/shlwapi.PathFindOnPath
     [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, SetLastError = false)]

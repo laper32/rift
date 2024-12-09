@@ -5,9 +5,6 @@
 // ===========================================================================
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -18,7 +15,6 @@ namespace Rift.Runtime.Fundamental;
 /// </summary>
 public sealed partial class ApplicationHost
 {
-    private const    int            MaxPath = 260;
     private readonly string         _executablePath;
     private readonly string         _installationPath;
     private readonly ILoggerFactory _logger;
