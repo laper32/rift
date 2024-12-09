@@ -87,5 +87,5 @@ jobs:
       - name: Build Rift.Go
         run:
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib /m:$nproc -p:Version=$VERSION
+          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
           ls ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib
