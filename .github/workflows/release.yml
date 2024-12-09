@@ -72,21 +72,6 @@ jobs:
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
           dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/rift/bin -p:Version=$VERSION
-
-  build_rift_go:
-    needs: setup
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install .NET Core
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "9.0.x"
-      - name: Build Rift.Go
-        run:
-          VERSION="${{ needs.setup.outputs.version_full }}"
           dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Check dirs
         run:
