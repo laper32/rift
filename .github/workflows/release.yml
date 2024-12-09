@@ -134,9 +134,6 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: rift-${{ needs.setup.outputs.version }}-linux-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-      - name: List files
-        run: |
-          ls -al
       - name: Release
         id: release
         uses: softprops/action-gh-release@v1
