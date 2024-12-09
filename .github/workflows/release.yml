@@ -21,6 +21,8 @@ jobs:
       branch: ${{ steps.envvars.outputs.BRANCH }}
       github_sha_short: ${{ steps.envvars.outputs.GITHUB_SHA_SHORT }}
       date: ${{ steps.envvars.outputs.DATE }}
+      version: ${{ steps.envvars.outputs.VERSION }}
+      version_full: ${{ steps.envvars.outputs.VERSION_FULL }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -36,76 +38,20 @@ jobs:
         id: envvars
         run: |
           DATE=$(date +"%Y.%m.%d")
-          COMMIT_VERSION=$(git rev-list --count HEAD)
+          VERSION_MAJOR=1
+          VERSION_MINOR=0
+          VERSION_PATCH=0
+          VERSION_COMMIT=$(git rev-list --count HEAD)
           echo "DATE=$DATE"
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}"
-          echo "GIT_COMMIT=$COMMIT_VERSION"
+          echo "GIT_COMMIT=$VERSION_COMMIT"
           echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          echo "VERSION=$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH"
+          echo "VERSION_FULL=$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_COMMIT"
 
           echo "GITHUB_SHA_SHORT=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           echo "GIT_COMMIT=$COMMIT_VERSION" >> $GITHUB_OUTPUT
           echo "BRANCH=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
           echo "DATE=$DATE" >> $GITHUB_OUTPUT
-
-  # build_rift:
-  #   needs: setup
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - name: Install .NET Core
-  #       uses: actions/setup-dotnet@v4
-  #       with:
-  #         dotnet-version: "9.0.x"
-  #     - name: Make directories
-  #       run: |
-  #         mkdir -p ./build/rift/bin
-  #         mkdir -p ./build/rift/plugins
-  #     - name: Build Rift
-  #       run: |
-  #         VERSION="1.0.0.${{ needs.setup.outputs.git_commit }}"
-  #         dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/pylon/sharp/modules/Pylon -p:Version=$VERSION
-  #     - name: Copy assets
-  #       if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' ) }}
-  #       run: |
-  #         cp -r ./.asset/configs  ./build/sharp
-  #         cp -r ./.asset/gamedata ./build/sharp
-  #     - name: Zip package
-  #       if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' ) }}
-  #       run: |
-  #         pushd ./build/pylon
-  #         zip -qq -r ../../pylon-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
-  #         popd
-  #     - name: Upload package
-  #       if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' ) }}
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: pylon-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #         path: "."
-  # upload:
-  #   if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main' ) }}
-  #   needs: ["setup", "build_pylon", "build_community", "build_prophunt"]
-  #   permissions:
-  #     contents: write
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: pylon-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: community-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: prophunt-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #     - name: Install SSH Key
-  #       uses: shimataro/ssh-key-action@v2
-  #       with:
-  #         key: ${{ secrets.SSH_PRIVATE_KEY }}
-  #         known_hosts: just-a-placeholder-so-we-dont-get-errors
-  #     - name: Add Known Hosts
-  #       run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
-  #     - name: Upload
-  #       run: |
-  #         rsync -avz pylon-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/rsync/build/cs2/pylon/pylon-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #         rsync -avz community-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/rsync/build/cs2/plugins/community/community-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
-  #         rsync -avz prophunt-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/rsync/build/cs2/plugins/prophunt/prophunt-${{ needs.setup.outputs.git_commit }}-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip
+          echo "VERSION=$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH" >> $GITHUB_OUTPUT
+          echo "VERSION_FULL=$VERSION_MAJOR.$VERSION_MINOR.$VERSION_PATCH.$VERSION_COMMIT" >> $GITHUB_OUTPUT

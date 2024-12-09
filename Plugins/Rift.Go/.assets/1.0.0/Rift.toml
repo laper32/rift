@@ -1,7 +1,7 @@
 # Distributed copy DO NOT EDIT
 [plugin]
-name = "Rift.Generate"
-authors = ["Rift dev team"]
+name = "Rift.Go"
+authors = ["Rift Dev Team"]
 version = "1.0.0"
-description = "Generater"
+description = "Golang support"
 dependencies = "rift/dependencies.csx"
