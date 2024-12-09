@@ -81,7 +81,8 @@ jobs:
       - name: Zip Package
         run: |
           pushd ./build/rift
-          zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
+          Compress-Archive -Path . -DestinationPath ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip -Force
+          # zip -qq -r ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.branch }}-${{ needs.setup.outputs.github_sha_short }}.zip *
           popd
       - name: Upload package
         if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
@@ -110,7 +111,8 @@ jobs:
       - name: Copy Assets
         run: |
           PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
-          cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION .build/rift/plugins/rift.generate
+          ls -al ./build/rift/plugins
+          # cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION .build/rift/plugins/rift.generate
       - name: Zip Package
         run: |
           ls -al ./build/rift/plugins
