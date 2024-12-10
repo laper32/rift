@@ -11,6 +11,8 @@ using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Workspace;
 
+// TODO: Workspace Package的表现有点不太对：整个应当是一个树形结构。
+
 public interface IPackageInstance
 {
     public string                               Name          { get; }
