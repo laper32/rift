@@ -5,9 +5,6 @@
 // ===========================================================================
 
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
-using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -16,9 +13,8 @@ namespace Rift.Runtime.Fundamental;
 /// <summary>
 ///     Represents the host for the application, providing useful variables and services.
 /// </summary>
-public sealed class ApplicationHost
+public sealed partial class ApplicationHost
 {
-    private const    int            MaxPath = 260;
     private readonly string         _executablePath;
     private readonly string         _installationPath;
     private readonly ILoggerFactory _logger;
@@ -65,31 +61,21 @@ public sealed class ApplicationHost
     /// </summary>
     public static string UserPath => Instance._userPath;
 
-    // https://learn.microsoft.com/en-us/windows/desktop/api/shlwapi/nf-shlwapi-pathfindonpathw
-    // https://www.pinvoke.net/default.aspx/shlwapi.PathFindOnPath
-    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, SetLastError = false)]
-    private static extern bool PathFindOnPath([In] [Out] StringBuilder pszFile, [In] string[]? ppszOtherDirs);
-
     /// <summary>
-    ///     Gets the full path of the given executable filename as if the user had entered this
-    ///     executable in a shell. So, for example, the Windows PATH environment variable will
-    ///     be examined. If the filename can't be found by Windows, null is returned. <br />
-    ///     see: https://stackoverflow.com/questions/3855956/check-if-an-executable-exists-in-the-windows-path
+    /// 获取某一个可执行文件在PATH环境变量中的路径。 <br/>
+    /// <remarks>
+    /// 使用该函数时需要注意如下问题：<br/>
+    /// 1. 只负责返回路径，不负责判断该文件是否为可执行文件，这点请你一定注意。 <br/>
+    /// 2. LinWinMac对于界定什么是可执行文件的标准不一样，目前暂时不会做任何额外处理 <br/>
+    /// （比如说判断如果是win默认加一个.exe后缀，lin不做处理一样，但实际上Lin/Mac很多是通过shell脚本来wrap可执行文件的）
+    /// </remarks>
     /// </summary>
-    /// <param name="exeName"> The name of the executable. </param>
-    /// <returns> The full path if successful, or null otherwise. </returns>
-    /// <exception cref="ArgumentException"> Thrown when the executable name is too long. </exception>
-    [SupportedOSPlatform("windows")]
+    /// <param name="exeName">可执行文件的路径</param>
+    /// <returns>目标可执行文件路径，为空则说明该文件不存在。</returns>
     public static string? GetPathFromPathVariable(string exeName)
     {
-        if (exeName.Length >= MaxPath)
-        {
-            throw new ArgumentException(
-                $"The executable name '{nameof(exeName)}' must have less than {MaxPath} characters."
-            );
-        }
-
-        var builder = new StringBuilder(exeName, MaxPath);
-        return PathFindOnPath(builder, null) ? builder.ToString() : null;
+        return OperatingSystem.IsWindows()
+            ? GetPathFromPathVariableWindows(exeName)
+            : GetPathFromPathVariableUnix(exeName);
     }
 }
