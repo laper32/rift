@@ -25,4 +25,22 @@ public static class PackageConfigurationExtensions
     {
         return self.Attributes.GetValueOrDefault("Go.Mod.Path") as string ?? string.Empty;
     }
+
+    /// <summary>
+    /// 是否导出该包的go.mod文件
+    /// </summary>
+    /// <param name="self"></param>
+    /// <param name="export"></param>
+    /// <returns></returns>
+    public static PackageConfiguration ExportGoMod(this PackageConfiguration self, bool export)
+    {
+        self.Attributes["Go.Mod.ExportGoMod"] = export;
+        return self;
+    }
+
+
+    public static bool ShouldExportGoMod(this PackageConfiguration self)
+    {
+        return self.Attributes.GetValueOrDefault("Go.Mod.ExportGoMod") as bool? ?? false;
+    }
 }

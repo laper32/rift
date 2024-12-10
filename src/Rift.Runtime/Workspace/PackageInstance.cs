@@ -46,8 +46,6 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
     }
 }
 
-
-
 internal class PackageInstances
 {
     private readonly Dictionary<
