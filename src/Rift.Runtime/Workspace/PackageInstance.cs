@@ -46,13 +46,7 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
     }
 }
 
-public static class PackageInstanceExtensions
-{
-    public static bool HasPlugin(this IPackageInstance self, string pluginName)
-    {
-        return self.Plugins.ContainsKey(pluginName);
-    }
-}
+
 
 internal class PackageInstances
 {

@@ -20,7 +20,7 @@ public class GolangEnvironment
         }
 
         _goExe = ApplicationHost.GetPathFromPathVariable(goExecutableFileName) ?? "";
-
+        
         if (string.IsNullOrEmpty(_goExe))
         {
             _goVersion = ""; //这时候版本就完全不知道了，只能靠Go.Version环境变量指定用什么版本
