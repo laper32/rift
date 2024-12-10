@@ -61,5 +61,21 @@ public sealed partial class ApplicationHost
     /// </summary>
     public static string UserPath => Instance._userPath;
 
-    
+    /// <summary>
+    /// 获取某一个可执行文件在PATH环境变量中的路径。 <br/>
+    /// <remarks>
+    /// 使用该函数时需要注意如下问题：<br/>
+    /// 1. 只负责返回路径，不负责判断该文件是否为可执行文件，这点请你一定注意。 <br/>
+    /// 2. LinWinMac对于界定什么是可执行文件的标准不一样，目前暂时不会做任何额外处理 <br/>
+    /// （比如说判断如果是win默认加一个.exe后缀，lin不做处理一样，但实际上Lin/Mac很多是通过shell脚本来wrap可执行文件的）
+    /// </remarks>
+    /// </summary>
+    /// <param name="exeName">可执行文件的路径</param>
+    /// <returns>目标可执行文件路径，为空则说明该文件不存在。</returns>
+    public static string? GetPathFromPathVariable(string exeName)
+    {
+        return OperatingSystem.IsWindows()
+            ? GetPathFromPathVariableWindows(exeName)
+            : GetPathFromPathVariableUnix(exeName);
+    }
 }

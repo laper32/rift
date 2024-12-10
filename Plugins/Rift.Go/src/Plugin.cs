@@ -12,14 +12,8 @@ namespace Rift.Go;
 // ReSharper disable once UnusedMember.Global
 internal class Plugin : RiftPlugin
 {
-    private static Plugin           _instance        = null!;
     private        IGenerateService _generateService = null!;
     private        IServiceProvider _provider        = null!;
-
-    public Plugin()
-    {
-        _instance = this;
-    }
 
     public override bool OnLoad()
     {

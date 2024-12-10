@@ -13,7 +13,13 @@ public class GolangEnvironment
 
     public GolangEnvironment()
     {
-        _goExe = ApplicationHost.GetPathFromPathVariable("go.exe") ?? "";
+        var goExecutableFileName = "go";
+        if (OperatingSystem.IsWindows())
+        {
+            goExecutableFileName += ".exe";
+        }
+
+        _goExe = ApplicationHost.GetPathFromPathVariable(goExecutableFileName) ?? "";
 
         if (string.IsNullOrEmpty(_goExe))
         {

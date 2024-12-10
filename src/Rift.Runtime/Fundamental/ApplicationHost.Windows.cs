@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using System.Runtime.Versioning;
 using System.Text;
 
 namespace Rift.Runtime.Fundamental;
@@ -21,8 +20,7 @@ public sealed partial class ApplicationHost
     /// <param name="exeName"> The name of the executable. </param>
     /// <returns> The full path if successful, or null otherwise. </returns>
     /// <exception cref="ArgumentException"> Thrown when the executable name is too long. </exception>
-    [SupportedOSPlatform("windows")]
-    public static string? GetPathFromPathVariable(string exeName)
+    private static string? GetPathFromPathVariableWindows(string exeName)
     {
         if (exeName.Length >= MaxPath)
         {
