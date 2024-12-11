@@ -24,12 +24,15 @@ public sealed class WorkspaceManager
 
     private EWorkspaceStatus _status;
 
+    internal static EWorkspaceStatus Status { get; private set; }
+
     public WorkspaceManager()
     {
         _status           = EWorkspaceStatus.Unknown;
         _packages         = new Packages();
         _packageInstances = new PackageInstances();
         _instance         = this;
+        Status            = EWorkspaceStatus.Unknown;
     }
 
     /// <summary>
@@ -55,6 +58,7 @@ public sealed class WorkspaceManager
     internal static void LoadWorkspace()
     {
         var manifestPath = Path.Combine(_instance.Root, Definitions.ManifestIdentifier);
+
         _instance._packages.LoadRecursively(manifestPath);
         _instance.ValidateWorkspace();
         _instance.ActivatePackage();

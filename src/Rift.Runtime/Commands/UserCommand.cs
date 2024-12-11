@@ -54,6 +54,11 @@ internal class UserCommand
     public static RootCommand BuildCli(UserCommandEntry entry)
     {
         var root = new RootCommand("Rift, a cross-platform build system");
+
+        root.SetHandler(() =>
+        {
+            root.Invoke("--help");
+        });
         BuildCliImpl(root, entry);
         return root;
     }
@@ -80,7 +85,16 @@ internal class UserCommand
             newCmd.Description = task.Description;
             if (task.HasAction)
             {
-                newCmd.SetHandler(() => { TaskManager.RunTask(task.Name); });
+                newCmd.SetHandler(ctx =>
+                {
+                    Console.WriteLine("ParseResultDirectives...");
+                    foreach (var (key, value) in ctx.ParseResult.Directives)
+                    {
+                        Console.WriteLine($"{key} = [{string.Join(", ", value)}]");
+                    }
+                    Console.WriteLine("...End");
+                    TaskManager.RunTask(task.Name);
+                });
             }
 
             cmd.AddCommand(newCmd);

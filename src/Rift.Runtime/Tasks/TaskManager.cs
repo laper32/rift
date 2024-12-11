@@ -5,14 +5,16 @@
 // ===========================================================================
 
 
+using Rift.Runtime.Commands;
 using Rift.Runtime.Scripting;
+using Rift.Runtime.Workspace;
 
 namespace Rift.Runtime.Tasks;
 
 public sealed class TaskManager
 {
     private static   TaskManager     _instance = null!;
-    private readonly List<IRiftTask> _tasks;
+    private readonly List<RiftTask> _tasks;
 
     public TaskManager()
     {
@@ -40,7 +42,7 @@ public sealed class TaskManager
     /// <param name="predicate"> 任务配置 </param>
     /// ">
     /// <returns> 想获取的任务 </returns>
-    public static IRiftTask RegisterTask(string name, Action<ITaskConfiguration> predicate)
+    public static RiftTask RegisterTask(string name, Action<TaskConfiguration> predicate)
     {
         return _instance.RegisterTaskInternal(name, predicate);
     }
@@ -50,7 +52,7 @@ public sealed class TaskManager
     /// </summary>
     /// <param name="name"> 对应的任务名 </param>
     /// <returns> </returns>
-    public static IRiftTask? FindTask(string name)
+    public static RiftTask? FindTask(string name)
     {
         return _instance.FindTaskInternal(name);
     }
@@ -67,7 +69,20 @@ public sealed class TaskManager
 
     public static void RunTask(string name)
     {
+        if (WorkspaceManager.Status is not EWorkspaceStatus.Ready)
+        {
+            return;
+        }
         _instance.RunTaskInternal(name);
+    }
+
+    internal static void RunTask(string name, CommandInvocationContext context)
+    {
+        if (WorkspaceManager.Status is not EWorkspaceStatus.Ready)
+        {
+            return;
+        }
+
     }
 
     internal static List<string> GetMarkedAsCommandTasks()
@@ -86,7 +101,7 @@ public sealed class TaskManager
         ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
     }
 
-    private IRiftTask RegisterTaskInternal(string name, Action<ITaskConfiguration> predicate)
+    private RiftTask RegisterTaskInternal(string name, Action<TaskConfiguration> predicate)
     {
         TaskConfiguration cfg;
         if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } task)
@@ -105,7 +120,7 @@ public sealed class TaskManager
         return ret;
     }
 
-    private IRiftTask? FindTaskInternal(string name)
+    private RiftTask? FindTaskInternal(string name)
     {
         return _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
@@ -117,7 +132,7 @@ public sealed class TaskManager
 
     private void RunTaskInternal(string name)
     {
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not RiftTask task)
+        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not { } task)
         {
             return;
         }

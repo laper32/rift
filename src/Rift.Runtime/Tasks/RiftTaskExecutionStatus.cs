@@ -7,7 +7,7 @@
 namespace Rift.Runtime.Tasks;
 
 /// <summary>
-///     The execution status of <see cref="IRiftTask" />
+///     The execution status of <see cref="RiftTask" />
 /// </summary>
 public enum RiftTaskExecutionStatus
 {
