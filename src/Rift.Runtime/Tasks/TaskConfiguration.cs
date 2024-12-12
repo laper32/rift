@@ -8,9 +8,7 @@ using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
-
-
-public static class TaskConfigurationExtensions
+public static partial class TaskConfigurationExtensions
 {
     public static TaskConfiguration AddAction(this TaskConfiguration configuration, Action action)
     {
@@ -20,15 +18,16 @@ public static class TaskConfigurationExtensions
 
 public class TaskConfiguration(RiftTask task)
 {
+    internal RiftTask Instance { get; init; } = task;
     public TaskConfiguration SetDeferException(bool value)
     {
-        task.DeferExceptions = value;
+        Instance.DeferExceptions = value;
         return this;
     }
 
     public TaskConfiguration SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
     {
-        task.SetErrorHandler(predicate);
+        Instance.SetErrorHandler(predicate);
         return this;
     }
 
@@ -36,20 +35,20 @@ public class TaskConfiguration(RiftTask task)
     {
         if (value)
         {
-            if (!task.Name.StartsWith("rift.", StringComparison.OrdinalIgnoreCase))
+            if (!Instance.Name.StartsWith("rift.", StringComparison.OrdinalIgnoreCase))
             {
-                Tty.Warning($"Task `{task.Name}` must starts with `rift.` if you mark this task as command!");
+                Tty.Warning($"Task `{Instance.Name}` must starts with `rift.` if you mark this task as command!");
                 return this;
             }
         }
 
-        task.IsCommand = value;
+        Instance.IsCommand = value;
         return this;
     }
 
     public TaskConfiguration AddAction(Action<ITaskContext> action)
     {
-        task.Actions.Add(context =>
+        Instance.Actions.Add(context =>
         {
             action(context);
             return Task.CompletedTask;
@@ -59,7 +58,7 @@ public class TaskConfiguration(RiftTask task)
 
     public TaskConfiguration SetDescription(string description)
     {
-        task.Description = description;
+        Instance.Description = description;
         return this;
     }
 }

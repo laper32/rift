@@ -87,13 +87,23 @@ internal class UserCommand
             {
                 newCmd.SetHandler(ctx =>
                 {
-                    Console.WriteLine("ParseResultDirectives...");
-                    foreach (var (key, value) in ctx.ParseResult.Directives)
-                    {
-                        Console.WriteLine($"{key} = [{string.Join(", ", value)}]");
-                    }
-                    Console.WriteLine("...End");
-                    TaskManager.RunTask(task.Name);
+                    var commandArgs = new CommandArguments();
+
+                    var options =
+                        newCmd
+                            .Options
+                            .ToDictionary(
+                                opt => opt.Name,
+                                opt => ctx.ParseResult.GetValueForOption(opt)
+                            );
+                    var args = newCmd
+                        .Arguments
+                        .ToDictionary(
+                            args => args.Name,
+                            args => ctx.ParseResult.GetValueForArgument(args)
+                        );
+                    commandArgs.AddArguments(args);
+                    commandArgs.AddOptions(options);
                 });
             }
 

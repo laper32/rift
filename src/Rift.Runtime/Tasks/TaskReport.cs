@@ -8,17 +8,13 @@ using System.Collections;
 
 namespace Rift.Runtime.Tasks;
 
-public interface ITaskReport
+
+public class TaskReport : IEnumerable<TaskReportRecipe>
 {
-    void Add(ITaskReportRecipe recipe);
-}
-
-public class TaskReport : ITaskReport, IEnumerable<ITaskReportRecipe>
-{
-    private readonly List<ITaskReportRecipe> _reports = [];
+    private readonly List<TaskReportRecipe> _reports = [];
 
 
-    public IEnumerator<ITaskReportRecipe> GetEnumerator()
+    public IEnumerator<TaskReportRecipe> GetEnumerator()
     {
         return _reports.GetEnumerator();
     }
@@ -29,7 +25,7 @@ public class TaskReport : ITaskReport, IEnumerable<ITaskReportRecipe>
     }
 
 
-    public void Add(ITaskReportRecipe recipe)
+    public void Add(TaskReportRecipe recipe)
     {
         _reports.Add(recipe);
     }

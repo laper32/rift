@@ -5,7 +5,7 @@
 // ===========================================================================
 
 
-using Rift.Runtime.Commands;
+using System.Collections.Concurrent;
 using Rift.Runtime.Scripting;
 using Rift.Runtime.Workspace;
 
@@ -13,23 +13,24 @@ namespace Rift.Runtime.Tasks;
 
 public sealed class TaskManager
 {
-    private static   TaskManager     _instance = null!;
+    private static TaskManager _instance = null!;
     private readonly List<RiftTask> _tasks;
 
     public TaskManager()
     {
-        _tasks    = [];
+        _tasks = [];
         _instance = this;
     }
 
     internal static bool Init()
     {
-        return _instance.InitInternal();
+        ScriptManager.AddNamespace("Rift.Runtime.Tasks");
+        return true;
     }
 
     internal static void Shutdown()
     {
-        _instance.ShutdownInternal();
+        ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
     }
 
     /// <summary>
@@ -44,7 +45,22 @@ public sealed class TaskManager
     /// <returns> 想获取的任务 </returns>
     public static RiftTask RegisterTask(string name, Action<TaskConfiguration> predicate)
     {
-        return _instance.RegisterTaskInternal(name, predicate);
+        TaskConfiguration cfg;
+        if (_instance._tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } task)
+        {
+            cfg = new TaskConfiguration(task);
+            predicate(cfg);
+
+            return task;
+        }
+
+        var ret = new RiftTask(name);
+        cfg = new TaskConfiguration(ret);
+        predicate(cfg);
+        _instance._tasks.Add(ret);
+
+        return ret;
+
     }
 
     /// <summary>
@@ -54,7 +70,7 @@ public sealed class TaskManager
     /// <returns> </returns>
     public static RiftTask? FindTask(string name)
     {
-        return _instance.FindTaskInternal(name);
+        return _instance._tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -64,98 +80,11 @@ public sealed class TaskManager
     /// <returns> 想获取的任务 </returns>
     public static bool HasTask(string name)
     {
-        return _instance.HasTaskInternal(name);
-    }
-
-    public static void RunTask(string name)
-    {
-        if (WorkspaceManager.Status is not EWorkspaceStatus.Ready)
-        {
-            return;
-        }
-        _instance.RunTaskInternal(name);
-    }
-
-    internal static void RunTask(string name, CommandInvocationContext context)
-    {
-        if (WorkspaceManager.Status is not EWorkspaceStatus.Ready)
-        {
-            return;
-        }
-
+        return _instance._tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
     internal static List<string> GetMarkedAsCommandTasks()
     {
-        return _instance.GetMarkedAsCommandTasksInternal();
-    }
-
-    private bool InitInternal()
-    {
-        ScriptManager.AddNamespace("Rift.Runtime.Tasks");
-        return true;
-    }
-
-    private void ShutdownInternal()
-    {
-        ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
-    }
-
-    private RiftTask RegisterTaskInternal(string name, Action<TaskConfiguration> predicate)
-    {
-        TaskConfiguration cfg;
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } task)
-        {
-            cfg = new TaskConfiguration((RiftTask)task);
-            predicate(cfg);
-
-            return task;
-        }
-
-        var ret = new RiftTask(name);
-        cfg = new TaskConfiguration(ret);
-        predicate(cfg);
-        _tasks.Add(ret);
-
-        return ret;
-    }
-
-    private RiftTask? FindTaskInternal(string name)
-    {
-        return _tasks.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private bool HasTaskInternal(string name)
-    {
-        return _tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private void RunTaskInternal(string name)
-    {
-        if (_tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not { } task)
-        {
-            return;
-        }
-
-        var context = new TaskContext();
-
-        try
-        {
-            ExecuteTask(task, context).GetAwaiter().GetResult();
-        }
-        catch (Exception e)
-        {
-            task.ErrorHandler?.Invoke(e, context);
-        }
-    }
-
-    private List<string> GetMarkedAsCommandTasksInternal()
-    {
-        return (from RiftTask task in _tasks where task.IsCommand select task.Name).ToList();
-    }
-
-    private async Task ExecuteTask(RiftTask task, TaskContext context)
-    {
-        await task.Invoke(context);
+        return (from RiftTask task in _instance._tasks where task.IsCommand select task.Name).ToList();
     }
 }
