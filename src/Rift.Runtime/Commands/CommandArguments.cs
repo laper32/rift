@@ -16,4 +16,14 @@ public class CommandArguments
     {
         options.ForEach(_options.Add);
     }
+
+    public IReadOnlyDictionary<string, object?> GetArguments()
+    {
+        return _arguments;
+    }
+
+    public IReadOnlyDictionary<string, object?> GetOptions()
+    {
+        return _options;
+    }
 }

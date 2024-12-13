@@ -69,7 +69,7 @@ internal class UserCommand
         {
             var newCmd = new Command(child.Name);
 
-            if (TaskManager.FindTask(child.TaskName) is not RiftTask task)
+            if (TaskManager.FindTask(child.TaskName) is not { } task)
             {
                 throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
             }
@@ -89,13 +89,12 @@ internal class UserCommand
                 {
                     var commandArgs = new CommandArguments();
 
-                    var options =
-                        newCmd
-                            .Options
-                            .ToDictionary(
-                                opt => opt.Name,
-                                opt => ctx.ParseResult.GetValueForOption(opt)
-                            );
+                    var options = newCmd
+                        .Options
+                        .ToDictionary(
+                            opt => opt.Name,
+                            opt => ctx.ParseResult.GetValueForOption(opt)
+                        );
                     var args = newCmd
                         .Arguments
                         .ToDictionary(
@@ -104,6 +103,20 @@ internal class UserCommand
                         );
                     commandArgs.AddArguments(args);
                     commandArgs.AddOptions(options);
+
+                    Console.WriteLine("Arguments...");
+                    foreach (var (key, value) in commandArgs.GetArguments())
+                    {
+                        Console.WriteLine($"{key} = {value}");
+                    }
+                    Console.WriteLine("...End");
+
+                    Console.WriteLine("Options...");
+                    foreach (var (key, value) in commandArgs.GetOptions())
+                    {
+                        Console.WriteLine($"{key} = {value}");
+                    }
+                    Console.WriteLine("...End");
                 });
             }
 

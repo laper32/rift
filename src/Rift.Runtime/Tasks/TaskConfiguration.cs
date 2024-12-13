@@ -10,15 +10,22 @@ namespace Rift.Runtime.Tasks;
 
 public static partial class TaskConfigurationExtensions
 {
-    public static TaskConfiguration AddAction(this TaskConfiguration configuration, Action action)
+    public static TaskConfiguration AddAction(this TaskConfiguration self, Action action)
     {
-        return configuration.AddAction(_ => { action(); });
+        return self.AddAction(_ => { action(); });
     }
 }
 
 public class TaskConfiguration(RiftTask task)
 {
     internal RiftTask Instance { get; init; } = task;
+
+    public TaskConfiguration OnInit(Action action)
+    {
+
+        return this;
+    }
+
     public TaskConfiguration SetDeferException(bool value)
     {
         Instance.DeferExceptions = value;
@@ -53,6 +60,13 @@ public class TaskConfiguration(RiftTask task)
             action(context);
             return Task.CompletedTask;
         });
+        return this;
+    }
+
+    public TaskConfiguration AddAction<TData>(Action<ITaskContext, TData> action) where TData : class
+    {
+
+
         return this;
     }
 

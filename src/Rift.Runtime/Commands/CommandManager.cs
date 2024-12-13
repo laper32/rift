@@ -19,7 +19,7 @@ public sealed class CommandManager
         Instance = this;
     }
 
-    public static CommandManager Instance { get; private set; } = null!;
+    internal static CommandManager Instance { get; private set; } = null!;
 
     public static void ExecuteCommand(string[] args)
     {
