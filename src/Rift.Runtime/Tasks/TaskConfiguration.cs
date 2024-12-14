@@ -8,7 +8,7 @@ using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
-public static partial class TaskConfigurationExtensions
+public static class TaskConfigurationExtensions
 {
     public static TaskConfiguration AddAction(this TaskConfiguration self, Action action)
     {
@@ -20,19 +20,13 @@ public class TaskConfiguration(RiftTask task)
 {
     internal RiftTask Instance { get; init; } = task;
 
-    public TaskConfiguration OnInit(Action action)
-    {
-
-        return this;
-    }
-
     public TaskConfiguration SetDeferException(bool value)
     {
         Instance.DeferExceptions = value;
         return this;
     }
 
-    public TaskConfiguration SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
+    public TaskConfiguration SetErrorHandler(Func<Exception, TaskContext, Task> predicate)
     {
         Instance.SetErrorHandler(predicate);
         return this;
@@ -53,7 +47,7 @@ public class TaskConfiguration(RiftTask task)
         return this;
     }
 
-    public TaskConfiguration AddAction(Action<ITaskContext> action)
+    public TaskConfiguration AddAction(Action<TaskContext> action)
     {
         Instance.Actions.Add(context =>
         {
@@ -63,9 +57,8 @@ public class TaskConfiguration(RiftTask task)
         return this;
     }
 
-    public TaskConfiguration AddAction<TData>(Action<ITaskContext, TData> action) where TData : class
+    public TaskConfiguration AddAction<TData>(Action<TaskContext, TData> action) where TData : class
     {
-
 
         return this;
     }

@@ -81,6 +81,7 @@ public sealed class TaskManager
         return _instance._tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
+
     internal static List<string> GetMarkedAsCommandTasks()
     {
         return (from RiftTask task in _instance._tasks where task.IsCommand select task.Name).ToList();

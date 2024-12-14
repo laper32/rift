@@ -104,19 +104,7 @@ internal class UserCommand
                     commandArgs.AddArguments(args);
                     commandArgs.AddOptions(options);
 
-                    Console.WriteLine("Arguments...");
-                    foreach (var (key, value) in commandArgs.GetArguments())
-                    {
-                        Console.WriteLine($"{key} = {value}");
-                    }
-                    Console.WriteLine("...End");
 
-                    Console.WriteLine("Options...");
-                    foreach (var (key, value) in commandArgs.GetOptions())
-                    {
-                        Console.WriteLine($"{key} = {value}");
-                    }
-                    Console.WriteLine("...End");
                 });
             }
 

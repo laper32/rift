@@ -51,7 +51,8 @@ public class UnitTest1(ITestOutputHelper testOutputHelper) : RuntimeSetup
         goVersions.Sort(SemVersion.SortOrderComparer);
         goVersions.Reverse();
         goVersions.ForEach(x => { testOutputHelper.WriteLine($"{x}"); });
-
+        //var optBuilder = new TaskOptionBuilder<int>();
+        
         //possibleGoVersions.ForEach(x =>
         //{
         //    testOutputHelper.WriteLine($"{x} => IsNullOrEmpty: {string.IsNullOrEmpty(x)}");

@@ -6,5 +6,7 @@
 
 namespace Rift.Runtime.Tasks;
 
-public interface ITaskContext;
-
+public class TaskContext
+{
+    public TaskData? Data { get; internal set; }
+}
