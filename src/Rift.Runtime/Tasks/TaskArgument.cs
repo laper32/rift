@@ -43,42 +43,26 @@ internal class TaskArgument<T>(string name) : ITaskArgument
     }
 }
 
-public class TaskArgumentBuilder<T>
+public class TaskArgumentBuilder<T>(string name)
 {
-    private TaskArgument<T>? _argument;
+    private readonly TaskArgument<T> _argument = new(name);
 
-    private void CheckCreated()
-    {
-        if (_argument is null)
-        {
-            throw new InvalidOperationException($"You must define argument's `{nameof(Name)}` first!");
-        }
-    }
-
-    public TaskArgumentBuilder<T> Name(string name)
-    {
-        _argument ??= new TaskArgument<T>(name);
-        return this;
-    }
 
     public TaskArgumentBuilder<T> Description(string description)
     {
-        CheckCreated();
-        _argument!.Description = description;
+        _argument.Description = description;
         return this;
     }
 
     public TaskArgumentBuilder<T> Default(object? defaultValue)
     {
-        CheckCreated();
-        _argument!.SetDefaultValue(defaultValue);
+        _argument.SetDefaultValue(defaultValue);
         return this;
     }
 
     public ITaskArgument Build()
     {
-        CheckCreated();
-        _argument!.Create();
+        _argument.Create();
         return _argument;
     }
 }

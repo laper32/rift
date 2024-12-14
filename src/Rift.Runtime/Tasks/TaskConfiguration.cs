@@ -17,9 +17,10 @@ public static class TaskConfigurationExtensions
 
     public static TaskConfiguration AddOption<T>(
         this TaskConfiguration self,
+        string name,
         Func<TaskOptionBuilder<T>, ITaskOption> predicate)
     {
-        var option = predicate(new TaskOptionBuilder<T>());
+        var option = predicate(new TaskOptionBuilder<T>(name));
         var isExist = self
             .Instance
             .Options
@@ -37,14 +38,16 @@ public static class TaskConfigurationExtensions
 
     public static TaskConfiguration AddArgument<T>(
         this TaskConfiguration self,
+        string name,
         Func<TaskArgumentBuilder<T>, ITaskArgument> predicate)
     {
-        var argument = predicate(new TaskArgumentBuilder<T>());
+        var argument = predicate(new TaskArgumentBuilder<T>(name));
         var isExist = self
             .Instance
             .Arguments
             .Find(x => x.Name.Equals(argument.Name, StringComparison.OrdinalIgnoreCase))
             is not null;
+
         if (isExist)
         {
             Tty.Warning($"Argument `{argument.Name}` already exists in `{self.Instance.Name}`");

@@ -60,56 +60,37 @@ internal class TaskOption<T>(string name) : ITaskOption
     }
 }
 
-public class TaskOptionBuilder<T>
+public class TaskOptionBuilder<T>(string name)
 {
-    private TaskOption<T>? _option;
-
-    private void CheckCreated()
-    {
-        if (_option is null)
-        {
-            throw new InvalidOperationException($"You must define option's `{nameof(Name)}` first!");
-        }
-    }
-
-    public TaskOptionBuilder<T> Name(string name)
-    {
-        _option ??= new TaskOption<T>(name);
-        return this;
-    }
+    private readonly TaskOption<T> _option = new(name);
 
     public TaskOptionBuilder<T> Long(string longName)
     {
-        CheckCreated();
-        _option!.Long = longName;
+        _option.Long = longName;
         return this;
     }
 
     public TaskOptionBuilder<T> Short(char shortName)
     {
-        CheckCreated();
-        _option!.Short = shortName;
+        _option.Short = shortName;
         return this;
     }
 
     public TaskOptionBuilder<T> Description(string description)
     {
-        CheckCreated();
-        _option!.Description = description;
+        _option.Description = description;
         return this;
     }
 
     public TaskOptionBuilder<T> Default(object? defaultValue)
     {
-        CheckCreated();
-        _option!.SetDefaultValue(defaultValue);
+        _option.SetDefaultValue(defaultValue);
         return this;
     }
 
     public ITaskOption Build()
     {
-        CheckCreated();
-        _option!.Create();
+        _option.Create();
         return _option;
     }
 }
