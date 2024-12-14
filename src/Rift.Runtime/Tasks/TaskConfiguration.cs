@@ -14,6 +14,47 @@ public static class TaskConfigurationExtensions
     {
         return self.AddAction(_ => { action(); });
     }
+
+    public static TaskConfiguration AddOption<T>(
+        this TaskConfiguration self,
+        Func<TaskOptionBuilder<T>, ITaskOption> predicate)
+    {
+        var option = predicate(new TaskOptionBuilder<T>());
+        var isExist = self
+            .Instance
+            .Options
+            .Find(x => x.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase))
+            is not null;
+        if (isExist)
+        {
+            Tty.Warning($"Option `{option.Name}` already exists in `{self.Instance.Name}`");
+            return self;
+        }
+        self.Instance.Options.Add(option);
+
+        return self;
+    }
+
+    public static TaskConfiguration AddArgument<T>(
+        this TaskConfiguration self,
+        Func<TaskArgumentBuilder<T>, ITaskArgument> predicate)
+    {
+        var argument = predicate(new TaskArgumentBuilder<T>());
+        var isExist = self
+            .Instance
+            .Arguments
+            .Find(x => x.Name.Equals(argument.Name, StringComparison.OrdinalIgnoreCase))
+            is not null;
+        if (isExist)
+        {
+            Tty.Warning($"Argument `{argument.Name}` already exists in `{self.Instance.Name}`");
+            return self;
+        }
+
+        self.Instance.Arguments.Add(argument);
+
+        return self;
+    }
 }
 
 public class TaskConfiguration(RiftTask task)

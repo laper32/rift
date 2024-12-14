@@ -28,6 +28,9 @@ public class RiftTask(string name)
     [JsonIgnore]
     internal Func<Exception, TaskContext, Task>? ErrorHandler { get; private set; }
 
+    internal List<ITaskArgument> Arguments { get; init; } = [];
+    internal List<ITaskOption>   Options   { get; init; } = [];
+
     internal bool DeferExceptions { get; set; }
 
     internal bool                          HasAction => Actions.Count > 0;

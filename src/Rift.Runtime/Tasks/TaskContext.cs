@@ -8,5 +8,5 @@ namespace Rift.Runtime.Tasks;
 
 public class TaskContext
 {
-    public TaskData? Data { get; internal set; }
+    public ITaskData? Data { get; internal set; }
 }

@@ -24,6 +24,16 @@ internal class Generate : RiftPlugin
         TaskManager.RegisterTask("rift.generate", config =>
         {
             config
+                .AddOption<int>(builder => builder
+                    .Name("hello-world")
+                    //.Long("hello-world")
+                    .Description("114514")
+                    .Short('w')
+                    .Build())
+                .AddArgument<int>(builder=> builder
+                    .Name("Arg1")
+                    .Description("1919810")
+                    .Build())
                 .SetIsCommand(true)
                 .SetDeferException(true)
                 .SetErrorHandler((exception, context) =>
