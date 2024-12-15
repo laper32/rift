@@ -43,24 +43,23 @@ internal class TaskArgument<T>(string name) : ITaskArgument
     }
 }
 
-public class TaskArgumentBuilder<T>(string name)
+public class TaskArgumentConfiguration<T>(string name)
 {
     private readonly TaskArgument<T> _argument = new(name);
 
-
-    public TaskArgumentBuilder<T> Description(string description)
+    public TaskArgumentConfiguration<T> Description(string description)
     {
         _argument.Description = description;
         return this;
     }
 
-    public TaskArgumentBuilder<T> Default(object? defaultValue)
+    public TaskArgumentConfiguration<T> Default(object? defaultValue)
     {
         _argument.SetDefaultValue(defaultValue);
         return this;
     }
 
-    public ITaskArgument Build()
+    internal ITaskArgument Build()
     {
         _argument.Create();
         return _argument;

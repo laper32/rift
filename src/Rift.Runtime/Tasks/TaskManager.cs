@@ -81,6 +81,27 @@ public sealed class TaskManager
         return _instance._tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
+    public static void RunTask(string name)
+    {
+        if (_instance._tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not { } task)
+        {
+            return;
+        }
+
+        task.Invoke(new TaskContext()).ConfigureAwait(false).GetAwaiter().GetResult();
+
+        //task.Invoke(new TaskContext());
+    }
+
+    internal static void RunTask(string name, TaskContext context)
+    {
+        if (_instance._tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not { } task)
+        {
+            return;
+        }
+
+        task.Invoke(context).ConfigureAwait(false).GetAwaiter().GetResult();
+    }
 
     internal static List<string> GetMarkedAsCommandTasks()
     {

@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.CommandLine;
+using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
@@ -73,12 +74,12 @@ internal class UserCommand
             {
                 throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
             }
-            Console.WriteLine($"Task: {task.Name}, Options count: {task.Options.Count}, Arguments count: {task.Arguments.Count}");
 
             task.Options.ForEach(x =>
             {
                 newCmd.AddOption(x.Value);
             });
+
             task.Arguments.ForEach(x =>
             {
                 newCmd.AddArgument(x.Value);
@@ -114,7 +115,11 @@ internal class UserCommand
                     commandArgs.AddArguments(args);
                     commandArgs.AddOptions(options);
 
-                    
+                    var taskContext = new TaskContext
+                    {
+                        Data = new TaskData(commandArgs)
+                    };
+                    TaskManager.RunTask(task.Name, taskContext);
                 });
             }
 

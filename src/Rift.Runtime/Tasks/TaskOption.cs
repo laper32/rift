@@ -60,35 +60,35 @@ internal class TaskOption<T>(string name) : ITaskOption
     }
 }
 
-public class TaskOptionBuilder<T>(string name)
+public class TaskOptionConfiguration<T>(string name)
 {
     private readonly TaskOption<T> _option = new(name);
 
-    public TaskOptionBuilder<T> Long(string longName)
+    public TaskOptionConfiguration<T> Long(string longName)
     {
         _option.Long = longName;
         return this;
     }
 
-    public TaskOptionBuilder<T> Short(char shortName)
+    public TaskOptionConfiguration<T> Short(char shortName)
     {
         _option.Short = shortName;
         return this;
     }
 
-    public TaskOptionBuilder<T> Description(string description)
+    public TaskOptionConfiguration<T> Description(string description)
     {
         _option.Description = description;
         return this;
     }
 
-    public TaskOptionBuilder<T> Default(object? defaultValue)
+    public TaskOptionConfiguration<T> Default(object? defaultValue)
     {
         _option.SetDefaultValue(defaultValue);
         return this;
     }
 
-    public ITaskOption Build()
+    internal ITaskOption Build()
     {
         _option.Create();
         return _option;

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Rift.Generate.Services;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Interfaces;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
@@ -24,26 +25,29 @@ internal class Generate : RiftPlugin
         TaskManager.RegisterTask("rift.generate", config =>
         {
             config
-                .AddOption<int>("hello-world", builder => builder
-                    //.Long("hello-world")
-                    .Description("114514")
-                    .Short('w')
-                    .Build())
-                .AddArgument<int>("Arg1", builder => builder
-                    .Description("1919810")
-                    .Build())
+                .AddOption<int>("hello-world", cfg => { cfg.Description("114514").Short('w'); })
+                .AddArgument<int>("Arg1", cfg => { cfg.Description("1919810"); })
                 .SetIsCommand(true)
                 .SetDeferException(true)
                 .SetErrorHandler((exception, context) =>
                 {
-                    Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
+                    Tty.Error(exception);
+                    //Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
 
                     return Task.CompletedTask;
                 })
-                .AddAction(() =>
+                .AddAction(context =>
                 {
-                    Console.WriteLine("12121");
-                    GenerateService.Invoke();
+                    Tty.Warning("Invoked");
+                    if (context.Data is not { } data)
+                    {
+                        return;
+                    }
+
+                    Tty.WriteLine("Data received");
+                    var helloWorld = data.GetOption<int>("hello-world");
+                    Console.WriteLine($"--hello-world = {helloWorld}");
+                    //GenerateService.Invoke();
                 });
         });
         ScriptManager.AddLibrary("Rift.Generate");

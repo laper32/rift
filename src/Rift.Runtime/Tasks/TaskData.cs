@@ -4,11 +4,11 @@ namespace Rift.Runtime.Tasks;
 
 public interface ITaskData
 {
-    public TData GetOption<TData>(string   name) where TData : class;
-    public TData GetArgument<TData>(string name) where TData : class;
+    public TData GetOption<TData>(string   name);
+    public TData GetArgument<TData>(string name);
 }
 
-internal class TaskData(CommandArguments args)
+internal class TaskData(CommandArguments args) : ITaskData
 {
     public static TaskData FromCommandArguments(CommandArguments args)
     {
@@ -18,7 +18,7 @@ internal class TaskData(CommandArguments args)
     private readonly IReadOnlyDictionary<string, object?> _options = args.GetOptions();
     private readonly IReadOnlyDictionary<string, object?> _arguments = args.GetArguments();
 
-    public TData GetOption<TData>(string name) where TData : class
+    public TData GetOption<TData>(string name)
     {
         if (!_options.TryGetValue(name, out var value))
         {
@@ -33,7 +33,7 @@ internal class TaskData(CommandArguments args)
         throw new InvalidOperationException($"{name}'s type is not {typeof(TData)}");
     }
 
-    public TData GetArgument<TData>(string name) where TData : class
+    public TData GetArgument<TData>(string name) 
     {
         if (!_arguments.TryGetValue(name, out var value))
         {

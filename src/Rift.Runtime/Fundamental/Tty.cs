@@ -38,7 +38,10 @@ public class Tty
     /// <param name="message"> The error message to write. </param>
     public static void Error(Exception e, string message = "")
     {
-        Console.WriteLine($"{Chalk.Bold.Red["error"]}: {message}{Environment.NewLine}{e}");
+        Console.WriteLine(string.IsNullOrEmpty(message)
+            ? $"{Chalk.Bold.Red["error"]}: {e}"
+            : $"{Chalk.Bold.Red["error"]}: {message}{Environment.NewLine}{e}"
+        );
     }
 
     /// <summary>
