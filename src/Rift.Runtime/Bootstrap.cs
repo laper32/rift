@@ -56,6 +56,8 @@ internal static class Bootstrap
             }
             CommandManager.ExecuteCommand(args);
         }
+
+        TaskManager.RunTasks();
     }
 
     private static bool InitImpl()

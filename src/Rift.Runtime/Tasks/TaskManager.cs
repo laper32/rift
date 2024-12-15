@@ -104,50 +104,10 @@ public sealed class TaskManager
         _instance._taskScheduler.Enqueue(name, context);
     }
 
-    //internal void RunTasks()
-    //{
-    //    var sw     = new Stopwatch();
-    //    var report = new TaskReport();
-    //    while (_taskScheduler.TryDequeue(out var scheduledTask))
-    //    {
-    //        if (_instance._tasks.Find(x => x.Name.Equals(scheduledTask.Name, StringComparison.OrdinalIgnoreCase)) is not
-    //            { } task)
-    //        {
-    //            continue;
-    //        }
-
-    //        task.Invoke(scheduledTask.Context).ConfigureAwait(false).GetAwaiter().GetResult();
-    //    }
-    //}
-
-    //private void RunTask(RiftTask task, Stopwatch stopwatch, TaskReport report)
-    //{
-        
-    //}
-
-    //internal TaskReport RunTasks()
-    //{
-    //    return RunTasksAsync().GetAwaiter().GetResult();
-    //}
-
-    //private async Task<TaskReport> RunTasksAsync()
-    //{
-    //    var report = new TaskReport();
-
-    //    while (_taskScheduler.TryDequeue(out var scheduledTask))
-    //    {
-    //        if (_tasks.Find(x => x.Name.Equals(scheduledTask.Name, StringComparison.OrdinalIgnoreCase)) is not { } task)
-    //        {
-    //            continue;
-    //        }
-
-    //        //Task.Run(async () => await task.Invoke(scheduledTask.Context).ConfigureAwait(false).GetAwaiter());
-    //        //var result = await task.Invoke(scheduledTask.Context).ConfigureAwait(false).GetAwaiter();
-    //    }
-
-    //    return report;
-    //}
-
+    internal static void RunTasks()
+    {
+        _instance._taskExecutor.ExecuteTasks(_instance._tasks);
+    }
 
     internal static List<string> GetMarkedAsCommandTasks()
     {

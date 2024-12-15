@@ -26,13 +26,11 @@ internal class Generate : RiftPlugin
         {
             config
                 .AddOption<int>("hello-world", cfg => { cfg.Description("114514").Short('w'); })
-                .AddArgument<int>("Arg1", cfg => { cfg.Description("1919810"); })
                 .SetIsCommand(true)
                 .SetDeferException(true)
                 .SetErrorHandler((exception, context) =>
                 {
                     Tty.Error(exception);
-                    //Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
 
                     return Task.CompletedTask;
                 })
@@ -47,6 +45,7 @@ internal class Generate : RiftPlugin
                     Tty.WriteLine("Data received");
                     var helloWorld = data.GetOption<int>("hello-world");
                     Console.WriteLine($"--hello-world = {helloWorld}");
+                    Thread.Sleep(TimeSpan.FromSeconds(5));
                     //GenerateService.Invoke();
                 });
         });
