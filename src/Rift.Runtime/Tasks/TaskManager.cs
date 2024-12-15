@@ -5,23 +5,35 @@
 // ===========================================================================
 
 
+using Microsoft.Extensions.DependencyInjection;
 using Rift.Runtime.Scripting;
 
 namespace Rift.Runtime.Tasks;
 
 public sealed class TaskManager
 {
-    private static TaskManager _instance = null!;
+    private static   TaskManager    _instance = null!;
     private readonly List<RiftTask> _tasks;
+    private readonly TaskScheduler  _taskScheduler;
+    private readonly TaskExecutor   _taskExecutor;
 
     public TaskManager()
     {
+        var services = new ServiceCollection();
+        services.AddSingleton<TaskScheduler>();
+        services.AddSingleton<TaskExecutor>();
+
+        var provider = services.BuildServiceProvider();
+        _taskScheduler = provider.GetRequiredService<TaskScheduler>();
+        _taskExecutor  = provider.GetRequiredService<TaskExecutor>();
+
         _tasks = [];
         _instance = this;
     }
 
     internal static bool Init()
     {
+
         ScriptManager.AddNamespace("Rift.Runtime.Tasks");
         return true;
     }
@@ -81,27 +93,61 @@ public sealed class TaskManager
         return _instance._tasks.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
 
-    public static void RunTask(string name)
+    public static void ScheduleTask(string name)
     {
-        if (_instance._tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not { } task)
-        {
-            return;
-        }
-
-        task.Invoke(new TaskContext()).ConfigureAwait(false).GetAwaiter().GetResult();
-
-        //task.Invoke(new TaskContext());
+        _instance._taskScheduler.Enqueue(name);
     }
 
-    internal static void RunTask(string name, TaskContext context)
+    // TODO: 在没想好怎么做泛型参数支持之前，先用着TaskContext，且不对外。
+    internal static void ScheduleTask(string name, TaskContext context)
     {
-        if (_instance._tasks.Find(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is not { } task)
-        {
-            return;
-        }
-
-        task.Invoke(context).ConfigureAwait(false).GetAwaiter().GetResult();
+        _instance._taskScheduler.Enqueue(name, context);
     }
+
+    //internal void RunTasks()
+    //{
+    //    var sw     = new Stopwatch();
+    //    var report = new TaskReport();
+    //    while (_taskScheduler.TryDequeue(out var scheduledTask))
+    //    {
+    //        if (_instance._tasks.Find(x => x.Name.Equals(scheduledTask.Name, StringComparison.OrdinalIgnoreCase)) is not
+    //            { } task)
+    //        {
+    //            continue;
+    //        }
+
+    //        task.Invoke(scheduledTask.Context).ConfigureAwait(false).GetAwaiter().GetResult();
+    //    }
+    //}
+
+    //private void RunTask(RiftTask task, Stopwatch stopwatch, TaskReport report)
+    //{
+        
+    //}
+
+    //internal TaskReport RunTasks()
+    //{
+    //    return RunTasksAsync().GetAwaiter().GetResult();
+    //}
+
+    //private async Task<TaskReport> RunTasksAsync()
+    //{
+    //    var report = new TaskReport();
+
+    //    while (_taskScheduler.TryDequeue(out var scheduledTask))
+    //    {
+    //        if (_tasks.Find(x => x.Name.Equals(scheduledTask.Name, StringComparison.OrdinalIgnoreCase)) is not { } task)
+    //        {
+    //            continue;
+    //        }
+
+    //        //Task.Run(async () => await task.Invoke(scheduledTask.Context).ConfigureAwait(false).GetAwaiter());
+    //        //var result = await task.Invoke(scheduledTask.Context).ConfigureAwait(false).GetAwaiter();
+    //    }
+
+    //    return report;
+    //}
+
 
     internal static List<string> GetMarkedAsCommandTasks()
     {

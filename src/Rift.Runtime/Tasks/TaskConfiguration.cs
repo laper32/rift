@@ -67,6 +67,11 @@ public static class TaskConfigurationExtensions
         return self;
     }
 
+    public static TaskConfiguration Requires(this TaskConfiguration self, string taskName, bool required = true)
+    {
+        self.Instance.AddDependency(taskName, required);
+        return self;
+    }
 }
 
 public class TaskConfiguration(RiftTask task)

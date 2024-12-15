@@ -115,11 +115,11 @@ internal class UserCommand
                     commandArgs.AddArguments(args);
                     commandArgs.AddOptions(options);
 
-                    var taskContext = new TaskContext
-                    {
-                        Data = new TaskData(commandArgs)
-                    };
-                    TaskManager.RunTask(task.Name, taskContext);
+                    //var taskContext = new TaskContext
+                    //{
+                    //    Data = new TaskData(commandArgs)
+                    //};
+                    //TaskManager.RunTask(task.Name, taskContext);
                 });
             }
 

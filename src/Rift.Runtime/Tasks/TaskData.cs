@@ -10,11 +10,6 @@ public interface ITaskData
 
 internal class TaskData(CommandArguments args) : ITaskData
 {
-    public static TaskData FromCommandArguments(CommandArguments args)
-    {
-        return new TaskData(args);
-    }
-
     private readonly IReadOnlyDictionary<string, object?> _options = args.GetOptions();
     private readonly IReadOnlyDictionary<string, object?> _arguments = args.GetArguments();
 

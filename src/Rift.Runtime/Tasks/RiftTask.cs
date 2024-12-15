@@ -11,12 +11,6 @@ namespace Rift.Runtime.Tasks;
 
 public class RiftTask(string name)
 {
-    [JsonIgnore]
-    private readonly List<IDependentTask> _dependencies = [];
-
-    [JsonIgnore]
-    private readonly List<IDependentTask> _dependents = [];
-
     internal bool IsCommand { get; set; }
 
     [JsonIgnore]
@@ -33,12 +27,11 @@ public class RiftTask(string name)
 
     internal bool DeferExceptions { get; set; }
 
-    internal bool                          HasAction => Actions.Count > 0;
-    internal bool                          HasDelayedAction => DelayedActions.Count > 0;
-    internal string                        Name { get; } = name ?? throw new ArgumentNullException(name, nameof(name));
-    internal string                        Description { get; set; } = string.Empty;
-    public   IReadOnlyList<IDependentTask> Dependencies => _dependencies;
-    public   IReadOnlyList<IDependentTask> Dependents => _dependents;
+    internal bool                 HasAction => Actions.Count > 0;
+    internal bool                 HasDelayedAction => DelayedActions.Count > 0;
+    internal string               Name { get; } = name ?? throw new ArgumentNullException(name, nameof(name));
+    internal string               Description { get; set; } = string.Empty;
+    public   List<IDependentTask> Dependencies { get; init; } = [];
 
     internal void SetErrorHandler(Func<Exception, TaskContext, Task> predicate)
     {
