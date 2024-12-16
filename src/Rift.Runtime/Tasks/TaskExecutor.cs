@@ -38,6 +38,14 @@ internal class TaskExecutor(TaskScheduler scheduler)
         catch (Exception e)
         {
             taskException = e;
+            if (task.ErrorHandler is not null)
+            {
+                await HandleErrorAsync(task.ErrorHandler, taskException, ctx);
+            }
+            else
+            {
+                throw;
+            }
         }
 
         if (taskException is null)
@@ -49,5 +57,10 @@ internal class TaskExecutor(TaskScheduler scheduler)
             report.AddFailed(task.Name, sw.Elapsed);
         }
 
+    }
+
+    private static async Task HandleErrorAsync(Func<Exception, TaskContext, Task> errorHandler, Exception exception, TaskContext context)
+    {
+        await errorHandler(exception, context);
     }
 }
