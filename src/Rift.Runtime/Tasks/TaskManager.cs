@@ -106,7 +106,16 @@ public sealed class TaskManager
 
     internal static void RunTasks()
     {
-        _instance._taskExecutor.ExecuteTasks(_instance._tasks);
+        var report = _instance._taskExecutor.ExecuteTasks(_instance._tasks);
+        _instance.SummaryTasks(report);
+    }
+
+    private void SummaryTasks(TaskReport report)
+    {
+        foreach (var recipe in report)
+        {
+            Console.WriteLine($" => {recipe.TaskName} used {recipe.Duration} seconds (Execution status: {recipe.ExecutionStatus})");
+        }
     }
 
     internal static List<string> GetMarkedAsCommandTasks()

@@ -28,9 +28,26 @@ internal class TaskExecutor(TaskScheduler scheduler)
     internal async Task ExecuteTaskAsync(RiftTask task, TaskContext ctx, Stopwatch sw, TaskReport report)
     {
         sw.Restart();
-        await task.Invoke(ctx).ConfigureAwait(false);
 
-        report.Add(new TaskReportRecipe(task.Name, "", sw.Elapsed));
-        Console.WriteLine($"Running task: {task.Name}, time elapsed: {sw.Elapsed}");
+        Exception? taskException = null;
+
+        try
+        {
+            await task.Invoke(ctx).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            taskException = e;
+        }
+
+        if (taskException is null)
+        {
+            report.Add(task.Name, sw.Elapsed);
+        }
+        else
+        {
+            report.AddFailed(task.Name, sw.Elapsed);
+        }
+
     }
 }

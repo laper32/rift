@@ -45,7 +45,7 @@ internal class Generate : RiftPlugin
                     Tty.WriteLine("Data received");
                     var helloWorld = data.GetOption<int>("hello-world");
                     Console.WriteLine($"--hello-world = {helloWorld}");
-                    Thread.Sleep(TimeSpan.FromSeconds(5));
+                    throw new InvalidOperationException("Experimental");
                     //GenerateService.Invoke();
                 });
         });

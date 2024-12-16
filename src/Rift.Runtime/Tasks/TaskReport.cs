@@ -29,4 +29,15 @@ public class TaskReport : IEnumerable<TaskReportRecipe>
     {
         _reports.Add(recipe);
     }
+
+    public void Add(string taskName, TimeSpan elapsed)
+    {
+        Add(new TaskReportRecipe(taskName, string.Empty, elapsed, RiftTaskExecutionStatus.Executed));
+    }
+
+    public void AddFailed(string taskName, TimeSpan elapsed)
+    {
+        Add(new TaskReportRecipe(taskName, string.Empty, elapsed, RiftTaskExecutionStatus.Failed));
+    }
+
 }
