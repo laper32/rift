@@ -7,6 +7,7 @@
 using System.Text.Json;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Interfaces;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Schema;
@@ -24,12 +25,15 @@ public sealed class WorkspaceManager
 
     private EWorkspaceStatus _status;
 
+    internal static EWorkspaceStatus Status { get; private set; }
+
     public WorkspaceManager()
     {
         _status           = EWorkspaceStatus.Unknown;
         _packages         = new Packages();
         _packageInstances = new PackageInstances();
         _instance         = this;
+        Status            = EWorkspaceStatus.Unknown;
     }
 
     /// <summary>
@@ -55,6 +59,7 @@ public sealed class WorkspaceManager
     internal static void LoadWorkspace()
     {
         var manifestPath = Path.Combine(_instance.Root, Definitions.ManifestIdentifier);
+
         _instance._packages.LoadRecursively(manifestPath);
         _instance.ValidateWorkspace();
         _instance.ActivatePackage();
@@ -547,6 +552,11 @@ public sealed class WorkspaceManager
         {
             return;
         }
+
+        Console.WriteLine($"Configuring {instance.Name}");
+        Console.WriteLine("With interfaces...");
+        InterfaceManager.DumpPluginInterfaces();
+        Console.WriteLine("...End");
 
         var configuration = new PackageConfiguration();
         predicate(configuration);

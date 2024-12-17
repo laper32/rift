@@ -35,27 +35,29 @@ internal static class Bootstrap
         ShutdownImpl();
     }
 
-    internal static void Load()
+    internal static void Exec(string[] args)
     {
-        // TODO: 要配合命令行的行为。
-        // TODO: 这里的意思是：如果有subcommand，除非特定的命令，否则走加载workspace流程。
-        WorkspaceManager.SetRootPath(
-            Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier));
-
-        // TODO: 需要放行特定的参数，比如说--version的时候不走workspace解析
-        try
+        var rootManifestPath = Path.Combine(Environment.CurrentDirectory, Definitions.ManifestIdentifier);
+        if (!File.Exists(rootManifestPath))
         {
-            WorkspaceManager.LoadWorkspace();
+            CommandManager.ExecuteCommand(args);
         }
-        catch (Exception e)
+        else
         {
-            Tty.Error($"{e.Message}");
-        }
-    }
+            WorkspaceManager.SetRootPath(rootManifestPath);
 
-    internal static void Run(string[] args)
-    {
-        CommandManager.ExecuteCommand(args);
+            try
+            {
+                WorkspaceManager.LoadWorkspace();
+            }
+            catch (Exception e)
+            {
+                Tty.Error($"{e.Message}");
+            }
+            CommandManager.ExecuteCommand(args);
+        }
+        
+        TaskManager.RunTasks();
     }
 
     private static bool InitImpl()

@@ -17,7 +17,7 @@ public class Tasks
     /// </summary>
     /// <param name="name"> </param>
     /// <param name="predicate"> </param>
-    public static void Register(string name, Action<ITaskConfiguration> predicate)
+    public static void Register(string name, Action<TaskConfiguration> predicate)
     {
         TaskManager.RegisterTask(name, predicate);
     }

@@ -10,4 +10,4 @@ namespace Rift.Runtime.Interfaces;
 ///     一般只在接口未找到时用，如果接口未找到则抛出此异常.
 /// </summary>
 /// <param name="message"> </param>
-public class InterfaceNotFoundException(string message = "") : Exception;
+public class InterfaceNotFoundException(string message = "") : Exception(message);

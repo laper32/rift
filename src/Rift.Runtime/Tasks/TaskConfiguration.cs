@@ -8,60 +8,106 @@ using Rift.Runtime.Fundamental;
 
 namespace Rift.Runtime.Tasks;
 
-/// <summary>
-///     注册任务时的配置
-/// </summary>
-public interface ITaskConfiguration
-{
-    ITaskConfiguration SetDeferException(bool value);
-
-    ITaskConfiguration SetErrorHandler(Func<Exception, ITaskContext, Task> predicate);
-
-    ITaskConfiguration SetIsCommand(bool              value);
-    ITaskConfiguration AddAction(Action<ITaskContext> action);
-    ITaskConfiguration SetDescription(string          description);
-}
-
 public static class TaskConfigurationExtensions
 {
-    public static ITaskConfiguration AddAction(this ITaskConfiguration configuration, Action action)
+    public static TaskConfiguration AddAction(this TaskConfiguration self, Action action)
     {
-        return configuration.AddAction(_ => { action(); });
+        return self.AddAction(_ => { action(); });
+    }
+
+    public static TaskConfiguration AddOption<T>(
+        this TaskConfiguration self,
+        string name,
+        Action<TaskOptionConfiguration<T>> predicate)
+    {
+        var cfg = new TaskOptionConfiguration<T>(name);
+        predicate(cfg);
+        var option = cfg.Build();
+
+        var isExist = self
+            .Instance
+            .Options
+            .Find(x => x.Name.Equals(option.Name, StringComparison.OrdinalIgnoreCase))
+            is not null;
+
+        if (isExist)
+        {
+            Tty.Warning($"Option `{option.Name}` already exists in `{self.Instance.Name}`");
+            return self;
+        }
+
+        self.Instance.Options.Add(option);
+
+        return self;
+    }
+
+    public static TaskConfiguration AddArgument<T>(
+        this TaskConfiguration self,
+        string name,
+        Action<TaskArgumentConfiguration<T>> predicate)
+    {
+        var cfg = new TaskArgumentConfiguration<T>(name);
+        predicate(cfg);
+        var argument = cfg.Build();
+
+        var isExist = self
+            .Instance
+            .Arguments
+            .Find(x => x.Name.Equals(argument.Name, StringComparison.OrdinalIgnoreCase))
+            is not null;
+
+        if (isExist)
+        {
+            Tty.Warning($"Argument `{argument.Name}` already exists in `{self.Instance.Name}`");
+            return self;
+        }
+
+        self.Instance.Arguments.Add(argument);
+
+        return self;
+    }
+
+    public static TaskConfiguration Requires(this TaskConfiguration self, string taskName, bool required = true)
+    {
+        self.Instance.AddDependency(taskName, required);
+        return self;
     }
 }
 
-internal class TaskConfiguration(RiftTask task) : ITaskConfiguration
+public class TaskConfiguration(RiftTask task)
 {
-    public ITaskConfiguration SetDeferException(bool value)
+    internal RiftTask Instance { get; init; } = task;
+
+    public TaskConfiguration SetDeferException(bool value)
     {
-        task.DeferExceptions = value;
+        Instance.DeferExceptions = value;
         return this;
     }
 
-    public ITaskConfiguration SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
+    public TaskConfiguration SetErrorHandler(Func<Exception, TaskContext, Task> predicate)
     {
-        task.SetErrorHandler(predicate);
+        Instance.SetErrorHandler(predicate);
         return this;
     }
 
-    public ITaskConfiguration SetIsCommand(bool value)
+    public TaskConfiguration SetIsCommand(bool value)
     {
         if (value)
         {
-            if (!task.Name.StartsWith("rift.", StringComparison.OrdinalIgnoreCase))
+            if (!Instance.Name.StartsWith("rift.", StringComparison.OrdinalIgnoreCase))
             {
-                Tty.Warning($"Task `{task.Name}` must starts with `rift.` if you mark this task as command!");
+                Tty.Warning($"Task `{Instance.Name}` must starts with `rift.` if you mark this task as command!");
                 return this;
             }
         }
 
-        task.IsCommand = value;
+        Instance.IsCommand = value;
         return this;
     }
 
-    public ITaskConfiguration AddAction(Action<ITaskContext> action)
+    public TaskConfiguration AddAction(Action<TaskContext> action)
     {
-        task.Actions.Add(context =>
+        Instance.Actions.Add(context =>
         {
             action(context);
             return Task.CompletedTask;
@@ -69,9 +115,15 @@ internal class TaskConfiguration(RiftTask task) : ITaskConfiguration
         return this;
     }
 
-    public ITaskConfiguration SetDescription(string description)
+    public TaskConfiguration AddAction<TData>(Action<TaskContext, TData> action) where TData : class
     {
-        task.Description = description;
+
+        return this;
+    }
+
+    public TaskConfiguration SetDescription(string description)
+    {
+        Instance.Description = description;
         return this;
     }
 }
