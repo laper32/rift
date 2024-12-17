@@ -7,6 +7,7 @@
 using System.Text.Json;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Interfaces;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Schema;
@@ -551,6 +552,11 @@ public sealed class WorkspaceManager
         {
             return;
         }
+
+        Console.WriteLine($"Configuring {instance.Name}");
+        Console.WriteLine("With interfaces...");
+        InterfaceManager.DumpPluginInterfaces();
+        Console.WriteLine("...End");
 
         var configuration = new PackageConfiguration();
         predicate(configuration);
