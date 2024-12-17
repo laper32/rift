@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Interfaces;
@@ -225,6 +226,11 @@ public sealed class InterfaceManager
         }
     }
 
+    internal static void DumpPluginInterfaces()
+    {
+        _instance._interfaces.ForEach(Console.WriteLine);
+    }
+
     private IEnumerable<IInterface> GetPluginInterfaces(IPlugin plugin)
     {
         return _interfaces
@@ -245,5 +251,11 @@ public sealed class InterfaceManager
         }
     }
 
-    private record InterfaceInformation(IInterface Instance, IPlugin Plugin);
+    private record InterfaceInformation(IInterface Instance, IPlugin Plugin)
+    {
+        public override string ToString()
+        {
+            return $"InterfaceInformation {{ Instance = {Instance.GetType()}, Plugin = {Plugin.GetType()} }}";
+        }
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Rift.Generate.Services;
+using Rift.Runtime.Fundamental;
 using Rift.Runtime.Interfaces;
 using Rift.Runtime.Plugins;
 using Rift.Runtime.Scripting;
@@ -24,18 +25,28 @@ internal class Generate : RiftPlugin
         TaskManager.RegisterTask("rift.generate", config =>
         {
             config
+                .AddOption<int>("hello-world", cfg => { cfg.Description("114514").Short('w'); })
                 .SetIsCommand(true)
                 .SetDeferException(true)
                 .SetErrorHandler((exception, context) =>
                 {
-                    Console.WriteLine($"ErrorHandler, {exception.GetType()}, message: {exception.Message}");
+                    Tty.Error(exception);
 
                     return Task.CompletedTask;
                 })
-                .AddAction(() =>
+                .AddAction(context =>
                 {
-                    Console.WriteLine("12121");
-                    GenerateService.Invoke();
+                    Tty.Warning("Invoked");
+                    if (context.Data is not { } data)
+                    {
+                        return;
+                    }
+
+                    Tty.WriteLine("Data received");
+                    var helloWorld = data.GetOption<int>("hello-world");
+                    Console.WriteLine($"--hello-world = {helloWorld}");
+                    throw new InvalidOperationException("Experimental");
+                    //GenerateService.Invoke();
                 });
         });
         ScriptManager.AddLibrary("Rift.Generate");

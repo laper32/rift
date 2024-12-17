@@ -5,6 +5,7 @@
 // ===========================================================================
 
 using System.CommandLine;
+using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Tasks;
 
 namespace Rift.Runtime.Commands;
@@ -54,6 +55,11 @@ internal class UserCommand
     public static RootCommand BuildCli(UserCommandEntry entry)
     {
         var root = new RootCommand("Rift, a cross-platform build system");
+
+        root.SetHandler(() =>
+        {
+            root.Invoke("--help");
+        });
         BuildCliImpl(root, entry);
         return root;
     }
@@ -64,10 +70,20 @@ internal class UserCommand
         {
             var newCmd = new Command(child.Name);
 
-            if (TaskManager.FindTask(child.TaskName) is not RiftTask task)
+            if (TaskManager.FindTask(child.TaskName) is not { } task)
             {
                 throw new TaskNotFoundException($"{child.TaskName} does not found in registered tasks.");
             }
+
+            task.Options.ForEach(x =>
+            {
+                newCmd.AddOption(x.Value);
+            });
+
+            task.Arguments.ForEach(x =>
+            {
+                newCmd.AddArgument(x.Value);
+            });
 
             if (child.Children.Count > 0)
             {
@@ -80,7 +96,29 @@ internal class UserCommand
             newCmd.Description = task.Description;
             if (task.HasAction)
             {
-                newCmd.SetHandler(() => { TaskManager.RunTask(task.Name); });
+                newCmd.SetHandler(ctx =>
+                {
+                    var commandArgs = new CommandArguments();
+
+                    var options = newCmd
+                        .Options
+                        .ToDictionary(
+                            opt => opt.Name,
+                            opt => ctx.ParseResult.GetValueForOption(opt)
+                        );
+                    var args = newCmd
+                        .Arguments
+                        .ToDictionary(
+                            args => args.Name,
+                            args => ctx.ParseResult.GetValueForArgument(args)
+                        );
+                    commandArgs.AddArguments(args);
+                    commandArgs.AddOptions(options);
+                    TaskManager.ScheduleTask(task.Name, new TaskContext
+                    {
+                        Data = new TaskData(commandArgs)
+                    });
+                });
             }
 
             cmd.AddCommand(newCmd);

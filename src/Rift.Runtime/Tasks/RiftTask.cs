@@ -9,58 +9,31 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Tasks;
 
-public interface IRiftTask
+public class RiftTask(string name)
 {
-    /// <summary>
-    ///     名字
-    /// </summary>
-    string Name { get; }
-
-    /// <summary>
-    ///     描述
-    /// </summary>
-    string Description { get; }
-
-    /// <summary>
-    ///     如果需要执行这个task，需要哪些task提前执行？
-    /// </summary>
-    IReadOnlyList<IDependentTask> Dependencies { get; }
-
-    /// <summary>
-    ///     这个task会被哪些task依赖？
-    /// </summary>
-    IReadOnlyList<IDependentTask> Dependents { get; }
-}
-
-internal class RiftTask(string name) : IRiftTask
-{
-    [JsonIgnore]
-    private readonly List<IDependentTask> _dependencies = [];
+    internal bool IsCommand { get; set; }
 
     [JsonIgnore]
-    private readonly List<IDependentTask> _dependents = [];
-
-    public bool IsCommand { get; set; }
+    internal List<Func<TaskContext, Task>> Actions { get; init; } = [];
 
     [JsonIgnore]
-    public List<Func<ITaskContext, Task>> Actions { get; init; } = [];
+    internal Queue<Action<TaskContext>> DelayedActions { get; init; } = [];
 
     [JsonIgnore]
-    public Queue<Action<ITaskContext>> DelayedActions { get; init; } = [];
+    internal Func<Exception, TaskContext, Task>? ErrorHandler { get; private set; }
 
-    [JsonIgnore]
-    public Func<Exception, ITaskContext, Task>? ErrorHandler { get; private set; }
+    internal List<ITaskArgument> Arguments { get; init; } = [];
+    internal List<ITaskOption>   Options   { get; init; } = [];
 
-    public bool DeferExceptions { get; set; }
+    internal bool DeferExceptions { get; set; }
 
-    public bool                          HasAction => Actions.Count > 0;
-    public bool                          HasDelayedAction => DelayedActions.Count > 0;
-    public string                        Name { get; } = name ?? throw new ArgumentNullException(name, nameof(name));
-    public string                        Description { get; set; } = string.Empty;
-    public IReadOnlyList<IDependentTask> Dependencies => _dependencies;
-    public IReadOnlyList<IDependentTask> Dependents => _dependents;
+    internal bool                 HasAction => Actions.Count > 0;
+    internal bool                 HasDelayedAction => DelayedActions.Count > 0;
+    internal string               Name { get; } = name ?? throw new ArgumentNullException(name, nameof(name));
+    internal string               Description { get; set; } = string.Empty;
+    public   List<IDependentTask> Dependencies { get; init; } = [];
 
-    public void SetErrorHandler(Func<Exception, ITaskContext, Task> predicate)
+    internal void SetErrorHandler(Func<Exception, TaskContext, Task> predicate)
     {
         ArgumentNullException.ThrowIfNull(predicate, nameof(predicate));
 
@@ -72,7 +45,7 @@ internal class RiftTask(string name) : IRiftTask
     /// </summary>
     /// <param name="context"> The context. </param>
     /// <returns> Returned Task. </returns>
-    public async Task Invoke(ITaskContext context)
+    internal async Task Invoke(TaskContext context)
     {
         while (DelayedActions.Count > 0)
         {
