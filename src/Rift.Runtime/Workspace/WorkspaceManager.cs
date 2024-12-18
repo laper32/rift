@@ -553,11 +553,6 @@ public sealed class WorkspaceManager
             return;
         }
 
-        Console.WriteLine($"Configuring {instance.Name}");
-        Console.WriteLine("With interfaces...");
-        InterfaceManager.DumpPluginInterfaces();
-        Console.WriteLine("...End");
-
         var configuration = new PackageConfiguration();
         predicate(configuration);
         configuration.Attributes.ForEach(kv => { instance.Configuration.Attributes.Add(kv.Key, kv.Value); });

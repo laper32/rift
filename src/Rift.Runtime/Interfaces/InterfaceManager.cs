@@ -226,7 +226,7 @@ public sealed class InterfaceManager
         }
     }
 
-    internal static void DumpPluginInterfaces()
+    public static void DumpPluginInterfaces()
     {
         _instance._interfaces.ForEach(Console.WriteLine);
     }

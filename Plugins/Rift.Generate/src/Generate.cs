@@ -15,7 +15,6 @@ internal class Generate : RiftPlugin
 {
     public override bool OnLoad()
     {
-        Console.WriteLine("Rift.Generate initialized");
         var services = new ServiceCollection();
         services.AddSingleton<GenerateService>();
 
@@ -64,6 +63,15 @@ public static class Sth
 {
     public static void Call()
     {
+        Console.WriteLine("DumpInterfaces...");
+
+        Console.WriteLine($"HasInterface => GenerateService => {InterfaceManager.HasInterface<GenerateService>()}");
+        Console.WriteLine($"HasInterface => IGenerateService => {InterfaceManager.HasInterface<IGenerateService>()}");
+
+        InterfaceManager.DumpPluginInterfaces();
+
+        Console.WriteLine("...End");
+
         Console.WriteLine("Call from Sth.Call()");
     }
 }
