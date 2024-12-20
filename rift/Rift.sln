@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift", "src\Rift\Rift.cspro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.Tests", "src\Rift.Runtime.Tests\Rift.Runtime.Tests.csproj", "{C50FCAA0-54AF-4242-B123-20F59D877986}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Module.NuGet", "src\Rift.Module.NuGet\Rift.Module.NuGet.csproj", "{9890D7F2-A05A-43F3-912F-4BAEEB001A41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{C50FCAA0-54AF-4242-B123-20F59D877986}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C50FCAA0-54AF-4242-B123-20F59D877986}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C50FCAA0-54AF-4242-B123-20F59D877986}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9890D7F2-A05A-43F3-912F-4BAEEB001A41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9890D7F2-A05A-43F3-912F-4BAEEB001A41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9890D7F2-A05A-43F3-912F-4BAEEB001A41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9890D7F2-A05A-43F3-912F-4BAEEB001A41}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
