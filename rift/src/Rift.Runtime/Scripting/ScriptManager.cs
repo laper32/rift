@@ -241,8 +241,32 @@ public sealed class ScriptManager
         }
     }
 
+    /// <summary>
+    /// 执行脚本
+    /// </summary>
+    /// <param name="scriptPath"></param>
+    /// <param name="timedOutUnitSec"></param>
     internal void EvaluateScriptInternal(string scriptPath, int timedOutUnitSec = 15)
     {
+        /*
+         * 执行脚本的时候有几点需要格外注意：
+         * 1. Assembly必须是LoadFromFile，绝对不能LoadFromStream。
+         *    Roslyn不支持加载Dynamic Assembly，这会直接导致脚本无法读取Assembly的所在位置，甚至哪怕你加载了也拿不到
+         * 想要的类型
+         *
+         * 参阅:
+         *  - https://github.com/dotnet/roslyn/blob/main/docs/wiki/Scripting-API-Samples.md
+         *  - https://github.com/dotnet/roslyn/issues/6101
+         *
+         * 2. 数据共享问题。
+         *    目前来看，脚本系统只认Host自身加载的数据，不认动态加载的数据
+         * 注：这里所谓的‘动态加载的数据’指的是形如InterfaceManager那边注册的接口。
+         *    在导出函数给脚本系统使用时需要非常小心，必须要控制脚本域和插件域，哪怕你想导出API给脚本，如果你的函数实现中
+         * 有调用InterfaceManager中的接口，也会直接报数据不存在。
+         *
+         *    目前我的猜测可能需要类似MonoMod这种IL注入才行，但还需要额外测试。
+         */
+
         CheckAvailable();
 
         // make sure script context path passed in is canonicalized.
