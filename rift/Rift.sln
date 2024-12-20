@@ -9,12 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift", "src\Rift\Rift.cspro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.Tests", "src\Rift.Runtime.Tests\Rift.Runtime.Tests.csproj", "{C50FCAA0-54AF-4242-B123-20F59D877986}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Generate", "Plugins\Rift.Generate\src\Rift.Generate.csproj", "{3165A4A2-F6C2-41EB-8538-D7C8339A0314}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{638C74EF-4AB5-4F1E-83B7-28A7B9438B82}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Go", "Plugins\Rift.Go\src\Rift.Go.csproj", "{B87985B2-811C-4C6A-80BE-F9073EC043A0}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,20 +27,8 @@ Global
 		{C50FCAA0-54AF-4242-B123-20F59D877986}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C50FCAA0-54AF-4242-B123-20F59D877986}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C50FCAA0-54AF-4242-B123-20F59D877986}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3165A4A2-F6C2-41EB-8538-D7C8339A0314}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3165A4A2-F6C2-41EB-8538-D7C8339A0314}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3165A4A2-F6C2-41EB-8538-D7C8339A0314}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3165A4A2-F6C2-41EB-8538-D7C8339A0314}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B87985B2-811C-4C6A-80BE-F9073EC043A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B87985B2-811C-4C6A-80BE-F9073EC043A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B87985B2-811C-4C6A-80BE-F9073EC043A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B87985B2-811C-4C6A-80BE-F9073EC043A0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{3165A4A2-F6C2-41EB-8538-D7C8339A0314} = {638C74EF-4AB5-4F1E-83B7-28A7B9438B82}
-		{B87985B2-811C-4C6A-80BE-F9073EC043A0} = {638C74EF-4AB5-4F1E-83B7-28A7B9438B82}
 	EndGlobalSection
 EndGlobal
