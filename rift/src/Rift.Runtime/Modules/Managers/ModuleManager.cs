@@ -100,8 +100,8 @@ public sealed class ModuleManager
 
     private void BootKernelModules()
     {
-        LoadKernelModuleIdentities(ApplicationHost.InstallationInformation.LibPath);
-        AddKernelSharedAssemblies(ApplicationHost.InstallationInformation.LibPath);
+        LoadKernelModuleIdentities(ApplicationHost.InstallationInformation.BinPath);
+        AddKernelSharedAssemblies(ApplicationHost.InstallationInformation.BinPath);
 
         LoadSharedContext();
         LoadModuleAssemblyContext();
