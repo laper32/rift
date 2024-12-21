@@ -10,18 +10,31 @@ using Rift.Runtime.Tasks.Managers;
 
 namespace Rift.Runtime.Commands.Managers;
 
+/// <summary>
+/// Manages the execution and initialization of CLI commands.
+/// </summary>
 public sealed class CommandManager
 {
     private RootCommand _command = null!;
-    private bool        _initialized;
+    private bool _initialized;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CommandManager"/> class.
+    /// </summary>
     public CommandManager()
     {
         Instance = this;
     }
 
+    /// <summary>
+    /// Gets the singleton instance of the <see cref="CommandManager"/> class.
+    /// </summary>
     internal static CommandManager Instance { get; private set; } = null!;
 
+    /// <summary>
+    /// Executes the specified command arguments.
+    /// </summary>
+    /// <param name="args">The command arguments to execute.</param>
     public static void ExecuteCommand(string[] args)
     {
         if (!Instance._initialized)
@@ -32,15 +45,25 @@ public sealed class CommandManager
         Instance.Invoke(args);
     }
 
+    /// <summary>
+    /// Initializes the command manager.
+    /// </summary>
+    /// <returns>True if initialization is successful; otherwise, false.</returns>
     internal static bool Init()
     {
         return true;
     }
 
+    /// <summary>
+    /// Shuts down the command manager.
+    /// </summary>
     internal static void Shutdown()
     {
     }
 
+    /// <summary>
+    /// Builds the CLI commands.
+    /// </summary>
     private static void BuildCli()
     {
         if (Instance._initialized)
@@ -56,6 +79,10 @@ public sealed class CommandManager
         Instance._initialized = true;
     }
 
+    /// <summary>
+    /// Invokes the specified command arguments.
+    /// </summary>
+    /// <param name="args">The command arguments to invoke.</param>
     private void Invoke(string[] args)
     {
         _command.Invoke(args);

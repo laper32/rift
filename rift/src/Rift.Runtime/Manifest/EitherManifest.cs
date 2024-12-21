@@ -11,8 +11,8 @@ using Rift.Runtime.Manifest.Virtual;
 namespace Rift.Runtime.Manifest;
 
 /// <summary>
-///     所有可能的Manifest类型。 <br />
-///     没有Enum class的情况下所做的模拟
+///     Enum representing all possible Manifest types. <br />
+///     Simulates the absence of an Enum class.
 /// </summary>
 internal enum EEitherManifest
 {
@@ -21,14 +21,33 @@ internal enum EEitherManifest
     Rift
 }
 
+/// <summary>
+///     Interface for EitherManifest, providing Name and Type properties.
+/// </summary>
 internal interface IEitherManifest
 {
-    public string          Name { get; }
+    /// <summary>
+    ///     Gets the name of the manifest.
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    ///     Gets the type of the manifest.
+    /// </summary>
     public EEitherManifest Type { get; }
 }
 
+/// <summary>
+///     A record representing a manifest that can be of type IManifest, IVirtualManifest, or IRiftManifest.
+/// </summary>
+/// <typeparam name="T">The type of the manifest.</typeparam>
 internal record EitherManifest<T> : IEitherManifest
 {
+    /// <summary>
+    ///     Initializes a new instance of the <see cref="EitherManifest{T}"/> class.
+    /// </summary>
+    /// <param name="manifest">The manifest instance.</param>
+    /// <exception cref="InvalidOperationException">Thrown when the manifest is not of a valid type.</exception>
     public EitherManifest(T manifest)
     {
         if (manifest is not (IManifest or IVirtualManifest or IRiftManifest))
@@ -39,8 +58,8 @@ internal record EitherManifest<T> : IEitherManifest
         Type = manifest switch
         {
             IVirtualManifest => EEitherManifest.Virtual,
-            IManifest        => EEitherManifest.Real,
-            IRiftManifest    => EEitherManifest.Rift,
+            IManifest => EEitherManifest.Real,
+            IRiftManifest => EEitherManifest.Rift,
             _ => throw new ArgumentOutOfRangeException(nameof(manifest), manifest,
                 "Only accepts `VirtualManifest`, `Manifest`, or `RiftManifest`")
         };
@@ -48,16 +67,26 @@ internal record EitherManifest<T> : IEitherManifest
         Value = manifest;
     }
 
+    /// <summary>
+    ///     Gets the manifest value.
+    /// </summary>
     //[JsonIgnore]
     public T Value { get; init; }
 
+    /// <summary>
+    ///     Gets the type of the manifest.
+    /// </summary>
     public EEitherManifest Type { get; init; }
 
+    /// <summary>
+    ///     Gets the name of the manifest.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when the manifest type is invalid.</exception>
     public string Name => Value switch
     {
-        IManifest real                   => real.Name,
+        IManifest real => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,
-        IRiftManifest riftManifest       => riftManifest.Name,
-        _                                => throw new ArgumentException("Invalid manifest type.")
+        IRiftManifest riftManifest => riftManifest.Name,
+        _ => throw new ArgumentException("Invalid manifest type.")
     };
 }
