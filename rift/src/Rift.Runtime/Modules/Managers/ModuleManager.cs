@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using Rift.Runtime.Application;
 using Rift.Runtime.Modules.Attributes;
 using Rift.Runtime.Modules.Fundamental;
 using Rift.Runtime.Modules.Loader;
-using ApplicationHost = Rift.Runtime.Application.ApplicationHost;
 
 namespace Rift.Runtime.Modules.Managers;
 
