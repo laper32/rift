@@ -17,6 +17,13 @@ internal class ModuleInstance(ModuleLoadContext context)
 
     public bool Init()
     {
+        foreach (var t in _entry.GetTypes())
+        {
+            Console.WriteLine("Type Information: \n" +
+                              $"  - Name: {t.FullName}\n" +
+                              $"  - Derived From: {t.BaseType?.FullName}");
+        }
+
         if (_entry.GetTypes().FirstOrDefault(t => typeof(RiftModule).IsAssignableFrom(t) && !t.IsAbstract) is not
             { } type)
         {

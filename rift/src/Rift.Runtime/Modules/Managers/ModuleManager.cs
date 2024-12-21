@@ -194,7 +194,6 @@ public sealed class ModuleManager
             _moduleContexts.Add(new ModuleLoadContext(identity, _sharedContext));
         }
     }
-
     
     private void LoadSharedContext()
     {
