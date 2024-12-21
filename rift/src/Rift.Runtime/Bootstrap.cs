@@ -152,15 +152,10 @@ internal static class Bootstrap
             throw new InvalidOperationException("Failed to init InterfaceManager.");
         }
 
-        Console.WriteLine($"Installation Path: {ApplicationHost.InstallationInformation.InstallationPath}");
-        Console.WriteLine($"Executable Path: {ApplicationHost.InstallationInformation.ExecutablePath}");
-        Console.WriteLine($"UserProfile Path: {ApplicationHost.UserInformation.UserPath}");
-
         if (!ModuleManager.Init())
         {
             throw new InvalidOperationException($"Failed to init {typeof(ModuleManager)}");
         }
-
 
         //if (!ScriptManager.Init())
         //{

@@ -20,9 +20,9 @@ internal class ModuleInstance(ModuleLoadContext context)
         if (_entry.GetTypes().FirstOrDefault(t => typeof(RiftModule).IsAssignableFrom(t) && !t.IsAbstract) is not
             { } type)
         {
-            MakeError("An error occured when loading plugin.",
+            MakeError("An error occured when loading module.",
                 new BadImageFormatException(
-                    $"Instance is not derived from <RiftPlugin>.\n  At: {_identity.EntryPath}"));
+                    $"Instance is not derived from {typeof(RiftModule)}.\n  At: {_identity.EntryPath}"));
             Status = ModuleStatus.Failed;
    
             return false;
@@ -30,7 +30,7 @@ internal class ModuleInstance(ModuleLoadContext context)
 
         if (Activator.CreateInstance(type) is not RiftModule instance)
         {
-            MakeError("An error occured when loading plugin.",
+            MakeError("An error occured when loading module.",
                 new BadImageFormatException("Failed to create instance!"));
             Status = ModuleStatus.Failed;
             return false;
@@ -60,7 +60,7 @@ internal class ModuleInstance(ModuleLoadContext context)
         }
         catch (Exception e)
         {
-            MakeError("An error occured when loading plugin.", e);
+            MakeError("An error occured when loading module.", e);
             // 出问题了，就得置空，不然就是野的
             Instance = null;
             Status   = ModuleStatus.Failed;

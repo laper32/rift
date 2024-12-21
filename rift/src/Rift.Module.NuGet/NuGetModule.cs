@@ -1,18 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Rift.Runtime.Interfaces;
 using Rift.Runtime.Modules.Abstractions;
+using Rift.Runtime.Modules.Attributes;
+
+//[assembly: ModuleShared]
 
 namespace Rift.Module.NuGet;
-
-public interface IExampleService : IInterface
-{
-
-}
-
-internal class ExampleService : IExampleService
-{
-    public uint InterfaceVersion => 1;
-}
 
 internal class NuGetModule : RiftModule
 {
@@ -20,9 +12,8 @@ internal class NuGetModule : RiftModule
     {
         var services = new ServiceCollection();
 
-        services.AddSingleton<ExampleService>();
         var provider = services.BuildServiceProvider();
-        InterfaceManager.AddInterface(provider.GetRequiredService<ExampleService>(), this);
+        //InterfaceManager.AddInterface(provider.GetRequiredService<ExampleService>(), this);
 
         Console.WriteLine("NuGetModule.OnLoad");
         return true;

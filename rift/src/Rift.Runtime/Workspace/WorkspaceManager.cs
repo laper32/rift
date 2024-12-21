@@ -123,7 +123,7 @@ public sealed class WorkspaceManager
 
         RunWorkspacePluginsScript();
 
-        //PluginManager.NotifyLoadPlugins();
+        PluginManager.NotifyLoadPlugins();
 
         RunWorkspaceDependenciesScript();
         RunWorkspaceConfigurationScript();

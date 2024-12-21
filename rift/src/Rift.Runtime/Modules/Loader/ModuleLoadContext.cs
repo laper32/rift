@@ -32,8 +32,10 @@ internal class ModuleLoadContext : ModuleAssemblyContext
             Entry = asm;
             return;
         }
-
+        Console.WriteLine($"EntryPath: {entryPath}, Entry: {Entry is null}");
         Entry = LoadFromAssemblyPath(entryPath);
+        Console.WriteLine($"EntryPath: {entryPath}, Entry: {Entry is null}");
+
     }
 
     protected override Assembly? Load(AssemblyName assemblyName)
@@ -46,7 +48,7 @@ internal class ModuleLoadContext : ModuleAssemblyContext
             return ret;
         }
 
-        var path = _resolver?.ResolveAssemblyToPath(assemblyName);
+        var path = _resolver.ResolveAssemblyToPath(assemblyName);
         return path == null ? null : LoadFromAssemblyPath(path);
     }
 }

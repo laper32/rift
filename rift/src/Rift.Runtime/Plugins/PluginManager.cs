@@ -20,6 +20,11 @@ public sealed class PluginManager
 
     }
 
+    internal static void NotifyLoadPlugins()
+    {
+
+    }
+
     //private static PluginManager _instance = null!;
 
     //private readonly PluginIdentities               _identities;

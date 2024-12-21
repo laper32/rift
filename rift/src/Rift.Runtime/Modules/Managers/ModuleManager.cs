@@ -195,6 +195,7 @@ public sealed class ModuleManager
         }
     }
 
+    
     private void LoadSharedContext()
     {
         foreach (var info in _sharedAssemblyInfos)
