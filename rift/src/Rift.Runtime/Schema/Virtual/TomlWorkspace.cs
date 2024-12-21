@@ -9,7 +9,6 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Schema.Virtual;
 
-// ReSharper disable once IdentifierTypo
 internal sealed class TomlWorkspace
 {
     [JsonPropertyName("name")]

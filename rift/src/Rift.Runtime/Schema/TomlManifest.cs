@@ -11,11 +11,8 @@ using Rift.Runtime.Schema.Virtual;
 
 namespace Rift.Runtime.Schema;
 
-// ReSharper disable IdentifierTypo
-// ReSharper disable StringLiteralTypo
 internal sealed class TomlManifest
 {
-    //[DataMember(Name = "target")]
     [JsonPropertyName("target")]
     public TomlTarget? Target { get; set; }
 

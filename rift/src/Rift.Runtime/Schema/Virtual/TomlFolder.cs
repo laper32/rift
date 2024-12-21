@@ -8,8 +8,6 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Schema.Virtual;
 
-// ReSharper disable IdentifierTypo
-// ReSharper disable StringLiteralTypo
 internal class TomlFolder
 {
     [JsonPropertyName("name")]

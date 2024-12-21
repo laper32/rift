@@ -9,7 +9,6 @@ using System.Text.Json.Serialization;
 
 namespace Rift.Runtime.Schema.Real;
 
-// ReSharper disable IdentifierTypo
 internal sealed class TomlTarget
 {
     [JsonPropertyName("name")]
