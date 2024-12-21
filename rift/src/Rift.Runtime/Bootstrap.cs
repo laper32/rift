@@ -7,15 +7,16 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Rift.Runtime.Commands;
-using Rift.Runtime.Fundamental;
-using Rift.Runtime.Fundamental.Application;
-using Rift.Runtime.Interfaces;
+using Rift.Runtime.Application;
+using Rift.Runtime.Commands.Managers;
+using Rift.Runtime.Constants;
+using Rift.Runtime.Interfaces.Managers;
+using Rift.Runtime.IO;
 using Rift.Runtime.Modules.Managers;
-using Rift.Runtime.Plugins;
-using Rift.Runtime.Scripting;
-using Rift.Runtime.Tasks;
-using Rift.Runtime.Workspace;
+using Rift.Runtime.Plugins.Managers;
+using Rift.Runtime.Scripts.Managers;
+using Rift.Runtime.Tasks.Managers;
+using Rift.Runtime.Workspace.Managers;
 using Serilog;
 using Serilog.Events;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -56,9 +57,10 @@ internal static class Bootstrap
             {
                 Tty.Error($"{e.Message}");
             }
+
             CommandManager.ExecuteCommand(args);
         }
-        
+
         TaskManager.RunTasks();
     }
 

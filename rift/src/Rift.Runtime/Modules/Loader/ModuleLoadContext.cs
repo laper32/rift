@@ -9,16 +9,13 @@ internal class ModuleLoadContext : ModuleAssemblyContext
     private readonly AssemblyDependencyResolver _resolver;
     private readonly AssemblyLoadContext        _sharedContext;
 
-    public ModuleIdentity Identity { get; init; }
-    public Assembly       Entry    { get; init; }
-
     public ModuleLoadContext(ModuleIdentity identity, AssemblyLoadContext sharedContext)
     {
         ArgumentNullException.ThrowIfNull(identity, nameof(identity));
         ArgumentNullException.ThrowIfNull(sharedContext, nameof(sharedContext));
 
         _sharedContext = sharedContext;
-        Identity = identity;
+        Identity       = identity;
         var entryPath = Identity.EntryPath;
         if (string.IsNullOrEmpty(entryPath))
         {
@@ -32,11 +29,16 @@ internal class ModuleLoadContext : ModuleAssemblyContext
             Entry = asm;
             return;
         }
+
         Entry = LoadFromAssemblyPath(entryPath);
     }
 
+    public ModuleIdentity Identity { get; init; }
+    public Assembly       Entry    { get; init; }
+
     protected override Assembly? Load(AssemblyName assemblyName)
     {
+        Console.WriteLine($"Loading: {assemblyName}");
         var ret = _sharedContext
             .Assemblies
             .FirstOrDefault(x => x.GetName().Name == assemblyName.Name);
@@ -45,8 +47,20 @@ internal class ModuleLoadContext : ModuleAssemblyContext
             return ret;
         }
 
+        var baseAsm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName() == assemblyName);
+        Console.WriteLine($"baseAsm: {baseAsm?.FullName}");
+        if (baseAsm != null)
+        {
+            return baseAsm;
+        }
+
         var path = _resolver.ResolveAssemblyToPath(assemblyName);
-        return path == null ? null : LoadFromAssemblyPath(path);
+        if (path is null)
+        {
+            return null;
+        }
+
+        var asm = LoadFromAssemblyPath(path);
+        return asm;
     }
 }
-

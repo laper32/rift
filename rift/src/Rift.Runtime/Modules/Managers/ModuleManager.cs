@@ -1,12 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using Rift.Runtime.Fundamental;
-using Rift.Runtime.Modules.Abstractions;
 using Rift.Runtime.Modules.Attributes;
 using Rift.Runtime.Modules.Fundamental;
 using Rift.Runtime.Modules.Loader;
-using ApplicationHost = Rift.Runtime.Fundamental.Application.ApplicationHost;
+using ApplicationHost = Rift.Runtime.Application.ApplicationHost;
 
 namespace Rift.Runtime.Modules.Managers;
 
@@ -14,23 +12,21 @@ public sealed class ModuleManager
 {
     private const string ModulePattern = "Rift.Module.*.dll";
 
-    private readonly ModuleAssemblyContext _sharedContext = new();
-    private readonly List<ModuleIdentity> _pendingLoadModules = [];
+    private static   ModuleManager                  _instance            = null!;
+    private readonly List<ModuleInstance>           _kernelInstances     = [];
+    private readonly List<ModuleLoadContext>        _moduleContexts      = [];
+    private readonly List<ModuleIdentity>           _pendingLoadModules  = [];
+    private readonly List<ModuleInstance>           _runtimeInstances    = [];
     private readonly List<ModuleSharedAssemblyInfo> _sharedAssemblyInfos = [];
-    private readonly List<ModuleLoadContext> _moduleContexts = [];
-    private readonly List<ModuleInstance> _kernelInstances = [];
-    private readonly List<ModuleInstance> _runtimeInstances = [];
 
-    internal delegate void DelegateModuleUnload(ModuleInstance instance);
-
-    internal static event DelegateModuleUnload? ModuleUnload;
-
-    private static ModuleManager _instance = null!;
+    private readonly ModuleAssemblyContext _sharedContext = new();
 
     public ModuleManager()
     {
         _instance = this;
     }
+
+    internal static event DelegateModuleUnload? ModuleUnload;
 
     internal static bool Init()
     {
@@ -66,7 +62,6 @@ public sealed class ModuleManager
 
     private void BootRuntimeModules()
     {
-
     }
 
     private void LoadRuntimeModules()
@@ -79,10 +74,7 @@ public sealed class ModuleManager
             }
         });
 
-        _runtimeInstances.ForEach(x =>
-        {
-            x.PostLoad();
-        });
+        _runtimeInstances.ForEach(x => { x.PostLoad(); });
     }
 
     private void UnloadRuntimeModules()
@@ -97,8 +89,8 @@ public sealed class ModuleManager
     }
 
     /// <summary>
-    /// 启用内核模块 <br />
-    /// 内核模块一定和exe放一起的. 
+    ///     启用内核模块 <br />
+    ///     内核模块一定和exe放一起的.
     /// </summary>
     private void ActivateKernelModules()
     {
@@ -108,8 +100,8 @@ public sealed class ModuleManager
 
     private void BootKernelModules()
     {
-        LoadKernelModuleIdentities(ApplicationHost.InstallationInformation.BinPath);
-        AddKernelSharedAssemblies(ApplicationHost.InstallationInformation.BinPath);
+        LoadKernelModuleIdentities(ApplicationHost.InstallationInformation.LibPath);
+        AddKernelSharedAssemblies(ApplicationHost.InstallationInformation.LibPath);
 
         LoadSharedContext();
         LoadModuleAssemblyContext();
@@ -128,10 +120,7 @@ public sealed class ModuleManager
             }
         });
 
-        _kernelInstances.ForEach(x =>
-        {
-            x.PostLoad();
-        });
+        _kernelInstances.ForEach(x => { x.PostLoad(); });
     }
 
     private void UnloadKernelModules()
@@ -166,14 +155,14 @@ public sealed class ModuleManager
             var name = Path.GetFileNameWithoutExtension(sharedAsmPath);
             if (!sharedAssemblies.TryGetValue(name, out var value))
             {
-                value = [];
+                value                  = [];
                 sharedAssemblies[name] = value;
             }
 
             value.Add(new ModuleSharedAssemblyInfo(
-                Path: sharedAsmPath,
-                Info: FileVersionInfo.GetVersionInfo(sharedAsmPath),
-                LastWriteDate: File.GetLastWriteTime(sharedAsmPath))
+                sharedAsmPath,
+                FileVersionInfo.GetVersionInfo(sharedAsmPath),
+                File.GetLastWriteTime(sharedAsmPath))
             );
         }
 
@@ -194,7 +183,7 @@ public sealed class ModuleManager
             _moduleContexts.Add(new ModuleLoadContext(identity, _sharedContext));
         }
     }
-    
+
     private void LoadSharedContext()
     {
         foreach (var info in _sharedAssemblyInfos)
@@ -229,9 +218,9 @@ public sealed class ModuleManager
         // 然后我们通过读PE的方式找到这些带了这个标签的二进制文件, 把他们收集起来, 再根据一定的规则把他们都变成共享context。
         foreach (var dll in dlls)
         {
-            using var fs = new FileStream(dll, FileMode.Open);
-            using var pe = new PEReader(fs);
-            var reader = pe.GetMetadataReader();
+            using var fs     = new FileStream(dll, FileMode.Open);
+            using var pe     = new PEReader(fs);
+            var       reader = pe.GetMetadataReader();
             if (!reader.IsAssembly)
             {
                 continue;
@@ -249,14 +238,14 @@ public sealed class ModuleManager
                     continue;
                 }
 
-                var memberReference = reader.GetMemberReference((MemberReferenceHandle)attr.Constructor);
+                var memberReference = reader.GetMemberReference((MemberReferenceHandle) attr.Constructor);
                 if (memberReference.Parent.Kind != HandleKind.TypeReference)
                 {
                     continue;
                 }
 
 
-                var typeReference = reader.GetTypeReference((TypeReferenceHandle)memberReference.Parent);
+                var typeReference = reader.GetTypeReference((TypeReferenceHandle) memberReference.Parent);
                 if ($"{reader.GetString(typeReference.Namespace)}.{reader.GetString(typeReference.Name)}".Equals(
                         typeof(ModuleSharedAttribute).FullName!))
                 {
@@ -276,7 +265,7 @@ public sealed class ModuleManager
     /// <returns> </returns>
     internal static string GetEntryDll(string libPath)
     {
-        var conf = Directory.GetFiles(libPath, "*.deps.json");
+        var    conf = Directory.GetFiles(libPath, "*.deps.json");
         string entryDll;
         // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
         if (conf.Length != 1) // 首先看.deps.json的数量
@@ -291,4 +280,5 @@ public sealed class ModuleManager
         return File.Exists(entryDll) ? entryDll : string.Empty;
     }
 
+    internal delegate void DelegateModuleUnload(ModuleInstance instance);
 }

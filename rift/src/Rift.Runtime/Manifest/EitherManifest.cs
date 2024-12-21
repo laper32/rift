@@ -4,6 +4,10 @@
 // All Rights Reserved
 // ===========================================================================
 
+using Rift.Runtime.Manifest.Real;
+using Rift.Runtime.Manifest.Rift;
+using Rift.Runtime.Manifest.Virtual;
+
 namespace Rift.Runtime.Manifest;
 
 /// <summary>

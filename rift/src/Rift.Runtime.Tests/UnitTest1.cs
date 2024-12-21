@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using Rift.Runtime.Collections.Generic;
-using Rift.Runtime.Commands;
-using Rift.Runtime.Tasks;
+using Rift.Runtime.Commands.Cli;
+using Rift.Runtime.Tasks.Managers;
 using Semver;
 using Xunit.Abstractions;
 

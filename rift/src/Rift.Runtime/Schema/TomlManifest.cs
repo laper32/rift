@@ -5,6 +5,9 @@
 // ===========================================================================
 
 using System.Text.Json.Serialization;
+using Rift.Runtime.Schema.Real;
+using Rift.Runtime.Schema.Rift;
+using Rift.Runtime.Schema.Virtual;
 
 namespace Rift.Runtime.Schema;
 

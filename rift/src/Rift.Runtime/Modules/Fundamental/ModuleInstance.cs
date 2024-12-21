@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
-using Rift.Runtime.Fundamental;
+using System.Runtime.Loader;
+using Rift.Runtime.IO;
 using Rift.Runtime.Modules.Abstractions;
 using Rift.Runtime.Modules.Loader;
 
@@ -17,21 +18,45 @@ internal class ModuleInstance(ModuleLoadContext context)
 
     public bool Init()
     {
-        foreach (var t in _entry.GetTypes())
+        Console.WriteLine("AssemblyLoadContext.Default.Assemblies Find RiftModule...");
+        foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
         {
-            Console.WriteLine("Type Information: \n" +
-                              $"  - Name: {t.FullName}\n" +
-                              $"  - Derived From: {t.BaseType?.FullName}");
+            if (assembly.GetTypes().FirstOrDefault(x => x == typeof(RiftModule)) is { } t)
+            {
+                Console.WriteLine($"  {t.FullName} (HashCode:  {t.GetHashCode()} )");
+            }
         }
 
-        if (_entry.GetTypes().FirstOrDefault(t => typeof(RiftModule).IsAssignableFrom(t) && !t.IsAbstract) is not
+        Console.WriteLine("...End");
+
+        Console.WriteLine("AppDomain.CurrentDomain.GetAssemblies Dump...");
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (assembly.GetTypes().FirstOrDefault(x => x == typeof(RiftModule)) is { } t)
+            {
+                Console.WriteLine($"  {t.FullName} (HashCode:  {t.GetHashCode()} )");
+            }
+        }
+
+        Console.WriteLine("...End");
+
+        if (_entry.GetTypes().FirstOrDefault(t =>
+            {
+                var baseType = typeof(RiftModule);
+                Console.WriteLine($"BaseClass: {baseType.FullName}, BaseTypeHash: {baseType.GetHashCode()}");
+                Console.WriteLine($"BaseClass: {t.BaseType?.FullName}, BaseTypeHash: {t.BaseType?.GetHashCode()}");
+
+                var isAssignableFromBaseType = baseType.IsAssignableFrom(t);
+
+                return isAssignableFromBaseType && !t.IsAbstract;
+            }) is not
             { } type)
         {
             MakeError("An error occured when loading module.",
                 new BadImageFormatException(
                     $"Instance is not derived from {typeof(RiftModule)}.\n  At: {_identity.EntryPath}"));
             Status = ModuleStatus.Failed;
-   
+
             return false;
         }
 
@@ -42,7 +67,7 @@ internal class ModuleInstance(ModuleLoadContext context)
             Status = ModuleStatus.Failed;
             return false;
         }
-           
+
         Instance = instance;
         Status   = ModuleStatus.Checked;
 
@@ -57,12 +82,12 @@ internal class ModuleInstance(ModuleLoadContext context)
             {
                 throw new InvalidOperationException($"Failed to load plugin \"{_identity.EntryPath}\".");
             }
-   
+
             if (Error != null)
             {
                 throw Error;
             }
-   
+
             Status = ModuleStatus.Running;
         }
         catch (Exception e)
@@ -77,7 +102,7 @@ internal class ModuleInstance(ModuleLoadContext context)
     public void Unload(bool shutdown = false)
     {
         Instance?.OnUnload();
-   
+
         // 如果没有错误, 那么就正常的把状态置空, 否则, 保存当前状态.
         if (Error is null)
         {
@@ -91,7 +116,7 @@ internal class ModuleInstance(ModuleLoadContext context)
                 Status = ModuleStatus.None;
             }
         }
-   
+
         Instance = null;
     }
 

@@ -17,7 +17,7 @@ public static class DictionaryExtension
     }
 
     public static void ForEach<TKey, TValue>(
-        this IDictionary<TKey, TValue> self,
+        this IDictionary<TKey, TValue>     self,
         Action<KeyValuePair<TKey, TValue>> predicate)
     {
         foreach (var value in self)
@@ -25,5 +25,4 @@ public static class DictionaryExtension
             predicate(value);
         }
     }
-
 }

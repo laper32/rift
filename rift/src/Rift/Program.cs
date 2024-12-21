@@ -6,6 +6,7 @@ internal class Program
 {
     private static void Main(string[] args)
     {
+        Console.ReadKey();
         Bootstrap.Init();
         //Bootstrap.Exec(args);
         //Bootstrap.Load();

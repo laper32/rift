@@ -1,10 +1,8 @@
 ﻿namespace Rift.Runtime.Modules.Abstractions;
 
-
 /// <summary>
-/// Abstract base class for modules. <br />
-///
-/// All modules must be derived from this class.
+///     Abstract base class for modules. <br />
+///     All modules must be derived from this class.
 /// </summary>
 public abstract class RiftModule : IModule
 {
