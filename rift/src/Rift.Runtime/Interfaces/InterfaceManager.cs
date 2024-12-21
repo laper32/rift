@@ -6,12 +6,15 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
+using Rift.Runtime.Modules.Abstractions;
+using Rift.Runtime.Modules.Fundamental;
+using Rift.Runtime.Modules.Managers;
 using Rift.Runtime.Plugins;
 
 namespace Rift.Runtime.Interfaces;
 
 /// <summary>
-///     用于处理插件之间的接口共享
+///     用于处理模块之间的接口共享
 /// </summary>
 public sealed class InterfaceManager
 {
@@ -25,13 +28,13 @@ public sealed class InterfaceManager
 
     internal static bool Init()
     {
-        PluginManager.PluginUnload += _instance.OnPluginUnload;
+        ModuleManager.ModuleUnload += _instance.OnModuleUnload;
         return true;
     }
 
     internal static void Shutdown()
     {
-        PluginManager.PluginUnload -= _instance.OnPluginUnload;
+        ModuleManager.ModuleUnload -= _instance.OnModuleUnload;
     }
 
     /// <summary>
@@ -39,9 +42,9 @@ public sealed class InterfaceManager
     /// </summary>
     /// <typeparam name="T"> 继承自<see cref="IInterface" />的接口类型 </typeparam>
     /// <param name="interface"> 接口实例 </param>
-    /// <param name="plugin"> 对应的插件 </param>
+    /// <param name="module"> 对应的插件 </param>
     /// <exception cref="InterfaceAlreadyExistsException"> 如果接口已经存在则抛出异常 </exception>
-    public static void AddInterface<T>(T @interface, IPlugin plugin) where T : class, IInterface
+    public static void AddInterface<T>(T @interface, IModule module) where T : class, IInterface
     {
         var version = @interface.InterfaceVersion;
         if (_instance._interfaces.Any(x => x.Instance.InterfaceVersion.Equals(version)))
@@ -50,7 +53,7 @@ public sealed class InterfaceManager
                 $"Interface `{typeof(T).Name}(version: {version})` already exists");
         }
 
-        _instance._interfaces.Add(new InterfaceInformation(@interface, plugin));
+        _instance._interfaces.Add(new InterfaceInformation(@interface, module));
     }
 
     /// <summary>
@@ -231,31 +234,31 @@ public sealed class InterfaceManager
         _instance._interfaces.ForEach(Console.WriteLine);
     }
 
-    private IEnumerable<IInterface> GetPluginInterfaces(IPlugin plugin)
+    private IEnumerable<IInterface> GetModuleInterfaces(IModule plugin)
     {
         return _interfaces
-            .Where(x => x.Plugin == plugin)
+            .Where(x => x.Module == plugin)
             .Select(x => x.Instance);
     }
 
-    private void OnPluginUnload(PluginInstance instance)
+    private void OnModuleUnload(ModuleInstance instance)
     {
         if (instance.Instance is not { } internalInstance)
         {
             return;
         }
 
-        foreach (var @interface in GetPluginInterfaces(internalInstance).ToArray())
+        foreach (var @interface in GetModuleInterfaces(internalInstance).ToArray())
         {
             RemoveInterface(@interface);
         }
     }
 
-    private record InterfaceInformation(IInterface Instance, IPlugin Plugin)
+    private record InterfaceInformation(IInterface Instance, IModule Module)
     {
         public override string ToString()
         {
-            return $"InterfaceInformation {{ Instance = {Instance.GetType()}, Plugin = {Plugin.GetType()} }}";
+            return $"InterfaceInformation {{ Instance = {Instance.GetType()}, Module = {Module.GetType()} }}";
         }
     }
 }

@@ -19,7 +19,7 @@ namespace Rift.Runtime.Workspace;
 public sealed class WorkspaceManager
 {
     private static   WorkspaceManager         _instance  = null!;
-    private readonly List<PluginListenerInfo> _listeners = [];
+    //private readonly List<PluginListenerInfo> _listeners = [];
     private readonly PackageInstances         _packageInstances;
     private readonly Packages                 _packages;
 
@@ -44,14 +44,14 @@ public sealed class WorkspaceManager
     internal static bool Init()
     {
         _instance._status          =  EWorkspaceStatus.Init;
-        PluginManager.PluginUnload += _instance.OnPluginUnload;
+        //PluginManager.PluginUnload += _instance.OnPluginUnload;
         ScriptManager.AddNamespace("Rift.Runtime.Workspace");
         return true;
     }
 
     internal static void Shutdown()
     {
-        PluginManager.PluginUnload -= _instance.OnPluginUnload;
+        //PluginManager.PluginUnload -= _instance.OnPluginUnload;
         ScriptManager.RemoveNamespace("Rift.Runtime.Workspace");
         _instance._status = EWorkspaceStatus.Shutdown;
     }
@@ -94,23 +94,23 @@ public sealed class WorkspaceManager
 
     #region PluginManager
 
-    private void OnPluginUnload(PluginInstance instance)
-    {
-        if (instance.Instance is not { } internalInstance)
-        {
-            return;
-        }
+    //private void OnPluginUnload(PluginInstance instance)
+    //{
+    //    if (instance.Instance is not { } internalInstance)
+    //    {
+    //        return;
+    //    }
 
-        var listeners = _listeners.FindAll(x => x.Instance == internalInstance).ToArray();
-        foreach (var info in listeners)
-        {
-            RemoveListener(info.Instance, info.Listener);
-        }
-    }
+    //    var listeners = _listeners.FindAll(x => x.Instance == internalInstance).ToArray();
+    //    foreach (var info in listeners)
+    //    {
+    //        RemoveListener(info.Instance, info.Listener);
+    //    }
+    //}
 
     #endregion
 
-    private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
+    //private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
 
     #region Package Operations
 
@@ -123,12 +123,12 @@ public sealed class WorkspaceManager
 
         RunWorkspacePluginsScript();
 
-        PluginManager.NotifyLoadPlugins();
+        //PluginManager.NotifyLoadPlugins();
 
         RunWorkspaceDependenciesScript();
         RunWorkspaceConfigurationScript();
 
-        OnAllPackageLoaded();
+        //OnAllPackageLoaded();
     }
 
     /// <summary>
@@ -150,12 +150,12 @@ public sealed class WorkspaceManager
         return _instance._packageInstances.GetAllInstances();
     }
 
-    internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
-    {
-        _instance.CheckAvailable();
+    //internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
+    //{
+    //    _instance.CheckAvailable();
 
-        return _instance._packageInstances.CollectPluginsForLoad();
-    }
+    //    return _instance._packageInstances.CollectPluginsForLoad();
+    //}
 
     private void CheckAvailable()
     {
@@ -167,50 +167,50 @@ public sealed class WorkspaceManager
 
     #endregion
 
-    #region Listeners Operation
+    //#region Listeners Operation
 
-    /// <summary>
-    ///     Adding a listener <br />
-    ///     Plugin system is unnecessary to consider when remove the listener, PluginManager will automatically remove it when
-    ///     plugin unloads.
-    /// </summary>
-    /// <param name="instance"> Plugin instance. </param>
-    /// <param name="listener"> Workspace Listener </param>
-    public static void AddListener(RiftPlugin instance, IWorkspaceListener listener)
-    {
-        if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) != null)
-        {
-            Tty.Warning($"You have already installed same listener!{Environment.NewLine}{Environment.StackTrace}");
-            return;
-        }
+    ///// <summary>
+    /////     Adding a listener <br />
+    /////     Plugin system is unnecessary to consider when remove the listener, PluginManager will automatically remove it when
+    /////     plugin unloads.
+    ///// </summary>
+    ///// <param name="instance"> Plugin instance. </param>
+    ///// <param name="listener"> Workspace Listener </param>
+    //public static void AddListener(RiftPlugin instance, IWorkspaceListener listener)
+    //{
+    //    if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) != null)
+    //    {
+    //        Tty.Warning($"You have already installed same listener!{Environment.NewLine}{Environment.StackTrace}");
+    //        return;
+    //    }
 
-        _instance._listeners.Add(new PluginListenerInfo(instance, listener));
-    }
+    //    _instance._listeners.Add(new PluginListenerInfo(instance, listener));
+    //}
 
-    /// <summary>
-    ///     Removing a listener <br />
-    ///     Plugin system is unnecessary to consider when remove the listener, PluginManager will automatically remove it when
-    ///     plugin unloads.
-    /// </summary>
-    /// <param name="instance"> Plugin instance. </param>
-    /// <param name="listener"> Workspace Listener </param>
-    public static void RemoveListener(RiftPlugin instance, IWorkspaceListener listener)
-    {
-        if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) is not { } data)
-        {
-            return;
-        }
+    ///// <summary>
+    /////     Removing a listener <br />
+    /////     Plugin system is unnecessary to consider when remove the listener, PluginManager will automatically remove it when
+    /////     plugin unloads.
+    ///// </summary>
+    ///// <param name="instance"> Plugin instance. </param>
+    ///// <param name="listener"> Workspace Listener </param>
+    //public static void RemoveListener(RiftPlugin instance, IWorkspaceListener listener)
+    //{
+    //    if (_instance._listeners.Find(x => x.Instance == instance && x.Listener == listener) is not { } data)
+    //    {
+    //        return;
+    //    }
 
-        _instance._listeners.Remove(data);
-    }
+    //    _instance._listeners.Remove(data);
+    //}
 
-    private void OnAllPackageLoaded()
-    {
-        _listeners.ForEachCatchException(x => x.Listener.OnAllPackagesLoaded(),
-            e => { Tty.Error(e, $"An error occured when calling {nameof(OnAllPackageLoaded)}"); });
-    }
+    //private void OnAllPackageLoaded()
+    //{
+    //    _listeners.ForEachCatchException(x => x.Listener.OnAllPackagesLoaded(),
+    //        e => { Tty.Error(e, $"An error occured when calling {nameof(OnAllPackageLoaded)}"); });
+    //}
 
-    #endregion
+    //#endregion
 
     #region Manifest operations
 

@@ -8,17 +8,17 @@ using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Fundamental.Application;
 
 /// <summary>
 ///     Represents the host for the application, providing useful variables and services.
 /// </summary>
 public sealed partial class ApplicationHost
 {
-    private readonly string         _executablePath;
-    private readonly string         _installationPath;
     private readonly ILoggerFactory _logger;
-    private readonly string         _userPath;
+
+    private readonly InstallationInformation _installationInfo;
+    private readonly UserInformation         _userInfo;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="ApplicationHost" /> class.
@@ -26,13 +26,18 @@ public sealed partial class ApplicationHost
     /// <param name="provider"> The service provider to get required services. </param>
     public ApplicationHost(IServiceProvider provider)
     {
-        _logger           = provider.GetRequiredService<ILoggerFactory>();
-        _executablePath   = Process.GetCurrentProcess().MainModule!.FileName;
-        _installationPath = Directory.GetParent(Directory.GetParent(_executablePath)!.FullName)!.FullName;
-        _userPath = Path.Combine(
+        var executablePath   = Process.GetCurrentProcess().MainModule!.FileName;
+        var installationPath = Directory.GetParent(Directory.GetParent(executablePath)!.FullName)!.FullName;
+        var userPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             Definitions.DirectoryIdentifier
         );
+
+        _logger           = provider.GetRequiredService<ILoggerFactory>();
+
+        _installationInfo = new InstallationInformation(installationPath, executablePath);
+        _userInfo         = new UserInformation(userPath);
+
         Instance = this;
     }
 
@@ -46,20 +51,9 @@ public sealed partial class ApplicationHost
     /// </summary>
     public static ILoggerFactory Logger => Instance._logger;
 
-    /// <summary>
-    ///     Gets the path of the executable.
-    /// </summary>
-    public static string ExecutablePath => Instance._executablePath;
+    public static InstallationInformation InstallationInformation => Instance._installationInfo;
 
-    /// <summary>
-    ///     Gets the installation path.
-    /// </summary>
-    public static string InstallationPath => Instance._installationPath;
-
-    /// <summary>
-    ///     Gets the user path.
-    /// </summary>
-    public static string UserPath => Instance._userPath;
+    public static UserInformation UserInformation => Instance._userInfo;
 
     /// <summary>
     /// 获取某一个可执行文件在PATH环境变量中的路径。 <br/>

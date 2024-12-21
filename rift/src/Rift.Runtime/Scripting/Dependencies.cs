@@ -31,7 +31,7 @@ public class Dependencies
             return;
         }
 
-        PluginManager.AddDependencyForPlugin(dependency);
+        //PluginManager.AddDependencyForPlugin(dependency);
     }
 
     /// <summary>
@@ -48,6 +48,6 @@ public class Dependencies
             return;
         }
 
-        PluginManager.AddDependencyForPlugin(dependencies);
+        //PluginManager.AddDependencyForPlugin(dependencies);
     }
 }

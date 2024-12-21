@@ -1,4 +1,4 @@
-﻿namespace Rift.Runtime.Fundamental;
+﻿namespace Rift.Runtime.Fundamental.Application;
 
 public sealed partial class ApplicationHost
 {

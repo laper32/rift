@@ -1,13 +1,15 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Rift.Runtime.Fundamental;
+namespace Rift.Runtime.Fundamental.Application;
 
 public sealed partial class ApplicationHost
 {
     private const int MaxPath = 260;
+
     // https://learn.microsoft.com/en-us/windows/desktop/api/shlwapi/nf-shlwapi-pathfindonpathw
     // https://www.pinvoke.net/default.aspx/shlwapi.PathFindOnPath
+    // ReSharper disable once StringLiteralTypo
     [DllImport("shlwapi.dll", CharSet = CharSet.Unicode, SetLastError = false)]
     private static extern bool PathFindOnPath([In] [Out] StringBuilder pszFile, [In] string[]? ppszOtherDirs);
 

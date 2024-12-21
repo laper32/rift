@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Rift.Runtime.Commands;
 using Rift.Runtime.Fundamental;
+using Rift.Runtime.Fundamental.Application;
 using Rift.Runtime.Interfaces;
 using Rift.Runtime.Modules.Managers;
 using Rift.Runtime.Plugins;
@@ -146,15 +147,20 @@ internal static class Bootstrap
 
     private static void InitComponents()
     {
+        if (!InterfaceManager.Init())
+        {
+            throw new InvalidOperationException("Failed to init InterfaceManager.");
+        }
+
+        Console.WriteLine($"Installation Path: {ApplicationHost.InstallationInformation.InstallationPath}");
+        Console.WriteLine($"Executable Path: {ApplicationHost.InstallationInformation.ExecutablePath}");
+        Console.WriteLine($"UserProfile Path: {ApplicationHost.UserInformation.UserPath}");
+
         if (!ModuleManager.Init())
         {
             throw new InvalidOperationException($"Failed to init {typeof(ModuleManager)}");
         }
 
-        //if (!InterfaceManager.Init())
-        //{
-        //    throw new InvalidOperationException("Failed to init InterfaceManager.");
-        //}
 
         //if (!ScriptManager.Init())
         //{
@@ -189,7 +195,7 @@ internal static class Bootstrap
         //WorkspaceManager.Shutdown();
         //PluginManager.Shutdown();
         //ScriptManager.Shutdown();
-        //InterfaceManager.Shutdown();
         ModuleManager.Shutdown();
+        InterfaceManager.Shutdown();
     }
 }
