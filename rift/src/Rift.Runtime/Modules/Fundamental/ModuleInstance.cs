@@ -18,34 +18,10 @@ internal class ModuleInstance(ModuleLoadContext context)
 
     public bool Init()
     {
-        Console.WriteLine("AssemblyLoadContext.Default.Assemblies Find RiftModule...");
-        foreach (var assembly in AssemblyLoadContext.Default.Assemblies)
-        {
-            if (assembly.GetTypes().FirstOrDefault(x => x == typeof(RiftModule)) is { } t)
-            {
-                Console.WriteLine($"  {t.FullName} (HashCode:  {t.GetHashCode()} )");
-            }
-        }
-
-        Console.WriteLine("...End");
-
-        Console.WriteLine("AppDomain.CurrentDomain.GetAssemblies Dump...");
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            if (assembly.GetTypes().FirstOrDefault(x => x == typeof(RiftModule)) is { } t)
-            {
-                Console.WriteLine($"  {t.FullName} (HashCode:  {t.GetHashCode()} )");
-            }
-        }
-
-        Console.WriteLine("...End");
 
         if (_entry.GetTypes().FirstOrDefault(t =>
             {
                 var baseType = typeof(RiftModule);
-                Console.WriteLine($"BaseClass: {baseType.FullName}, BaseTypeHash: {baseType.GetHashCode()}");
-                Console.WriteLine($"BaseClass: {t.BaseType?.FullName}, BaseTypeHash: {t.BaseType?.GetHashCode()}");
-
                 var isAssignableFromBaseType = baseType.IsAssignableFrom(t);
 
                 return isAssignableFromBaseType && !t.IsAbstract;

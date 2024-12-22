@@ -48,7 +48,6 @@ internal class ModuleLoadContext : ModuleAssemblyContext
         }
 
         var baseAsm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName() == assemblyName);
-        Console.WriteLine($"baseAsm: {baseAsm?.FullName}");
         if (baseAsm != null)
         {
             return baseAsm;
