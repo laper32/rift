@@ -78,6 +78,8 @@ internal static class Bootstrap
 
         ActivateServices(provider);
 
+        ApplicationHost.Status = ApplicationStatus.KernelReady;
+
         return Boot();
     }
 
@@ -126,7 +128,6 @@ internal static class Bootstrap
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddSingleton<ApplicationHost>();
-        services.AddSingleton<ModuleManager>();
         services.AddSingleton<InterfaceManager>();
         services.AddSingleton<ScriptManager>();
         services.AddSingleton<PluginManager>();
@@ -138,7 +139,6 @@ internal static class Bootstrap
     private static void ActivateServices(IServiceProvider provider)
     {
         provider.GetRequiredService<ApplicationHost>();
-        provider.GetRequiredService<ModuleManager>();
         provider.GetRequiredService<InterfaceManager>();
         provider.GetRequiredService<ScriptManager>();
         provider.GetRequiredService<PluginManager>();
@@ -149,15 +149,18 @@ internal static class Bootstrap
 
     private static void InitComponents()
     {
+        
         if (!InterfaceManager.Init())
         {
-            throw new InvalidOperationException("Failed to init InterfaceManager.");
+            throw new InvalidOperationException($"Failed to init {typeof(InterfaceManager)}.");
         }
 
-        if (!ModuleManager.Init())
+        if (!PluginManager.Init())
         {
-            throw new InvalidOperationException($"Failed to init {typeof(ModuleManager)}");
+            throw new InvalidOperationException($"Failed to init {typeof(PluginManager)}");
         }
+
+        ApplicationHost.Status = ApplicationStatus.KernelReady;
 
         //if (!ScriptManager.Init())
         //{
@@ -192,7 +195,6 @@ internal static class Bootstrap
         //WorkspaceManager.Shutdown();
         //PluginManager.Shutdown();
         //ScriptManager.Shutdown();
-        ModuleManager.Shutdown();
         InterfaceManager.Shutdown();
     }
 }

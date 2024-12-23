@@ -16,9 +16,12 @@ namespace Rift.Runtime.Application;
 /// </summary>
 public sealed partial class ApplicationHost
 {
+    private static ApplicationHost _instance = null!;
+
     private readonly InstallationInformation _installationInfo;
     private readonly ILoggerFactory          _logger;
     private readonly UserInformation         _userInfo;
+    private          ApplicationStatus       _status;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="ApplicationHost" /> class.
@@ -37,23 +40,25 @@ public sealed partial class ApplicationHost
 
         _installationInfo = new InstallationInformation(installationPath, executablePath);
         _userInfo         = new UserInformation(userPath);
+        _status           = ApplicationStatus.Unknown;
 
-        Instance = this;
+        _instance = this;
     }
-
-    /// <summary>
-    ///     Gets the singleton instance of the <see cref="ApplicationHost" /> class.
-    /// </summary>
-    internal static ApplicationHost Instance { get; private set; } = null!;
 
     /// <summary>
     ///     Gets the logger factory.
     /// </summary>
-    public static ILoggerFactory Logger => Instance._logger;
+    public static ILoggerFactory Logger => _instance._logger;
 
-    public static InstallationInformation InstallationInformation => Instance._installationInfo;
+    public static InstallationInformation InstallationInformation => _instance._installationInfo;
 
-    public static UserInformation UserInformation => Instance._userInfo;
+    public static UserInformation UserInformation => _instance._userInfo;
+
+    public static ApplicationStatus Status
+    {
+        get => _instance._status;
+        set => _instance._status = value;
+    }
 
     /// <summary>
     ///     获取某一个可执行文件在PATH环境变量中的路径。 <br />
