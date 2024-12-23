@@ -12,7 +12,6 @@ using Rift.Runtime.Commands.Managers;
 using Rift.Runtime.Constants;
 using Rift.Runtime.Interfaces.Managers;
 using Rift.Runtime.IO;
-using Rift.Runtime.Modules.Managers;
 using Rift.Runtime.Plugins.Managers;
 using Rift.Runtime.Scripts.Managers;
 using Rift.Runtime.Tasks.Managers;

@@ -1,6 +1,6 @@
 ﻿namespace Rift.Runtime.Application;
 
-internal enum ApplicationStatus
+public enum ApplicationStatus
 {
     Unknown,
     KernelInit,
