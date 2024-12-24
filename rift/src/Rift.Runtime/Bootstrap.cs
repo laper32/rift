@@ -54,7 +54,7 @@ internal static class Bootstrap
             }
             catch (Exception e)
             {
-                Tty.Error($"{e.Message}");
+                Tty.Error(e);
             }
 
             CommandManager.ExecuteCommand(args);
