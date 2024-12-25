@@ -21,7 +21,13 @@ public sealed class TaskManager
     private readonly TaskExecutor   _taskExecutor;
     private readonly List<RiftTask> _tasks;
 
-    private readonly TaskScheduler _taskScheduler;
+    private readonly TaskScheduler       _taskScheduler;
+
+    private readonly IEnumerable<string> _importNamespaces = [
+        "Rift.Runtime.Tasks.Scripting",
+        "Rift.Runtime.Tasks.Configuration",
+        "Rift.Runtime.Tasks.Data",
+    ];
 
     public TaskManager()
     {
@@ -39,13 +45,13 @@ public sealed class TaskManager
 
     internal static bool Init()
     {
-        ScriptManager.AddNamespace("Rift.Runtime.Tasks");
+        ScriptManager.AddNamespace(_instance._importNamespaces);
         return true;
     }
 
     internal static void Shutdown()
     {
-        ScriptManager.RemoveNamespace("Rift.Runtime.Tasks");
+        ScriptManager.RemoveNamespace(_instance._importNamespaces);
     }
 
     /// <summary>

@@ -1,6 +1,6 @@
 ﻿using Rift.Runtime.Tasks.Fundamental;
 
-namespace Rift.Runtime.Tasks.Structuring;
+namespace Rift.Runtime.Tasks.Graph;
 
 internal class TaskGraphBuilder
 {

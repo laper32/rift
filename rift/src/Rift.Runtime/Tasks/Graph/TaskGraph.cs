@@ -4,7 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-namespace Rift.Runtime.Tasks.Structuring;
+namespace Rift.Runtime.Tasks.Graph;
 
 internal class TaskGraph
 {

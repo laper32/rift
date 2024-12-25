@@ -11,6 +11,7 @@ using Rift.Runtime.Manifest;
 using Rift.Runtime.Manifest.Real;
 using Rift.Runtime.Manifest.Rift;
 using Rift.Runtime.Manifest.Virtual;
+using Rift.Runtime.Plugins.Fundamental;
 using Rift.Runtime.Plugins.Managers;
 using Rift.Runtime.Schema;
 using Rift.Runtime.Scripts.Managers;
@@ -23,11 +24,16 @@ public sealed class WorkspaceManager
 {
     private static WorkspaceManager _instance = null!;
 
-    //private readonly List<PluginListenerInfo> _listeners = [];
-    private readonly PackageInstances _packageInstances;
-    private readonly Packages         _packages;
-
     private EWorkspaceStatus _status;
+    //private readonly List<PluginListenerInfo> _listeners = [];
+    private readonly PackageInstances    _packageInstances;
+    private readonly Packages            _packages;
+
+    private readonly IEnumerable<string> _importNamespaces =
+    [
+        "Rift.Runtime.Workspace.Fundamental"
+    ];
+
 
     public WorkspaceManager()
     {
@@ -49,14 +55,14 @@ public sealed class WorkspaceManager
     {
         _instance._status = EWorkspaceStatus.Init;
         //PluginManager.PluginUnload += _instance.OnPluginUnload;
-        ScriptManager.AddNamespace("Rift.Runtime.Workspace");
+        ScriptManager.AddNamespace(_instance._importNamespaces);
         return true;
     }
 
     internal static void Shutdown()
     {
         //PluginManager.PluginUnload -= _instance.OnPluginUnload;
-        ScriptManager.RemoveNamespace("Rift.Runtime.Workspace");
+        ScriptManager.RemoveNamespace(_instance._importNamespaces);
         _instance._status = EWorkspaceStatus.Shutdown;
     }
 
@@ -154,12 +160,12 @@ public sealed class WorkspaceManager
         return _instance._packageInstances.GetAllInstances();
     }
 
-    //internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
-    //{
-    //    _instance.CheckAvailable();
+    internal static IEnumerable<PluginDescriptor> CollectPluginsForLoad()
+    {
+        _instance.CheckAvailable();
 
-    //    return _instance._packageInstances.CollectPluginsForLoad();
-    //}
+        return _instance._packageInstances.CollectPluginsForLoad();
+    }
 
     private void CheckAvailable()
     {

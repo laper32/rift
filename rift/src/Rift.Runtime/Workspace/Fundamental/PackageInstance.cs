@@ -7,6 +7,7 @@
 using System.Text.Json;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.IO;
+using Rift.Runtime.Plugins.Fundamental;
 
 namespace Rift.Runtime.Workspace.Fundamental;
 
@@ -104,40 +105,40 @@ internal class PackageInstances
         Tty.WriteLine("...End");
     }
 
-    //public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
-    //{
-    //    foreach (var (packageName, instance) in _value)
-    //    {
-    //        if (instance.Plugins.Count <= 0)
-    //        {
-    //            continue;
-    //        }
+    public IEnumerable<PluginDescriptor> CollectPluginsForLoad()
+    {
+        foreach (var (packageName, instance) in _value)
+        {
+            if (instance.Plugins.Count <= 0)
+            {
+                continue;
+            }
 
-    //        foreach (var (pluginName, plugin) in instance.Plugins)
-    //        {
-    //            if (plugin is null)
-    //            {
-    //                throw new InvalidOperationException($"{pluginName}'s instance is null.");
-    //            }
+            foreach (var (pluginName, plugin) in instance.Plugins)
+            {
+                if (plugin is null)
+                {
+                    throw new InvalidOperationException($"{pluginName}'s instance is null.");
+                }
 
-    //            var trimmedPluginName = pluginName.Trim();
+                var trimmedPluginName = pluginName.Trim();
 
-    //            if (string.IsNullOrEmpty(trimmedPluginName))
-    //            {
-    //                Tty.Warning($"Found a plugin name is empty, package: `{packageName}`");
-    //                continue;
-    //            }
+                if (string.IsNullOrEmpty(trimmedPluginName))
+                {
+                    Tty.Warning($"Found a plugin name is empty, package: `{packageName}`");
+                    continue;
+                }
 
-    //            var trimmedPluginVersion = plugin.Version.Trim();
-    //            if (string.IsNullOrEmpty(trimmedPluginVersion))
-    //            {
-    //                trimmedPluginVersion = "latest";
-    //            }
+                var trimmedPluginVersion = plugin.Version.Trim();
+                if (string.IsNullOrEmpty(trimmedPluginVersion))
+                {
+                    trimmedPluginVersion = "latest";
+                }
 
-    //            yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
-    //        }
-    //    }
-    //}
+                yield return new PluginDescriptor(trimmedPluginName, trimmedPluginVersion);
+            }
+        }
+    }
 
     public void ForEach(Action<KeyValuePair<string, PackageInstance>> predicate)
     {

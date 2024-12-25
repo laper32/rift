@@ -77,8 +77,6 @@ internal static class Bootstrap
 
         ActivateServices(provider);
 
-        ApplicationHost.Status = ApplicationStatus.KernelReady;
-
         return Boot();
     }
 
@@ -154,46 +152,39 @@ internal static class Bootstrap
             throw new InvalidOperationException($"Failed to init {typeof(InterfaceManager)}.");
         }
 
+        if (!ScriptManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
+        }
+
         if (!PluginManager.Init())
         {
             throw new InvalidOperationException($"Failed to init {typeof(PluginManager)}");
         }
 
-        ApplicationHost.Status = ApplicationStatus.KernelReady;
+        if (!WorkspaceManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(WorkspaceManager)}.");
+        }
 
-        //if (!ScriptManager.Init())
-        //{
-        //    throw new InvalidOperationException($"Failed to init {nameof(ScriptManager)}.");
-        //}
+        if (!TaskManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
+        }
 
-        //if (!PluginManager.Init())
-        //{
-        //    throw new InvalidOperationException($"Failed to init {nameof(PluginManager)}.");
-        //}
-
-        //if (!WorkspaceManager.Init())
-        //{
-        //    throw new InvalidOperationException($"Failed to init {nameof(WorkspaceManager)}.");
-        //}
-
-        //if (!TaskManager.Init())
-        //{
-        //    throw new InvalidOperationException($"Failed to init {nameof(TaskManager)}.");
-        //}
-
-        //if (!CommandManager.Init())
-        //{
-        //    throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
-        //}
+        if (!CommandManager.Init())
+        {
+            throw new InvalidOperationException($"Failed to init {nameof(CommandManager)}");
+        }
     }
 
     private static void ShutdownComponents()
     {
-        //CommandManager.Shutdown();
-        //TaskManager.Shutdown();
-        //WorkspaceManager.Shutdown();
-        //PluginManager.Shutdown();
-        //ScriptManager.Shutdown();
+        CommandManager.Shutdown();
+        TaskManager.Shutdown();
+        WorkspaceManager.Shutdown();
+        PluginManager.Shutdown();
+        ScriptManager.Shutdown();
         InterfaceManager.Shutdown();
     }
 }

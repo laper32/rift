@@ -7,6 +7,7 @@
 // 为什么我们把暴露给脚本的三兄弟都放在本体里而不是放在API包里？
 // 原因只有一个：暴露给脚本的API不能设计的过于复杂，且很多时候脚本是没办法看到dll里面有什么API的。
 
+using Rift.Runtime.Plugins.Managers;
 using Rift.Runtime.Workspace.Fundamental;
 using Rift.Runtime.Workspace.Managers;
 
@@ -30,7 +31,7 @@ public class Dependencies
         {
         }
 
-        //PluginManager.AddDependencyForPlugin(dependency);
+        PluginManager.AddDependencyForPlugin(dependency);
     }
 
     /// <summary>
@@ -42,10 +43,11 @@ public class Dependencies
     /// <param name="dependencies"> </param>
     public static void Add(IEnumerable<PackageReference> dependencies)
     {
-        if (WorkspaceManager.AddDependencyForPackage(dependencies))
+        var references = dependencies as PackageReference[] ?? dependencies.ToArray();
+        if (WorkspaceManager.AddDependencyForPackage(references))
         {
         }
 
-        //PluginManager.AddDependencyForPlugin(dependencies);
+        PluginManager.AddDependencyForPlugin(references);
     }
 }
