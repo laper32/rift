@@ -70,16 +70,17 @@ jobs:
         shell: pwsh
         run: |
           $VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/.rift/bin -p:Version=$VERSION
-          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
-          dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish rift/src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/.rift/bin -p:Version=$VERSION
+          dotnet publish plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r win-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Copy Assets
         shell: pwsh
         run: |
           $PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
-          Copy-Item -Path Plugins/Rift.Generate/.assets/$PLUGIN_VERSION -Destination ./build/.rift/plugins/rift.generate -Recurse -Force
-          Copy-Item -Path Plugins/Rift.Go/.assets/$PLUGIN_VERSION -Destination ./build/.rift/plugins/rift.go -Recurse -Force
+          Copy-Item -Path plugins/Rift.Generate/.assets/$PLUGIN_VERSION -Destination ./build/.rift/plugins/rift.generate -Recurse -Force
+          Copy-Item -Path plugins/Rift.Go/.assets/$PLUGIN_VERSION -Destination ./build/.rift/plugins/rift.go -Recurse -Force
       - name: Zip Package
+        if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
         run: |
           pushd ./build/.rift
           Compress-Archive -Path . -DestinationPath ../../rift-${{ needs.setup.outputs.version }}-windows-${{ needs.setup.outputs.github_sha_short }}.zip
@@ -105,14 +106,14 @@ jobs:
       - name: Build Rift
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/.rift/bin -p:Version=$VERSION
-          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
-          dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish rift/src/Rift/Rift.csproj -f net9.0 --no-self-contained -c Release --output ./build/.rift/bin -p:Version=$VERSION
+          dotnet publish plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r linux-x64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Copy Assets
         run: |
           PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
-          cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.generate
-          cp -r Plugins/Rift.Go/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.go
+          cp -r plugins/Rift.Generate/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.generate
+          cp -r plugins/Rift.Go/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.go
       - name: Zip Package
         if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
         run: |
@@ -140,20 +141,20 @@ jobs:
       - name: Build Rift
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish src/Rift/Rift.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/bin -p:Version=$VERSION
+          dotnet publish rift/src/Rift/Rift.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/bin -p:Version=$VERSION
       - name: Build Rift.Generate Plugin
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish Plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish plugins/Rift.Generate/src/Rift.Generate.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.generate/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Build Rift.Go Plugin
         run: |
           VERSION="${{ needs.setup.outputs.version_full }}"
-          dotnet publish Plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
+          dotnet publish plugins/Rift.Go/src/Rift.Go.csproj -f net9.0 -r osx-arm64 --no-self-contained -c Release --output ./build/.rift/plugins/rift.go/${{ needs.setup.outputs.version }}/lib -p:Version=$VERSION
       - name: Copy Assets
         run: |
           PLUGIN_VERSION="${{ needs.setup.outputs.version }}"
-          cp -r Plugins/Rift.Generate/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.generate
-          cp -r Plugins/Rift.Go/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.go
+          cp -r plugins/Rift.Generate/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.generate
+          cp -r plugins/Rift.Go/.assets/$PLUGIN_VERSION ./build/.rift/plugins/rift.go
       - name: Zip Package
         if: ${{ github.event_name == 'push' && ( github.ref == 'refs/heads/main' ) }}
         run: |
