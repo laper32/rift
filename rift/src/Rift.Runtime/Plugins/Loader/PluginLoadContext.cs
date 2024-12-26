@@ -1,25 +1,16 @@
-﻿using Rift.Runtime.Plugins.Fundamental;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.Loader;
+using Rift.Runtime.Plugins.Fundamental;
 
 namespace Rift.Runtime.Plugins.Loader;
 
-internal class PluginInstanceContext : AssemblyLoadContext
-{
-    public PluginInstanceContext() : base(true)
-    {
-        Resolving += (_, args) =>
-            AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(x => x.GetName().Name == args.Name);
-    }
-}
-
-internal class PluginContext : PluginInstanceContext
+internal class PluginLoadContext : PluginAssemblyContext
 {
     private readonly AssemblyDependencyResolver? _resolver;
     private readonly AssemblyLoadContext         _sharedContext;
     public readonly  PluginIdentity              Identity;
 
-    public PluginContext(PluginIdentity identity, AssemblyLoadContext sharedContext)
+    public PluginLoadContext(PluginIdentity identity, AssemblyLoadContext sharedContext)
     {
         _sharedContext = sharedContext;
         Identity       = identity;

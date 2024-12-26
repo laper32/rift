@@ -1,18 +1,18 @@
-﻿using Rift.Runtime.Application;
+﻿using System.Diagnostics;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Rift.Runtime.Application;
 using Rift.Runtime.Collections.Generic;
 using Rift.Runtime.Constants;
-using Rift.Runtime.Manifest.Rift;
 using Rift.Runtime.Manifest;
+using Rift.Runtime.Manifest.Rift;
 using Rift.Runtime.Plugins.Annotations;
 using Rift.Runtime.Scripts.Managers;
 using Rift.Runtime.Workspace.Fundamental;
 using Rift.Runtime.Workspace.Managers;
 using Semver;
-using System.Diagnostics;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
-using System.Text.Json.Serialization;
-using System.Text.Json;
 
 namespace Rift.Runtime.Plugins.Fundamental;
 
@@ -21,19 +21,21 @@ internal record PluginSharedAssemblyInfo(string Path, FileVersionInfo Info, Date
 internal record PluginDescriptor(string Name, string Version);
 
 internal class PluginIdentity(
-    // 如果你需要类型转换, 用 EitherManifest<RiftManifest<PluginManifest>>
     IMaybePackage package)
 {
-    private const string BinPathName = "bin";
-    private const string LibPathName = "lib";
-    private const string PluginEntryToken = "deps.json";
+    private const string        BinPathName      = "bin";
+    private const string        LibPathName      = "lib";
+    private const string        PluginEntryToken = "deps.json";
+
     public        IMaybePackage Value { get; init; } = package;
-    public        Dictionary<string, object> Dependencies { get; init; } = [];
-    public        Dictionary<string, object> Metadata { get; init; } = [];
-    public        string Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
-    public        string LibPath => Path.Combine(Location, LibPathName);
-    public        string BinPath => Path.Combine(Location, BinPathName);
-    public        string EntryPath => GetEntryDll();
+    public MaybePackage<RiftPackage> CastedValue { get; init; } = (MaybePackage<RiftPackage>)package;
+
+    public Dictionary<string, object> Dependencies { get; init; } = [];
+    public Dictionary<string, object> Metadata { get; init; } = [];
+    public string                     Location => Path.GetFullPath(Directory.GetParent(Value.ManifestPath)!.FullName);
+    public string                     LibPath => Path.Combine(Location, LibPathName);
+    public string                     BinPath => Path.Combine(Location, BinPathName);
+    public string                     EntryPath => GetEntryDll();
 
     // 一个插件内是不应该出现在一个包里有相同插件但有不同版本的情况的, 这个情况只会在多个插件的时候才会出现.
     // (如: 两个不同的插件A, B, 同时依赖了插件C的不同版本. 但很明显, A或B自身是不可能出现同时引用一个插件的不同版本的情况的.)
@@ -64,6 +66,12 @@ internal class PluginIdentity(
 
             return ret;
         }
+    }
+
+    public  RiftManifest<PluginManifest> GetManifest()
+    {
+        var manifest = (RiftManifest<PluginManifest>)CastedValue.Value.Value;
+        return manifest;
     }
 
     private IEnumerable<string> GetPluginSharedAssembliesPath()
@@ -137,14 +145,12 @@ internal class PluginIdentity(
 
 internal class PluginIdentities
 {
-    private const string PluginDirectoryName = "plugins";
-
     private readonly List<PluginIdentity> _identities = [];
 
     private readonly List<string> _pluginSearchPaths =
     [
-        Path.Combine(ApplicationHost.InstallationInformation.PluginsPath, PluginDirectoryName), // Rift安装路径
-        Path.Combine(ApplicationHost.UserInformation.PluginsPath, PluginDirectoryName)          // 用户目录
+        ApplicationHost.InstallationInformation.PluginsPath, // Rift安装路径
+        ApplicationHost.UserInformation.PluginsPath          // 用户目录
     ];
 
     private PluginIdentity? _currentEvaluatingIdentity;

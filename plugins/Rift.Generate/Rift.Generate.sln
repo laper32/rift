@@ -7,6 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Generate", "src\Rift.G
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime", "..\..\rift\src\Rift.Runtime\Rift.Runtime.csproj", "{54240307-DE36-4E1E-9513-7799CFE370A7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Assets", "Assets", "{97025FC2-77C9-470F-A945-94416CAAF37B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.0.0", "1.0.0", "{033E2F94-A0CA-4311-8449-6D3BBC0E8AFF}"
+	ProjectSection(SolutionItems) = preProject
+		.assets\1.0.0\Rift.toml = .assets\1.0.0\Rift.toml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +31,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{033E2F94-A0CA-4311-8449-6D3BBC0E8AFF} = {97025FC2-77C9-470F-A945-94416CAAF37B}
 	EndGlobalSection
 EndGlobal

@@ -4,19 +4,20 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
+using System.Reflection;
 using Rift.Runtime.IO;
 using Rift.Runtime.Plugins.Abstractions;
 using Rift.Runtime.Plugins.Loader;
-using System.Diagnostics;
-using System.Reflection;
 
 namespace Rift.Runtime.Plugins.Fundamental;
 
-internal class PluginInstance(PluginContext context)
+internal class PluginInstance(PluginLoadContext loadContext)
 {
-    private readonly Assembly?      _entry    = context.Entry;
-    private readonly PluginIdentity _identity = context.Identity;
-    public           RiftPlugin?    Instance { get; private set; }
+    private readonly Assembly?      _entry = loadContext.Entry;
+    internal         PluginIdentity Identity { get; init; } = loadContext.Identity;
+
+    public RiftPlugin? Instance { get; private set; }
 
     public Exception? Error { get; set; }
 
@@ -35,13 +36,13 @@ internal class PluginInstance(PluginContext context)
         {
             MakeError("An error occured when loading plugin.",
                 new BadImageFormatException(
-                    $"Instance is not derived from <RiftPlugin>.\n  At: {_identity.EntryPath}"));
+                    $"Instance is not derived from <RiftPlugin>.\n  At: {Identity.EntryPath}"));
             Status = PluginStatus.Failed;
 
             return false;
         }
 
-        if (FileVersionInfo.GetVersionInfo(_identity.EntryPath) is not { } info)
+        if (FileVersionInfo.GetVersionInfo(Identity.EntryPath) is not { } info)
         {
             MakeError("An error occured when loading plugin.", new BadImageFormatException("Cannot get version info."));
             Status = PluginStatus.Failed;
@@ -69,7 +70,7 @@ internal class PluginInstance(PluginContext context)
         {
             if (Instance == null || !Instance.OnLoad())
             {
-                throw new InvalidOperationException($"Failed to load plugin \"{_identity.EntryPath}\".");
+                throw new InvalidOperationException($"Failed to load plugin \"{Identity.EntryPath}\".");
             }
 
             if (Error != null)
@@ -88,7 +89,7 @@ internal class PluginInstance(PluginContext context)
         }
     }
 
-    public void AllLoad()
+    public void PostLoad()
     {
         Instance?.OnAllLoaded();
     }
@@ -118,6 +119,5 @@ internal class PluginInstance(PluginContext context)
     {
         Error = e;
         Tty.Error($"{message} ({e.Message})");
-        //bridge.PluginManager.Logger.LogError(Error, message);
     }
 }

@@ -4,9 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
-using Rift.Runtime.Plugins.Annotations;
+using Rift.Runtime.Plugins.Abstractions;
 using Rift.Runtime.Plugins.Fundamental;
 using Rift.Runtime.Plugins.Loader;
 using Rift.Runtime.Workspace.Fundamental;
@@ -16,19 +14,21 @@ namespace Rift.Runtime.Plugins.Managers;
 
 public sealed class PluginManager
 {
+    internal delegate void DelegatePluginUnload(PluginInstance instance);
+
     private static PluginManager _instance = null!;
 
     private readonly PluginIdentities               _identities;
     private readonly List<PluginInstance>           _instances           = [];
     private readonly List<PluginIdentity>           _pendingLoadPlugins  = [];
-    private readonly List<PluginContext>            _pluginContexts      = [];
+    private readonly List<PluginLoadContext>        _pluginContexts      = [];
     private readonly List<PluginSharedAssemblyInfo> _sharedAssemblyInfos = [];
-    private          PluginInstanceContext?         _sharedContext;
+    private          PluginAssemblyContext?         _sharedContext;
 
     public PluginManager()
     {
         _identities    = new PluginIdentities();
-        _sharedContext = new PluginInstanceContext();
+        _sharedContext = new PluginAssemblyContext();
         _instance      = this;
     }
 
@@ -36,7 +36,7 @@ public sealed class PluginManager
 
     internal static bool Init()
     {
-        return _instance.InitInternal();
+        return GetInstance().InitInternal();
     }
 
     private bool InitInternal()
@@ -46,7 +46,7 @@ public sealed class PluginManager
 
     internal static void Shutdown()
     {
-        _instance.ShutdownInternal();
+        GetInstance().ShutdownInternal();
     }
 
     private void ShutdownInternal()
@@ -54,14 +54,13 @@ public sealed class PluginManager
         UnloadPlugins();
     }
 
-
     /// <summary>
     ///     N.B. 插件系统这里和很多地方不一样的是：我们需要支持没有dll的情况（即：这个插件只有二进制文件，或者只有配置文件）<br />
     ///     所以必须有一个中间层给插件做Identity。
     /// </summary>
     internal static void NotifyLoadPlugins()
     {
-        _instance.NotifyLoadPluginsInternal();
+        GetInstance().NotifyLoadPluginsInternal();
     }
 
     internal void NotifyLoadPluginsInternal()
@@ -96,7 +95,7 @@ public sealed class PluginManager
 
         foreach (var instance in _instances)
         {
-            instance.AllLoad();
+            instance.PostLoad();
         }
     }
 
@@ -174,7 +173,7 @@ public sealed class PluginManager
     {
         foreach (var identity in _pendingLoadPlugins)
         {
-            _pluginContexts.Add(new PluginContext(identity, _sharedContext!));
+            _pluginContexts.Add(new PluginLoadContext(identity, _sharedContext!));
         }
     }
 
@@ -182,7 +181,7 @@ public sealed class PluginManager
     {
         foreach (var context in _pluginContexts)
         {
-            _instances.Add(new PluginInstance(context));
+            GetPluginInstances().Add(new PluginInstance(context));
         }
     }
 
@@ -193,13 +192,13 @@ public sealed class PluginManager
 
     private void UnloadPlugins()
     {
-        foreach (var instance in _instances)
+        foreach (var instance in GetPluginInstances())
         {
             PluginUnload?.Invoke(instance);
             instance.Unload(true);
         }
 
-        _instances.Clear();
+        GetPluginInstances().Clear();
         _sharedContext!.Unload();
         _sharedContext = null;
         foreach (var context in _pluginContexts)
@@ -212,33 +211,39 @@ public sealed class PluginManager
 
     internal static bool AddDependencyForPlugin(PackageReference declarator)
     {
-        return _instance.AddDependencyForPluginInternal(declarator);
+        return GetInstance().AddDependencyForPluginInternal(declarator);
     }
 
     private bool AddDependencyForPluginInternal(PackageReference declarator)
     {
-        return _identities.AddDependencyForPlugin(declarator);
+        return GetPluginIdentities().AddDependencyForPlugin(declarator);
     }
 
     internal static bool AddDependencyForPlugin(IEnumerable<PackageReference> declarators)
     {
-        return _instance.AddDependencyForPluginInternal(declarators);
+        return GetInstance().AddDependencyForPluginInternal(declarators);
     }
 
     private bool AddDependencyForPluginInternal(IEnumerable<PackageReference> declarators)
     {
-        return _identities.AddDependencyForPlugin(declarators);
+        return GetPluginIdentities().AddDependencyForPlugin(declarators);
     }
 
-    internal static bool AddMetadataForPlugin(string key, object value)
+    public static PluginRuntimeInfo? GetPluginRuntimeInfo(RiftPlugin plugin)
     {
-        return _instance.AddMetadataForPluginInternal(key, value);
+        if (GetInstance().GetPluginInstances().Find(x => x.Instance == plugin) is not { } instance)
+        {
+            return null;
+        }
+
+        var identity = instance.Identity;
+        var manifest = identity.GetManifest();
+        return new PluginRuntimeInfo(manifest.Name, manifest.Version, instance.Status);
     }
 
-    private bool AddMetadataForPluginInternal(string key, object value)
-    {
-        return _identities.AddMetadataForPlugin(key, value);
-    }
+    private List<PluginInstance> GetPluginInstances() => _instances;
 
-    internal delegate void DelegatePluginUnload(PluginInstance instance);
+    internal static PluginManager GetInstance() => _instance;
+
+    private PluginIdentities GetPluginIdentities() => _identities;
 }

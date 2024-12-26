@@ -7,7 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\rift\src\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime"/>
+    <ProjectReference Include="..\..\..\rift\src\Rift.Runtime\Rift.Runtime.csproj" Private="false" ExcludeAssets="runtime" />
+    <ProjectReference Include="..\..\Rift.Generate\src\Rift.Generate.csproj" />
   </ItemGroup>
 
 </Project>
