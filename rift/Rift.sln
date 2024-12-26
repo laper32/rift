@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift", "src\Rift\Rift.cspro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime.Tests", "src\Rift.Runtime.Tests\Rift.Runtime.Tests.csproj", "{C50FCAA0-54AF-4242-B123-20F59D877986}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugins", "Plugins", "{DB565301-F9B6-4B44-BDFB-A513B526E59C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

@@ -67,8 +67,14 @@ public sealed class ScriptManager
         "System.Threading.Tasks",
         "System.Linq"
     ];
+    
+    private readonly IEnumerable<string> _runtimeImportNamespaces =
+    [
+        "Rift.Runtime.Scripts.Scripting"
+    ];
 
     private Status _status = Status.Unknown;
+
 
     public ScriptManager()
     {
@@ -193,18 +199,21 @@ public sealed class ScriptManager
         _instance.RemoveNamespaceInternal(namespaces);
     }
 
+
+    private IEnumerable<string> GetRuntimeImportNamespaces() => _runtimeImportNamespaces;
+
     internal bool InitInternal()
     {
         _status = Status.Init;
         AddLibrary(["Rift.Runtime"]);
-        AddNamespace(["Rift.Runtime.Scripting"]);
+        AddNamespace(_instance.GetRuntimeImportNamespaces());
         _status = Status.Ready;
         return true;
     }
 
     internal void ShutdownInternal()
     {
-        RemoveNamespace(["Rift.Runtime.Scripting"]);
+        RemoveNamespace(_instance.GetRuntimeImportNamespaces());
         RemoveLibrary(["Rift.Runtime"]);
         _status = Status.Shutdown;
     }

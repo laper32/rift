@@ -1,0 +1,44 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Go", "src\Rift.Go.csproj", "{BBEF67CE-9AC9-40C3-A9B8-76114D1FA528}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Rift.Runtime", "..\..\rift\src\Rift.Runtime\Rift.Runtime.csproj", "{86AE979C-1D99-4BB5-A41A-46DBC5BC5463}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Assets", "Assets", "{3317152F-9987-4DF1-B510-E20F5030A9D2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1.0.0", "1.0.0", "{3F9EEDF4-500B-4CD0-ACD5-328510701DBB}"
+	ProjectSection(SolutionItems) = preProject
+		.assets\1.0.0\Rift.toml = .assets\1.0.0\Rift.toml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "rift", "rift", "{018AB01E-C8A4-4EDC-A6A8-94C4FD6838F4}"
+	ProjectSection(SolutionItems) = preProject
+		.assets\1.0.0\rift\dependencies.csx = .assets\1.0.0\rift\dependencies.csx
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BBEF67CE-9AC9-40C3-A9B8-76114D1FA528}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BBEF67CE-9AC9-40C3-A9B8-76114D1FA528}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BBEF67CE-9AC9-40C3-A9B8-76114D1FA528}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BBEF67CE-9AC9-40C3-A9B8-76114D1FA528}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86AE979C-1D99-4BB5-A41A-46DBC5BC5463}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86AE979C-1D99-4BB5-A41A-46DBC5BC5463}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86AE979C-1D99-4BB5-A41A-46DBC5BC5463}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86AE979C-1D99-4BB5-A41A-46DBC5BC5463}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3F9EEDF4-500B-4CD0-ACD5-328510701DBB} = {3317152F-9987-4DF1-B510-E20F5030A9D2}
+		{018AB01E-C8A4-4EDC-A6A8-94C4FD6838F4} = {3F9EEDF4-500B-4CD0-ACD5-328510701DBB}
+	EndGlobalSection
+EndGlobal
