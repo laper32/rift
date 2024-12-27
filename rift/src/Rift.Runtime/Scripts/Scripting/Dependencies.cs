@@ -27,11 +27,10 @@ public class Dependencies
     public static void Add(PackageReference dependency)
     {
         // 如果是false的话，就会去尝试插件那找
-        if (WorkspaceManager.AddDependencyForPackage(dependency))
+        if (!WorkspaceManager.AddDependencyForPackage(dependency))
         {
+            PluginManager.AddDependencyForPlugin(dependency);
         }
-
-        PluginManager.AddDependencyForPlugin(dependency);
     }
 
     /// <summary>
@@ -44,10 +43,9 @@ public class Dependencies
     public static void Add(IEnumerable<PackageReference> dependencies)
     {
         var references = dependencies as PackageReference[] ?? dependencies.ToArray();
-        if (WorkspaceManager.AddDependencyForPackage(references))
+        if (!WorkspaceManager.AddDependencyForPackage(references))
         {
+            PluginManager.AddDependencyForPlugin(references);
         }
-
-        PluginManager.AddDependencyForPlugin(references);
     }
 }

@@ -18,6 +18,7 @@ using Rift.Runtime.Plugins.Managers;
 using Rift.Runtime.Schema;
 using Rift.Runtime.Scripts.Managers;
 using Rift.Runtime.Workspace.Abstractions;
+using Rift.Runtime.Workspace.Exceptions;
 using Rift.Runtime.Workspace.Fundamental;
 using Tomlyn;
 
@@ -25,19 +26,18 @@ namespace Rift.Runtime.Workspace.Managers;
 
 public sealed class WorkspaceManager
 {
-    private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
-
     private static WorkspaceManager _instance = null!;
-
-    private EWorkspaceStatus _status;
-    private readonly List<PluginListenerInfo> _listeners = [];
-    private readonly PackageInstances    _packageInstances;
-    private readonly Packages            _packages;
 
     private readonly IEnumerable<string> _importNamespaces =
     [
         "Rift.Runtime.Workspace.Fundamental"
     ];
+
+    private readonly List<PluginListenerInfo> _listeners = [];
+    private readonly PackageInstances         _packageInstances;
+    private readonly Packages                 _packages;
+
+    private EWorkspaceStatus _status;
 
     public WorkspaceManager()
     {
@@ -57,7 +57,7 @@ public sealed class WorkspaceManager
 
     internal static bool Init()
     {
-        _instance._status = EWorkspaceStatus.Init;
+        _instance._status          =  EWorkspaceStatus.Init;
         PluginManager.PluginUnload += _instance.OnPluginUnload;
         ScriptManager.AddNamespace(_instance._importNamespaces);
         return true;
@@ -124,6 +124,8 @@ public sealed class WorkspaceManager
 
     #endregion
 
+    private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
+
     #region Package Operations
 
     internal void ActivatePackage()
@@ -139,6 +141,12 @@ public sealed class WorkspaceManager
 
         RunWorkspaceDependenciesScript();
         RunWorkspaceConfigurationScript();
+        //var graph = PackageGraphBuilder.Build(_packageInstances.GetAllInstances().ToArray());
+
+        //foreach (var edge in graph.Edges)
+        //{
+        //    Console.WriteLine($"{edge.Start} -> {edge.End}");
+        //}
 
         //OnAllPackageLoaded();
     }
@@ -173,7 +181,7 @@ public sealed class WorkspaceManager
     {
         if (_status is not (EWorkspaceStatus.Ready or EWorkspaceStatus.Init))
         {
-            throw new InvalidOperationException("WorkspaceManager is not available.");
+            throw new WorkspaceException("WorkspaceManager is not available.");
         }
     }
 
@@ -241,16 +249,20 @@ public sealed class WorkspaceManager
         var schema = LoadManifest(path);
         if (schema is null)
         {
-            throw new InvalidOperationException($"Shutdown to load manifest from `{path}`");
+            throw new WorkspaceException($"Shutdown to load manifest from `{path}`");
         }
 
         if (schema.Workspace is { } workspace)
         {
-            if (schema.Folder is not null || schema.Project is not null || schema.Target is not null ||
-                schema.Plugin is not null)
+            if (schema.Folder is not null ||
+                schema.Project is not null ||
+                schema.Target is not null ||
+                schema.Plugin is not null
+               )
             {
-                throw new InvalidOperationException(
-                    "Workspace and Folder/Project/Target/Plugin can't be used together.");
+                throw new WorkspaceException(
+                    "Workspace and Folder/Project/Target/Plugin can't be used together."
+                );
             }
 
             var workspaceName = "";
@@ -287,11 +299,15 @@ public sealed class WorkspaceManager
 
         if (schema.Folder is { } folder)
         {
-            if (schema.Workspace is not null || schema.Project is not null || schema.Target is not null ||
-                schema.Plugin is not null)
+            if (schema.Workspace is not null ||
+                schema.Project is not null ||
+                schema.Target is not null ||
+                schema.Plugin is not null
+               )
             {
-                throw new InvalidOperationException(
-                    "Workspace and Folder/Project/Target/Plugin can't be used together.");
+                throw new WorkspaceException(
+                    "Workspace and Folder/Project/Target/Plugin can't be used together."
+                );
             }
 
             var folderName = "";
@@ -325,9 +341,12 @@ public sealed class WorkspaceManager
 
         if (schema.Project is { } project)
         {
-            if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
+            if (schema.Folder is not null ||
+                schema.Workspace is not null ||
+                schema.Plugin is not null
+               )
             {
-                throw new InvalidOperationException("Workspace and Folder/Project/Plugin can't be used together.");
+                throw new WorkspaceException("Workspace and Folder/Project/Plugin can't be used together.");
             }
 
             // 如果此时Project和Target在同一级，此时Target的脚本文件将会被直接无视，只看project级别的脚本文件。
@@ -337,7 +356,7 @@ public sealed class WorkspaceManager
             {
                 if (project.Members is not null || project.Exclude is not null)
                 {
-                    throw new InvalidOperationException(
+                    throw new WorkspaceException(
                         "`project.members` and `project.exclude` cannot occur when `[target]` field exists.");
                 }
 
@@ -398,7 +417,7 @@ public sealed class WorkspaceManager
         {
             if (schema.Folder is not null || schema.Workspace is not null || schema.Plugin is not null)
             {
-                throw new InvalidOperationException(
+                throw new WorkspaceException(
                     "Target cannot used together with `[workspace]`, `[folder]`, or `[plugin]`");
             }
 
@@ -419,10 +438,13 @@ public sealed class WorkspaceManager
         // ReSharper disable once InvertIf
         if (schema.Plugin is { } plugin)
         {
-            if (schema.Folder is not null || schema.Workspace is not null || schema.Project is not null ||
-                schema.Target is not null)
+            if (schema.Folder is not null ||
+                schema.Workspace is not null ||
+                schema.Project is not null ||
+                schema.Target is not null
+               )
             {
-                throw new InvalidOperationException(
+                throw new WorkspaceException(
                     "Plugin cannot used together with `[workspace]`, `[folder]`, `[project]`, or `[target]`");
             }
 
@@ -441,7 +463,7 @@ public sealed class WorkspaceManager
             );
         }
 
-        throw new InvalidOperationException($"No any workspace schema field found, path: `{path}`");
+        throw new WorkspaceException($"No any workspace schema field found, path: `{path}`");
     }
 
     /// <summary>
@@ -455,7 +477,7 @@ public sealed class WorkspaceManager
     {
         if (!manifestPath.EndsWith("Rift.toml"))
         {
-            throw new InvalidOperationException("No `Rift.toml` found.");
+            throw new WorkspaceException("No `Rift.toml` found.");
         }
 
 
@@ -502,12 +524,14 @@ public sealed class WorkspaceManager
 
         if (hasInvalidManifestPath)
         {
-            throw new Exception(
-                $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory, but found {invalidManifestName} please try to rename it to {Definitions.ManifestIdentifier}");
+            throw new WorkspaceException(
+                $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory, but found {invalidManifestName} please try to rename it to {Definitions.ManifestIdentifier}"
+            );
         }
 
-        throw new Exception(
-            $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory.");
+        throw new WorkspaceException(
+            $"could not find `{Definitions.ManifestIdentifier}` in `{cwd}` or any parent directory."
+        );
     }
 
     #endregion

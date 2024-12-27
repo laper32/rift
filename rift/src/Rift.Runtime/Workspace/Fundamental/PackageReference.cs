@@ -39,6 +39,7 @@ public static class PackageReferenceExtensions
 {
     /// <summary>
     ///     标记该包和某个特定的包使用相同的引用. <br />
+    ///     引用的包应当是你项目内的包。<br/>
     ///     该函数会在<see cref="PackageReference.Attributes" />处创建`Ref`字段, 其为string. <br />
     ///     <param name="packageName"> 对应的包名, 这里不检查是否存在. </param>
     /// </summary>
@@ -70,6 +71,16 @@ public static class PackageReferenceExtensions
         }
 
         return refPackage is string ret && ret.Equals(packageName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static string GetRef(this PackageReference self)
+    {
+        if (!self.Attributes.TryGetValue("Ref", out var refPackage))
+        {
+            return string.Empty;
+        }
+
+        return refPackage as string ?? string.Empty;
     }
 
     /// <summary>
