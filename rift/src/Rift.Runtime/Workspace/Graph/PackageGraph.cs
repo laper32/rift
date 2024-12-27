@@ -5,12 +5,12 @@ namespace Rift.Runtime.Workspace.Graph;
 
 public class PackageGraph
 {
-    private readonly List<PackageGraphEdge> _edges = [];
+    private readonly HashSet<PackageGraphEdge> _edges = [];
 
-    private readonly List<PackageGraphNode> _nodes = [];
+    private readonly HashSet<PackageGraphNode> _nodes = [];
 
-    public IReadOnlyList<PackageGraphNode> Nodes => _nodes;
-    public IReadOnlyList<PackageGraphEdge> Edges => _edges;
+    public IReadOnlyCollection<PackageGraphNode> Nodes => _nodes;
+    public IReadOnlyCollection<PackageGraphEdge> Edges => _edges;
 
     public void Add(PackageGraphNode node)
     {
@@ -40,12 +40,12 @@ public class PackageGraph
 
     public PackageGraphNode? Find(string name, string version)
     {
-        return _nodes.Find(x => x.Equals(name, version));
+        return _nodes.First(x => x.Equals(name, version));
     }
 
     public PackageGraphNode? Find(PackageReference reference)
     {
-        return _nodes.Find(x => x.Equals(reference.Name, reference.Version));
+        return _nodes.First(x => x.Equals(reference.Name, reference.Version));
     }
 
     public void Connect(PackageGraphNode start, PackageGraphNode end)
@@ -118,7 +118,7 @@ public class PackageGraph
         ICollection<PackageGraphNode> result,
         ISet<PackageGraphNode>?  visited = null)
     {
-        visited = visited ?? new HashSet<PackageGraphNode>();
+        visited ??= new HashSet<PackageGraphNode>();
         if (visited.Add(node))
         {
             var incoming = _edges.Where(x => x.End.Equals(node)).Select(x => x.Start);

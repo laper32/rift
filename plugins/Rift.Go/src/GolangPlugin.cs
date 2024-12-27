@@ -5,6 +5,7 @@ using Rift.Go.Generate;
 using Rift.Go.Workspace;
 using Rift.Runtime.Interfaces.Managers;
 using Rift.Runtime.Plugins.Abstractions;
+using Rift.Runtime.Plugins.Managers;
 
 namespace Rift.Go;
 
@@ -15,8 +16,10 @@ internal class GolangPlugin : RiftPlugin
 
     public override bool OnLoad()
     {
+        var myInfo = PluginManager.GetPluginRuntimeInfo(this)!;
         var services = new ServiceCollection();
         services.AddSingleton(this);
+        services.AddSingleton(myInfo);
         services.AddSingleton<GolangEnvironment>();
         services.AddSingleton<GolangGenerateService>();
         services.AddSingleton<GolangWorkspaceService>();

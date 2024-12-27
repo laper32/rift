@@ -68,7 +68,7 @@ internal class PluginIdentity(
         }
     }
 
-    public  RiftManifest<PluginManifest> GetManifest()
+    public RiftManifest<PluginManifest> GetManifest()
     {
         var manifest = (RiftManifest<PluginManifest>)CastedValue.Value.Value;
         return manifest;

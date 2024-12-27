@@ -2,6 +2,5 @@
 
 public record PluginRuntimeInfo(
     string       Name,
-    string       Version,
-    PluginStatus Status
+    string       Version
 );

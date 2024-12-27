@@ -238,7 +238,7 @@ public sealed class PluginManager
 
         var identity = instance.Identity;
         var manifest = identity.GetManifest();
-        return new PluginRuntimeInfo(manifest.Name, manifest.Version, instance.Status);
+        return new PluginRuntimeInfo(manifest.Name, manifest.Version);
     }
 
     private List<PluginInstance> GetPluginInstances() => _instances;
