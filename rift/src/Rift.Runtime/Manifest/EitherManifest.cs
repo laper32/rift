@@ -93,7 +93,7 @@ internal record EitherManifest<T> : IEitherManifest
         IManifest real => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,
         IRiftManifest riftManifest => riftManifest.Name,
-        _ => throw new UnreachableException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 
     public string Version => Value switch

@@ -66,9 +66,19 @@ internal class PackageInstances
         return _value.Values;
     }
 
-    public PackageInstance? FindInstance(string packageName)
+    public PackageInstance? Find(string packageName)
     {
         return _value.GetValueOrDefault(packageName);
+    }
+
+    public PackageInstance? Find(string name, string version)
+    {
+        return _value.Values.First(x =>
+        {
+            var nameEquals = x.Name.Equals(name, StringComparison.OrdinalIgnoreCase);
+            var versionEquals = x.Version.Equals(version, StringComparison.OrdinalIgnoreCase);
+            return nameEquals && versionEquals;
+        });
     }
 
     public PackageInstance? FindPackageFromManifestPath(string manifestPath)

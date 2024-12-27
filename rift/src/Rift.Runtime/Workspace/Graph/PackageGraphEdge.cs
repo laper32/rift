@@ -1,6 +1,6 @@
 ﻿namespace Rift.Runtime.Workspace.Graph;
 
-internal record PackageGraphEdge(PackageGraphNode Start, PackageGraphNode End)
+public record PackageGraphEdge(PackageGraphNode Start, PackageGraphNode End)
 {
     public override string ToString()
     {

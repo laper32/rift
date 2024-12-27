@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics;
+using Rift.Runtime.Workspace.Fundamental;
 
 namespace Rift.Runtime.Workspace.Graph;
 
-internal class PackageGraph
+public class PackageGraph
 {
     private readonly List<PackageGraphEdge> _edges = [];
 
@@ -40,6 +41,11 @@ internal class PackageGraph
     public PackageGraphNode? Find(string name, string version)
     {
         return _nodes.Find(x => x.Equals(name, version));
+    }
+
+    public PackageGraphNode? Find(PackageReference reference)
+    {
+        return _nodes.Find(x => x.Equals(reference.Name, reference.Version));
     }
 
     public void Connect(PackageGraphNode start, PackageGraphNode end)

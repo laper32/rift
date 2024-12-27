@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -58,7 +59,7 @@ internal class VirtualManifest<T> : IVirtualManifest
         {
             FolderManifest => EVirtualManifest.Folder,
             WorkspaceManifest => EVirtualManifest.Workspace,
-            _ => throw new ArgumentException("Manifest must be of type WorkspaceManifest or FolderManifest")
+            _ => throw new UnreachableException("Manifest must be of type WorkspaceManifest or FolderManifest")
         };
 
         Value = manifest;
@@ -73,7 +74,7 @@ internal class VirtualManifest<T> : IVirtualManifest
     {
         WorkspaceManifest workspace => workspace.Name,
         FolderManifest folder       => folder.Name,
-        _                           => throw new ArgumentException("Invalid manifest type.")
+        _                           => throw new UnreachableException()
     };
 
     public string Version => "latest";
@@ -82,41 +83,41 @@ internal class VirtualManifest<T> : IVirtualManifest
     {
         WorkspaceManifest workspace => workspace.Members,
         FolderManifest folder       => folder.Members,
-        _                           => throw new ArgumentException("Invalid manifest type.")
+        _                           => throw new UnreachableException()
     };
 
     public List<string> Exclude => Value switch
     {
         WorkspaceManifest workspace => workspace.Exclude,
-        FolderManifest folder       => folder.Exclude,
-        _                           => throw new ArgumentException("Invalid manifest type.")
+        FolderManifest folder => folder.Exclude,
+        _ => throw new UnreachableException()
     };
 
     public string? Dependencies => Value switch
     {
         WorkspaceManifest workspace => workspace.Dependencies,
         FolderManifest              => throw new ArgumentException("[folder] does not have `dependencies` field."),
-        _                           => throw new ArgumentException("Invalid manifest type.")
+        _                           => throw new UnreachableException()
     };
 
     public string? Plugins => Value switch
     {
         WorkspaceManifest workspace => workspace.Plugins,
         FolderManifest              => throw new ArgumentException("[folder] does not have `plugins` field."),
-        _                           => throw new ArgumentException("Invalid manifest type.")
+        _                           => throw new UnreachableException()
     };
 
     public string? Configure => Value switch
     {
         WorkspaceManifest workspace => workspace.Configure,
         FolderManifest              => throw new ArgumentException("[folder] does not have `metadata` field."),
-        _                           => throw new ArgumentException("Invalid manifest type.")
+        _                           => throw new UnreachableException()
     };
 
     public Dictionary<string, JsonElement> Others => Value switch
     {
         WorkspaceManifest workspace => workspace.Others,
         FolderManifest => throw new ArgumentException("`[folder]` does not support extension field currently."),
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 }

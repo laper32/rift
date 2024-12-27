@@ -1,6 +1,6 @@
 ﻿namespace Rift.Runtime.Workspace.Graph;
 
-internal record PackageGraphNode(string Name, string Version)
+public record PackageGraphNode(string Name, string Version)
 {
     private bool _isRoot;
 

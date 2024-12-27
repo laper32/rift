@@ -44,7 +44,7 @@ public sealed class WorkspaceManager
 
     internal static EWorkspaceStatus Status { get; private set; }
 
-    internal static PackageGraph PackageGraph { get; private set; } = null!;
+    public static PackageGraph PackageGraph { get; private set; } = null!;
 
     public WorkspaceManager()
     {
@@ -55,7 +55,6 @@ public sealed class WorkspaceManager
         Status            = EWorkspaceStatus.Unknown;
         PackageGraph      = new PackageGraph();
     }
-
 
     /// <summary>
     ///     Workspace根目录
@@ -140,8 +139,6 @@ public sealed class WorkspaceManager
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
 
-
-
         RunWorkspacePluginsScript();
 
         PluginManager.NotifyLoadPlugins();
@@ -161,7 +158,7 @@ public sealed class WorkspaceManager
             Console.WriteLine($"{edge}");
         }
 
-        //OnAllPackageLoaded();
+        OnAllPackageLoaded();
     }
 
     /// <summary>
@@ -171,7 +168,7 @@ public sealed class WorkspaceManager
     /// <returns> </returns>
     public static IPackageInstance? FindPackage(string name)
     {
-        return _instance._packageInstances.FindInstance(name);
+        return _instance._packageInstances.Find(name);
     }
 
     /// <summary>
@@ -672,18 +669,61 @@ public sealed class WorkspaceManager
     {
         foreach (var package in _packageInstances.GetAllInstances())
         {
-            package.Dependencies.ForEach((name, reference) =>
+            package.Dependencies.ForEach((depName, reference) =>
             {
-                var depNode     = new PackageGraphNode(reference.Name, reference.Version);
                 var packageNode = PackageGraph.Find(package.Name, package.Version)!;
-                if (PackageGraph.Find(reference.Name, reference.Version) is { } dep)
+                if (reference.IsRefWorkspaceRoot())
                 {
-                    PackageGraph.Connect(dep, packageNode);
+                    var rootNode = PackageGraph.GetRootNode();
+                    var rootPackage = _packageInstances.Find(rootNode.Name, rootNode.Version)!;
+
+                    if (!rootPackage.Dependencies.TryGetValue(depName, out var rootPackageReference))
+                    {
+                        throw new WorkspaceException($"Unable to found `{depName}` in `{rootPackage.Name}`");
+                    }
+
+                    if (PackageGraph.Find(rootPackageReference) is not { } rootRefNode)
+                    {
+                        rootRefNode = new PackageGraphNode(rootPackageReference.Name, rootPackageReference.Version);
+                    }
+
+                    PackageGraph.Connect(rootRefNode, packageNode);
+                }
+                else if (reference.HasRef())
+                {
+                    // 先找有没有这个包...
+                    if (_packageInstances.Find(reference.GetRef()) is not { } refPackage)
+                    {
+                        throw new WorkspaceException($"Unable to find package `{reference.GetRef()}`");
+                    }
+
+                    // 然后看这个包里有没有这个依赖
+                    if (!refPackage.Dependencies.TryGetValue(depName, out var refPackageReference))
+                    {
+                        throw new WorkspaceException($"Unable to found `{depName}` in `{refPackage.Name}`");
+                    }
+
+                    // 然后看这个依赖在不在图里
+                    if (PackageGraph.Find(refPackageReference) is not { } refPackageReferenceNode)
+                    {
+                        refPackageReferenceNode = new PackageGraphNode(refPackageReference.Name, refPackageReference.Version);
+                    }
+
+                    PackageGraph.Connect(refPackageReferenceNode, packageNode);
                 }
                 else
                 {
-                    PackageGraph.Add(depNode);
-                    PackageGraph.Connect(depNode, packageNode);
+                    var depNode = new PackageGraphNode(reference.Name, reference.Version);
+
+                    if (PackageGraph.Find(reference.Name, reference.Version) is { } dep)
+                    {
+                        PackageGraph.Connect(dep, packageNode);
+                    }
+                    else
+                    {
+                        PackageGraph.Add(depNode);
+                        PackageGraph.Connect(depNode, packageNode);
+                    }
                 }
             });
         }

@@ -1,4 +1,6 @@
-﻿namespace Rift.Runtime.Workspace.Fundamental;
+﻿using Rift.Runtime.IO;
+
+namespace Rift.Runtime.Workspace.Fundamental;
 
 /// <summary>
 ///     包引用
@@ -46,8 +48,16 @@ public static class PackageReferenceExtensions
     public static PackageReference Ref(this PackageReference self, string packageName)
     {
         // 如果已经ref workspace了, 直接跳过
-        if (self.IsRefWorkspace())
+        if (self.IsRefWorkspaceRoot())
         {
+            return self;
+        }
+
+        packageName = packageName.Trim();
+
+        if (string.IsNullOrEmpty(packageName))
+        {
+            Tty.Error($"Invalid referencing for dependency `{self.Name}`: Cannot be empty, null, or pure whitespace.");
             return self;
         }
 
@@ -83,37 +93,46 @@ public static class PackageReferenceExtensions
         return refPackage as string ?? string.Empty;
     }
 
+    public static bool HasRef(this PackageReference self)
+    {
+        if (self.Attributes.TryGetValue("Ref", out var refPackage))
+        {
+            return true;
+        }
+
+        return refPackage is string;
+    }
+
     /// <summary>
-    ///     判断该包是否引用Workspace. <br />
+    ///     判断该包是否引用最上层的包. <br />
     /// </summary>
     /// <returns> True if references workspace, false otherwise. </returns>
-    public static bool IsRefWorkspace(this PackageReference self)
+    public static bool IsRefWorkspaceRoot(this PackageReference self)
     {
-        if (!self.Attributes.TryGetValue("RefWorkspace", out var refWorkspace))
+        if (!self.Attributes.TryGetValue("RefWorkspaceRoot", out var refWorkspace))
         {
             return false;
         }
-
         return refWorkspace is true;
     }
 
     /// <summary>
-    ///     标记该包引用Workspace. <br />
-    ///     该函数会在<see cref="PackageReference.Attributes" />处创建`RefWorkspace`字段, 其为bool. <br />
+    ///     标记该包引用整个项目空间的最顶级. <br />
+    ///     该函数会在<see cref="PackageReference.Attributes" />处创建`RefWorkspaceRoot`字段, 其为bool. <br />
     /// </summary>
-    public static PackageReference RefWorkspace(this PackageReference self)
+    public static PackageReference RefWorkspaceRoot(this PackageReference self)
     {
-        if (self.Attributes.TryGetValue("RefWorkspace", out var refWorkspace))
+        if (self.Attributes.TryGetValue("RefWorkspaceRoot", out var refWorkspace))
         {
             if (refWorkspace is not bool)
             {
-                self.Attributes["RefWorkspace"] = true;
+                self.Attributes["RefWorkspaceRoot"] = true;
             }
-
             return self;
         }
+        
+        self.Attributes.Add("RefWorkspaceRoot", true);
 
-        self.Attributes["RefWorkspace"] = true;
         return self;
     }
 }

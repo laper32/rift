@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -91,7 +92,7 @@ internal class Manifest<T> : IManifest
         {
             TargetManifest => EManifest.Target,
             ProjectManifest => EManifest.Project,
-            _ => throw new ArgumentException("Manifest must be of type TargetManifest or ProjectManifest")
+            _ => throw new UnreachableException("Manifest must be of type TargetManifest or ProjectManifest")
         };
 
         Value = manifest;
@@ -115,7 +116,7 @@ internal class Manifest<T> : IManifest
     {
         ProjectManifest project => project.Name,
         TargetManifest target => target.Name,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 
     /// <summary>
@@ -126,7 +127,7 @@ internal class Manifest<T> : IManifest
     {
         ProjectManifest project => project.Version,
         TargetManifest => "latest",
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 
     /// <summary>
@@ -136,7 +137,7 @@ internal class Manifest<T> : IManifest
     {
         ProjectManifest project => project.Dependencies,
         TargetManifest target => target.Dependencies,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 
     /// <summary>
@@ -146,7 +147,7 @@ internal class Manifest<T> : IManifest
     {
         ProjectManifest project => project.Plugins,
         TargetManifest target => target.Plugins,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 
     /// <summary>
@@ -156,7 +157,7 @@ internal class Manifest<T> : IManifest
     {
         ProjectManifest project => project.Configure,
         TargetManifest target => target.Configure,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 
     /// <summary>
@@ -166,6 +167,6 @@ internal class Manifest<T> : IManifest
     {
         ProjectManifest project => project.Others,
         TargetManifest target => target.Others,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException()
     };
 }
