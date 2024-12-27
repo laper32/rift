@@ -1,4 +1,6 @@
-﻿namespace Rift.Runtime.Workspace.Graph;
+﻿using System.Diagnostics;
+
+namespace Rift.Runtime.Workspace.Graph;
 
 internal class PackageGraph
 {
@@ -81,6 +83,16 @@ internal class PackageGraph
         }
 
         _edges.Add(new PackageGraphEdge(start, end));
+    }
+
+    public PackageGraphNode GetRootNode()
+    {
+        foreach (var node in _nodes.Where(node => node.IsRoot()))
+        {
+            return node;
+        }
+
+        throw new UnreachableException();
     }
 
     public IEnumerable<PackageGraphNode> Traverse(PackageGraphNode package)

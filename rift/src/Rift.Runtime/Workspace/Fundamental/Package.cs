@@ -89,6 +89,12 @@ internal class Packages
                         var package = new Package(projectManifest.Value, manifestPath);
 
                         var packageNode = new PackageGraphNode(package.Name, package.Version);
+
+                        if (parentPackage is null)
+                        {
+                            packageNode.MarkAsRoot();
+                        }
+
                         WorkspaceManager.PackageGraph.Add(packageNode);
 
                         if (projectManifest.Value.Value.Target is not null)
@@ -131,8 +137,13 @@ internal class Packages
 
                         var package     = new Package(targetManifest.Value, manifestPath);
                         var packageNode = new PackageGraphNode(package.Name, package.Version);
-                        WorkspaceManager.PackageGraph.Add(packageNode);
 
+                        if (parentPackage is null)
+                        {
+                            packageNode.MarkAsRoot();
+                        }
+
+                        WorkspaceManager.PackageGraph.Add(packageNode);
 
                         if (parentPackage is not null)
                         {
@@ -174,7 +185,14 @@ internal class Packages
                         var virtualPackage = new VirtualPackage(folderManifest.Value, manifestPath);
 
                         var packageNode    = new PackageGraphNode(virtualPackage.Name, virtualPackage.Version);
+
+                        if (parentPackage is null)
+                        {
+                            packageNode.MarkAsRoot();
+                        }
+
                         WorkspaceManager.PackageGraph.Add(packageNode);
+
                         if (parentPackage is not null)
                         {
                             if (WorkspaceManager.PackageGraph.Find(parentPackage.Name, parentPackage.Version) is not
@@ -202,6 +220,12 @@ internal class Packages
 
                         var virtualPackage = new VirtualPackage(workspaceManifest.Value, manifestPath);
                         var packageNode    = new PackageGraphNode(virtualPackage.Name, virtualPackage.Version);
+
+                        if (parentPackage is null)
+                        {
+                            packageNode.MarkAsRoot();
+                        }
+
                         WorkspaceManager.PackageGraph.Add(packageNode);
 
                         if (parentPackage is not null)
