@@ -1,32 +1,16 @@
 ﻿namespace Rift.Runtime.Workspace.Graph;
 
-internal class PackageGraphNode
+internal record PackageGraphNode(string Name, string Version)
 {
-    public string Name    { get; init; }
-    public string Version { get; init; }
 
-    public PackageGraphNode(string packageName, string packageVersion)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(packageName);
-        ArgumentException.ThrowIfNullOrEmpty(packageVersion);
-
-        Name    = packageName;
-        Version = packageVersion;
-    }
-
-    private bool Equals(string name, string version)
+    public bool Equals(string name, string version)
     {
         return Name.Equals(name, StringComparison.OrdinalIgnoreCase) && Version.Equals(version, StringComparison.OrdinalIgnoreCase);
     }
 
-    public override bool Equals(object? obj)
+    public virtual bool Equals(PackageGraphNode? rhs)
     {
-        return obj is PackageGraphNode rhs && Equals(rhs.Name, rhs.Version);
-    }
-
-    protected bool Equals(PackageGraphNode other)
-    {
-        return Name == other.Name && Version == other.Version;
+        return rhs is not null && Equals(rhs.Name, rhs.Version);
     }
 
 

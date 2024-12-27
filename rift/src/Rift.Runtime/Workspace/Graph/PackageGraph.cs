@@ -28,6 +28,18 @@ internal class PackageGraph
         return _nodes.Any(x => x.Equals(node));
     }
 
+    public bool Exists(string name, string version)
+    {
+        ArgumentNullException.ThrowIfNull(name, nameof(name));
+        ArgumentNullException.ThrowIfNull(version, nameof(version));
+        return _nodes.Any(x => x.Equals(name, version));
+    }
+
+    public PackageGraphNode? Find(string name, string version)
+    {
+        return _nodes.Find(x => x.Equals(name, version));
+    }
+
     public void Connect(PackageGraphNode start, PackageGraphNode end)
     {
         if (start.Equals(end))

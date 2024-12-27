@@ -42,13 +42,11 @@ internal class GeneratePlugin : RiftPlugin
 
     public override void OnAllLoaded()
     {
-        Console.WriteLine("Rift.Plugin.Generate.OnAllLoaded");
-        base.OnAllLoaded();
+
     }
 
     public override void OnUnload()
     {
-        Console.WriteLine("Rift.Plugin.Generate.OnUnload");
-        base.OnUnload();
+
     }
 }

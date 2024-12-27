@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
 using Rift.Runtime.Manifest.Real;
 using Rift.Runtime.Manifest.Rift;
 using Rift.Runtime.Manifest.Virtual;
@@ -30,6 +31,11 @@ internal interface IEitherManifest
     ///     Gets the name of the manifest.
     /// </summary>
     public string Name { get; }
+
+    /// <summary>
+    /// Manifest version.
+    /// </summary>
+    public string Version { get; }
 
     /// <summary>
     ///     Gets the type of the manifest.
@@ -81,12 +87,20 @@ internal record EitherManifest<T> : IEitherManifest
     /// <summary>
     ///     Gets the name of the manifest.
     /// </summary>
-    /// <exception cref="ArgumentException">Thrown when the manifest type is invalid.</exception>
+    /// <exception cref="UnreachableException">Thrown when the manifest type is invalid.</exception>
     public string Name => Value switch
     {
         IManifest real => real.Name,
         IVirtualManifest virtualManifest => virtualManifest.Name,
         IRiftManifest riftManifest => riftManifest.Name,
-        _ => throw new ArgumentException("Invalid manifest type.")
+        _ => throw new UnreachableException("Invalid manifest type.")
+    };
+
+    public string Version => Value switch
+    {
+        IManifest real      => real.Version,
+        IVirtualManifest vm => vm.Version,
+        IRiftManifest rm    => rm.Version,
+        _                   => throw new UnreachableException()
     };
 }

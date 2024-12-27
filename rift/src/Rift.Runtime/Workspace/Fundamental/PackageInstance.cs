@@ -34,6 +34,7 @@ internal class PackageInstance(IMaybePackage package) : IPackageInstance
     public Dictionary<string, PackageReference> Plugins      { get; init; } = [];
     public Dictionary<string, PackageReference> Dependencies { get; init; } = [];
     public string                               Name         => Value.Name;
+    public string                               Version      => Value.Version;
     public string                               ManifestPath => Value.ManifestPath;
     public string                               Root         => Value.Root;
 

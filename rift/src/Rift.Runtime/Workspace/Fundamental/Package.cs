@@ -4,12 +4,14 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
 using System.Text.Json;
 using Rift.Runtime.Constants;
 using Rift.Runtime.IO;
 using Rift.Runtime.Manifest;
 using Rift.Runtime.Manifest.Real;
 using Rift.Runtime.Manifest.Virtual;
+using Rift.Runtime.Workspace.Graph;
 using Rift.Runtime.Workspace.Managers;
 
 namespace Rift.Runtime.Workspace.Fundamental;
@@ -17,6 +19,7 @@ namespace Rift.Runtime.Workspace.Fundamental;
 internal class Package(IManifest manifest, string manifestPath)
 {
     public string    Name         => manifest.Name;
+    public string    Version      => manifest.Version;
     public string    ManifestPath => manifestPath;
     public string    Root         => Directory.GetParent(ManifestPath)!.FullName;
     public IManifest Value        => manifest;
@@ -67,7 +70,7 @@ internal class Packages
 {
     internal readonly Dictionary<string, IMaybePackage> Value = [];
 
-    public void Load(string manifestPath)
+    public void Load(string manifestPath, IEitherManifest? parentPackage = null)
     {
         var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
@@ -84,11 +87,36 @@ internal class Packages
                         }
 
                         var package = new Package(projectManifest.Value, manifestPath);
+
+                        var packageNode = new PackageGraphNode(package.Name, package.Version);
+                        WorkspaceManager.PackageGraph.Add(packageNode);
+
                         if (projectManifest.Value.Value.Target is not null)
                         {
                             var targetManifest = projectManifest.Value.Value.Target;
                             var targetPackage = new Package(new Manifest<TargetManifest>(targetManifest), manifestPath);
+
+                            var targetPackageNode = new PackageGraphNode(targetPackage.Name, targetPackage.Version);
+
+                            WorkspaceManager.PackageGraph.Add(targetPackageNode);
+                            WorkspaceManager.PackageGraph.Connect(targetPackageNode, packageNode);
+
                             Value.Add(targetPackage.Name, new MaybePackage<Package>(targetPackage));
+                        }
+
+                        if (parentPackage is not null)
+                        {
+                            if (WorkspaceManager.PackageGraph.Find(parentPackage.Name, parentPackage.Version) is not
+                                { } parent)
+                            {
+                                var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
+                                WorkspaceManager.PackageGraph.Add(node);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
+                            }
+                            else
+                            {
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
+                            }
                         }
 
                         Value.Add(package.Name, new MaybePackage<Package>(package));
@@ -101,7 +129,26 @@ internal class Packages
                             throw new InvalidOperationException($"Package already exists: `{targetManifest.Name}`");
                         }
 
-                        var package = new Package(targetManifest.Value, manifestPath);
+                        var package     = new Package(targetManifest.Value, manifestPath);
+                        var packageNode = new PackageGraphNode(package.Name, package.Version);
+                        WorkspaceManager.PackageGraph.Add(packageNode);
+
+
+                        if (parentPackage is not null)
+                        {
+                            if (WorkspaceManager.PackageGraph.Find(parentPackage.Name, parentPackage.Version) is not
+                                { } parent)
+                            {
+                                var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
+                                WorkspaceManager.PackageGraph.Add(node);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
+                            }
+                            else
+                            {
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
+                            }
+                        }
+
                         Value.Add(package.Name, new MaybePackage<Package>(package));
                         break;
                     }
@@ -125,6 +172,24 @@ internal class Packages
                         }
 
                         var virtualPackage = new VirtualPackage(folderManifest.Value, manifestPath);
+
+                        var packageNode    = new PackageGraphNode(virtualPackage.Name, virtualPackage.Version);
+                        WorkspaceManager.PackageGraph.Add(packageNode);
+                        if (parentPackage is not null)
+                        {
+                            if (WorkspaceManager.PackageGraph.Find(parentPackage.Name, parentPackage.Version) is not
+                                { } parent)
+                            {
+                                var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
+                                WorkspaceManager.PackageGraph.Add(node);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
+                            }
+                            else
+                            {
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
+                            }
+                        }
+
                         Value.Add(virtualPackage.Name, new MaybePackage<VirtualPackage>(virtualPackage));
                         break;
                     }
@@ -136,6 +201,24 @@ internal class Packages
                         }
 
                         var virtualPackage = new VirtualPackage(workspaceManifest.Value, manifestPath);
+                        var packageNode    = new PackageGraphNode(virtualPackage.Name, virtualPackage.Version);
+                        WorkspaceManager.PackageGraph.Add(packageNode);
+
+                        if (parentPackage is not null)
+                        {
+                            if (WorkspaceManager.PackageGraph.Find(parentPackage.Name, parentPackage.Version) is not
+                                { } parent)
+                            {
+                                var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
+                                WorkspaceManager.PackageGraph.Add(node);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
+                            }
+                            else
+                            {
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
+                            }
+                        }
+
                         Value.Add(virtualPackage.Name, new MaybePackage<VirtualPackage>(virtualPackage));
                         break;
                     }
@@ -149,16 +232,16 @@ internal class Packages
             }
             case EEitherManifest.Rift:
             {
-                throw new InvalidOperationException("`Unable to parse Rift-specific manifests.");
+                throw new InvalidOperationException("Unable to parse Rift-specific manifests.");
             }
             default:
             {
-                throw new InvalidOperationException("Why are you here?");
+                throw new UnreachableException();
             }
         }
     }
 
-    public void LoadRecursively(string manifestPath)
+    public void LoadRecursively(string manifestPath, IEitherManifest? parentManifest = null)
     {
         var manifest = WorkspaceManager.ReadManifest(manifestPath);
         switch (manifest.Type)
@@ -174,14 +257,14 @@ internal class Packages
                             return;
                         }
 
-                        Load(manifestPath);
+                        Load(manifestPath, parentManifest);
                         if (projectManifest.Value.Value.Members is { } members)
                         {
                             foreach (var fullPath in members.Select(member =>
                                          Path.Combine(Path.GetDirectoryName(manifestPath)!, member,
                                              Definitions.ManifestIdentifier)))
                             {
-                                LoadRecursively(fullPath);
+                                LoadRecursively(fullPath, projectManifest);
                             }
                         }
 
@@ -194,7 +277,8 @@ internal class Packages
                             return;
                         }
 
-                        Load(manifestPath);
+                        // 这个时候如果ParentManifest不是空的话，那么parent应当有以下之一：`[workspace]`, `[folder]`, `[project]`
+                        Load(manifestPath, parentManifest);
                         break;
                     }
                     default:
@@ -217,7 +301,7 @@ internal class Packages
                             return;
                         }
 
-                        Load(manifestPath);
+                        Load(manifestPath, parentManifest);
 
                         if (folderManifest.Value.Value.Members is { } members)
                         {
@@ -225,7 +309,7 @@ internal class Packages
                                          Path.Combine(Path.GetDirectoryName(manifestPath)!, member,
                                              Definitions.ManifestIdentifier)))
                             {
-                                LoadRecursively(fullPath);
+                                LoadRecursively(fullPath, folderManifest);
                             }
                         }
 
@@ -239,6 +323,7 @@ internal class Packages
                             return;
                         }
 
+                        // 这个是绝对不可能还有parent的！
                         Load(manifestPath);
 
                         if (workspaceManifest.Value.Value.Members is { } members)
@@ -247,7 +332,7 @@ internal class Packages
                                          Path.Combine(Path.GetDirectoryName(manifestPath)!, member,
                                              Definitions.ManifestIdentifier)))
                             {
-                                LoadRecursively(fullPath);
+                                LoadRecursively(fullPath, workspaceManifest);
                             }
                         }
 

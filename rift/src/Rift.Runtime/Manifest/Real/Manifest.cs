@@ -46,7 +46,7 @@ internal interface IManifest
     /// Target manifests do not require a version number and are always considered latest.
     /// </remarks>
     /// </summary>
-    public string? Version { get; }
+    public string Version { get; }
 
     /// <summary>
     /// Gets the dependencies script path of the manifest.

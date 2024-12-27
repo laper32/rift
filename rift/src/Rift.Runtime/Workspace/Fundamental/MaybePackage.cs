@@ -4,6 +4,7 @@
 // All Rights Reserved
 // ===========================================================================
 
+using System.Diagnostics;
 using System.Text.Json;
 
 namespace Rift.Runtime.Workspace.Fundamental;
@@ -19,6 +20,7 @@ internal interface IMaybePackage
 {
     public EMaybePackage                   Type         { get; }
     public string                          Name         { get; }
+    public string                          Version      { get; }
     public string?                         Dependencies { get; }
     public string?                         Plugins      { get; }
     public string?                         Configure    { get; }
@@ -44,7 +46,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
         Package package        => package.ManifestPath,
         VirtualPackage package => package.ManifestPath,
         RiftPackage package    => package.ManifestPath,
-        _                      => throw new InvalidOperationException("Why you at here?")
+        _                      => throw new UnreachableException()
     };
 
     public string Root => Value switch
@@ -52,7 +54,7 @@ internal class MaybePackage<T>(T value) : IMaybePackage
         Package package        => package.Root,
         VirtualPackage package => package.Root,
         RiftPackage package    => package.Root,
-        _                      => throw new InvalidOperationException("Why you at here?")
+        _                      => throw new UnreachableException()
     };
 
     public string Name => Value switch
@@ -60,8 +62,17 @@ internal class MaybePackage<T>(T value) : IMaybePackage
         Package package        => package.Name,
         VirtualPackage package => package.Name,
         RiftPackage package    => package.Name,
-        _                      => string.Empty
+        _                      => throw new UnreachableException()
     };
+
+    public string Version => Value switch
+    {
+        Package package        => package.Version,
+        VirtualPackage package => package.Version,
+        RiftPackage package    => package.Version,
+        _                      => throw new UnreachableException()
+    };
+
 
     public string? Dependencies => Value switch
     {

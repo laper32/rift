@@ -13,6 +13,7 @@ namespace Rift.Runtime.Workspace.Fundamental;
 internal class VirtualPackage(IVirtualManifest virtualManifest, string manifestPath)
 {
     public string           Name         => virtualManifest.Name;
+    public string           Version      => virtualManifest.Version;
     public string           ManifestPath => manifestPath;
     public string           Root         => Directory.GetParent(ManifestPath)!.FullName;
     public IVirtualManifest Value        => virtualManifest;

@@ -13,6 +13,7 @@ namespace Rift.Runtime.Workspace.Fundamental;
 internal class RiftPackage(IRiftManifest riftManifest, string manifestPath)
 {
     public string        Name         => riftManifest.Name;
+    public string        Version      => riftManifest.Version;
     public string        ManifestPath => manifestPath;
     public string        Root         => Directory.GetParent(ManifestPath)!.FullName;
     public IRiftManifest Value        => riftManifest;

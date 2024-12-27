@@ -1,7 +1,9 @@
 ﻿namespace Rift.Runtime.Workspace.Graph;
 
-internal class PackageGraphEdge(PackageGraphNode start, PackageGraphNode end)
+internal record PackageGraphEdge(PackageGraphNode Start, PackageGraphNode End)
 {
-    public PackageGraphNode Start { get; init; } = start;
-    public PackageGraphNode End   { get; init; } = end;
+    public override string ToString()
+    {
+        return $"PackageGraphEdge {{ Start = (Name = {Start.Name}, Version = {Start.Version}), End = (Name = {End.Name}, Version = {End.Version}) }}";
+    }
 }

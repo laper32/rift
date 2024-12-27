@@ -20,12 +20,15 @@ using Rift.Runtime.Scripts.Managers;
 using Rift.Runtime.Workspace.Abstractions;
 using Rift.Runtime.Workspace.Exceptions;
 using Rift.Runtime.Workspace.Fundamental;
+using Rift.Runtime.Workspace.Graph;
 using Tomlyn;
 
 namespace Rift.Runtime.Workspace.Managers;
 
 public sealed class WorkspaceManager
 {
+    private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
+
     private static WorkspaceManager _instance = null!;
 
     private readonly IEnumerable<string> _importNamespaces =
@@ -39,6 +42,10 @@ public sealed class WorkspaceManager
 
     private EWorkspaceStatus _status;
 
+    internal static EWorkspaceStatus Status { get; private set; }
+
+    internal static PackageGraph PackageGraph { get; private set; } = null!;
+
     public WorkspaceManager()
     {
         _status           = EWorkspaceStatus.Unknown;
@@ -46,9 +53,9 @@ public sealed class WorkspaceManager
         _packageInstances = new PackageInstances();
         _instance         = this;
         Status            = EWorkspaceStatus.Unknown;
+        PackageGraph      = new PackageGraph();
     }
 
-    internal static EWorkspaceStatus Status { get; private set; }
 
     /// <summary>
     ///     Workspace根目录
@@ -124,8 +131,6 @@ public sealed class WorkspaceManager
 
     #endregion
 
-    private record PluginListenerInfo(RiftPlugin Instance, IWorkspaceListener Listener);
-
     #region Package Operations
 
     internal void ActivatePackage()
@@ -135,19 +140,23 @@ public sealed class WorkspaceManager
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
 
+        foreach (var node in PackageGraph.Nodes)
+        {
+            Console.WriteLine(node);
+        }
+
+        foreach (var edge in PackageGraph.Edges)
+        {
+            Console.WriteLine($"{edge}");
+        }
+
+
         RunWorkspacePluginsScript();
 
         PluginManager.NotifyLoadPlugins();
 
         RunWorkspaceDependenciesScript();
         RunWorkspaceConfigurationScript();
-        //var graph = PackageGraphBuilder.Build(_packageInstances.GetAllInstances().ToArray());
-
-        //foreach (var edge in graph.Edges)
-        //{
-        //    Console.WriteLine($"{edge.Start} -> {edge.End}");
-        //}
-
         //OnAllPackageLoaded();
     }
 
@@ -249,7 +258,7 @@ public sealed class WorkspaceManager
         var schema = LoadManifest(path);
         if (schema is null)
         {
-            throw new WorkspaceException($"Shutdown to load manifest from `{path}`");
+            throw new WorkspaceException($"Failed to load manifest from `{path}`");
         }
 
         if (schema.Workspace is { } workspace)
@@ -261,7 +270,7 @@ public sealed class WorkspaceManager
                )
             {
                 throw new WorkspaceException(
-                    "Workspace and Folder/Project/Target/Plugin can't be used together."
+                    "`[workspace]` and `[folder]`/`[project]`/`[target]`/`[plugin]` can't be used together."
                 );
             }
 
@@ -479,7 +488,6 @@ public sealed class WorkspaceManager
         {
             throw new WorkspaceException("No `Rift.toml` found.");
         }
-
 
         return Path.Combine(Path.GetDirectoryName(manifestPath)!, scriptPath);
     }
