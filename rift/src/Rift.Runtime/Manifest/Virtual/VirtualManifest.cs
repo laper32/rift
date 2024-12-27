@@ -17,14 +17,32 @@ internal enum EVirtualManifest
 
 internal interface IVirtualManifest
 {
-    public EVirtualManifest                Type         { get; }
-    public string                          Name         { get; }
-    public List<string>                    Members      { get; }
-    public List<string>                    Exclude      { get; }
-    public string?                         Dependencies { get; }
-    public string?                         Plugins      { get; }
-    public string?                         Configure    { get; }
-    public Dictionary<string, JsonElement> Others       { get; }
+    /// <summary>
+    ///     Manifest type.
+    /// </summary>
+    public EVirtualManifest Type { get; }
+
+    /// <summary>
+    ///     Manifest name.
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    ///     Virtual manifest's version will always be latest.
+    /// </summary>
+    public string Version { get; }
+
+    public List<string> Members { get; }
+
+    public List<string> Exclude { get; }
+
+    public string? Dependencies { get; }
+
+    public string? Plugins { get; }
+
+    public string? Configure { get; }
+
+    public Dictionary<string, JsonElement> Others { get; }
 }
 
 internal class VirtualManifest<T> : IVirtualManifest
@@ -57,6 +75,8 @@ internal class VirtualManifest<T> : IVirtualManifest
         FolderManifest folder       => folder.Name,
         _                           => throw new ArgumentException("Invalid manifest type.")
     };
+
+    public string Version => "latest";
 
     public List<string> Members => Value switch
     {

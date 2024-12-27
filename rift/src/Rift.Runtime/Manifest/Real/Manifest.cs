@@ -119,12 +119,13 @@ internal class Manifest<T> : IManifest
     };
 
     /// <summary>
-    /// Gets the version of the manifest.
+    /// Gets the version of the manifest. <br />
+    /// Target's version will always be <b>'latest'</b>
     /// </summary>
-    public string? Version => Value switch
+    public string Version => Value switch
     {
         ProjectManifest project => project.Version,
-        TargetManifest => null,
+        TargetManifest => "latest",
         _ => throw new ArgumentException("Invalid manifest type.")
     };
 
