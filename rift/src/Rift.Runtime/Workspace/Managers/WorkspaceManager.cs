@@ -140,6 +140,17 @@ public sealed class WorkspaceManager
             _packageInstances.Add(packageName, new PackageInstance(maybePackage));
         }
 
+
+
+        RunWorkspacePluginsScript();
+
+        PluginManager.NotifyLoadPlugins();
+
+        RunWorkspaceDependenciesScript();
+        RunWorkspaceConfigurationScript();
+
+        ConnectPackageDependencies();
+
         foreach (var node in PackageGraph.Nodes)
         {
             Console.WriteLine(node);
@@ -150,13 +161,6 @@ public sealed class WorkspaceManager
             Console.WriteLine($"{edge}");
         }
 
-
-        RunWorkspacePluginsScript();
-
-        PluginManager.NotifyLoadPlugins();
-
-        RunWorkspaceDependenciesScript();
-        RunWorkspaceConfigurationScript();
         //OnAllPackageLoaded();
     }
 
@@ -663,4 +667,25 @@ public sealed class WorkspaceManager
     }
 
     #endregion
+
+    private void ConnectPackageDependencies()
+    {
+        foreach (var package in _packageInstances.GetAllInstances())
+        {
+            package.Dependencies.ForEach((name, reference) =>
+            {
+                var depNode     = new PackageGraphNode(reference.Name, reference.Version);
+                var packageNode = PackageGraph.Find(package.Name, package.Version)!;
+                if (PackageGraph.Find(reference.Name, reference.Version) is { } dep)
+                {
+                    PackageGraph.Connect(dep, packageNode);
+                }
+                else
+                {
+                    PackageGraph.Add(depNode);
+                    PackageGraph.Connect(depNode, packageNode);
+                }
+            });
+        }
+    }
 }
