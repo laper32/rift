@@ -105,10 +105,9 @@ internal class Packages
                             var targetPackageNode = new PackageGraphNode(targetPackage.Name, targetPackage.Version);
 
                             WorkspaceManager.PackageGraph.Add(targetPackageNode);
-                            //WorkspaceManager.PackageGraph.Connect(targetPackageNode, packageNode);
-                            WorkspaceManager.PackageGraph.Connect(packageNode, targetPackageNode);
+                            WorkspaceManager.PackageGraph.Connect(targetPackageNode, packageNode);
 
-                            Value.Add(targetPackage.Name, new MaybePackage<Package>(targetPackage));
+                                    Value.Add(targetPackage.Name, new MaybePackage<Package>(targetPackage));
                         }
 
                         if (parentPackage is not null)
@@ -118,13 +117,11 @@ internal class Packages
                             {
                                 var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
                                 WorkspaceManager.PackageGraph.Add(node);
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, node);
-                                WorkspaceManager.PackageGraph.Connect(node, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
                             }
                             else
                             {
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, parent);
-                                WorkspaceManager.PackageGraph.Connect(parent, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
                             }
                         }
 
@@ -155,13 +152,11 @@ internal class Packages
                             {
                                 var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
                                 WorkspaceManager.PackageGraph.Add(node);
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, node);
-                                WorkspaceManager.PackageGraph.Connect(node, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
                             }
                             else
                             {
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, parent);
-                                WorkspaceManager.PackageGraph.Connect(parent, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
                             }
                         }
 
@@ -205,13 +200,11 @@ internal class Packages
                             {
                                 var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
                                 WorkspaceManager.PackageGraph.Add(node);
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, node);
-                                WorkspaceManager.PackageGraph.Connect(node, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
                             }
                             else
                             {
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, parent);
-                                WorkspaceManager.PackageGraph.Connect(parent, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
                             }
                         }
 
@@ -242,13 +235,11 @@ internal class Packages
                             {
                                 var node = new PackageGraphNode(parentPackage.Name, parentPackage.Version);
                                 WorkspaceManager.PackageGraph.Add(node);
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, node);
-                                WorkspaceManager.PackageGraph.Connect(node, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, node);
                             }
                             else
                             {
-                                //WorkspaceManager.PackageGraph.Connect(packageNode, parent);
-                                WorkspaceManager.PackageGraph.Connect(parent, packageNode);
+                                WorkspaceManager.PackageGraph.Connect(packageNode, parent);
                             }
                         }
 

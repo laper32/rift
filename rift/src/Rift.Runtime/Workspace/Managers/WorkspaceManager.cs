@@ -692,8 +692,7 @@ public sealed class WorkspaceManager
                         rootRefNode = new PackageGraphNode(rootPackageReference.Name, rootPackageReference.Version);
                     }
 
-                    //PackageGraph.Connect(rootRefNode, packageNode);
-                    PackageGraph.Connect(packageNode, rootRefNode);
+                    PackageGraph.Connect(rootRefNode, packageNode);
                 }
                 else if (reference.HasRef())
                 {
@@ -715,8 +714,7 @@ public sealed class WorkspaceManager
                         refPackageReferenceNode = new PackageGraphNode(refPackageReference.Name, refPackageReference.Version);
                     }
 
-                    //PackageGraph.Connect(refPackageReferenceNode, packageNode);
-                    PackageGraph.Connect(packageNode, refPackageReferenceNode);
+                    PackageGraph.Connect(refPackageReferenceNode, packageNode);
                 }
                 else
                 {
@@ -724,14 +722,12 @@ public sealed class WorkspaceManager
 
                     if (PackageGraph.Find(reference.Name, reference.Version) is { } dep)
                     {
-                        //PackageGraph.Connect(dep, packageNode);
-                        PackageGraph.Connect(packageNode, dep);
+                        PackageGraph.Connect(dep, packageNode);
                     }
                     else
                     {
                         PackageGraph.Add(depNode);
-                        //PackageGraph.Connect(depNode, packageNode);
-                        PackageGraph.Connect(packageNode, depNode);
+                        PackageGraph.Connect(depNode, packageNode);
                     }
                 }
             });

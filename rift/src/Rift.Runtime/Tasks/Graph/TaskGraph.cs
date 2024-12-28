@@ -84,16 +84,16 @@ internal class TaskGraph
 
     private void Traverse(string node, ICollection<string> result, ISet<string>? visited = null)
     {
-        visited = visited ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!visited.Contains(node))
+        visited ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (visited.Add(node))
         {
-            visited.Add(node);
             var incoming = _edges.Where(x => x.End.Equals(node, StringComparison.OrdinalIgnoreCase))
                 .Select(x => x.Start);
             foreach (var child in incoming)
             {
                 Traverse(child, result, visited);
             }
+            result.Add(node);
         }
         else if (!result.Any(x => x.Equals(node, StringComparison.OrdinalIgnoreCase)))
         {
