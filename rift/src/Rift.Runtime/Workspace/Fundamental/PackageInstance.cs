@@ -16,10 +16,17 @@ namespace Rift.Runtime.Workspace.Fundamental;
 public interface IPackageInstance
 {
     public string                               Name          { get; }
+    
+    public string Version { get; }
+
     public string                               ManifestPath  { get; }
+    
     public string                               Root          { get; }
+    
     public Dictionary<string, PackageReference> Plugins       { get; }
+    
     public Dictionary<string, PackageReference> Dependencies  { get; }
+    
     public PackageConfiguration                 Configuration { get; }
 
     JsonElement? GetExtensionField(string name);

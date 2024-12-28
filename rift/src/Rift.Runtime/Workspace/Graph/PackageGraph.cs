@@ -101,6 +101,48 @@ public class PackageGraph
         throw new UnreachableException();
     }
 
+    public void Traverse(Action<PackageGraphNode> action)
+    {
+        var root = GetRootNode();
+    }
+
+    private void Traverse(
+        PackageGraphNode node,
+        Action<PackageGraphNode> action,
+        ISet<PackageGraphNode>? visited = null)
+    {
+        visited ??= new HashSet<PackageGraphNode>();
+        if (visited.Add(node))
+        {
+            var incoming = _edges
+                .Where(x => x.End.Equals(node))
+                .Select(x => x.Start);
+            foreach (var child in incoming)
+            {
+                Traverse(node, action, visited);
+            }
+        }
+        else if (visited.Any(x => x.Equals(node)))
+        {
+            throw new ArgumentException("Graph contains circular references.");
+        }
+        /*
+                 visited ??= new HashSet<PackageGraphNode>();
+           if (visited.Add(node))
+           {
+               var incoming = _edges.Where(x => x.End.Equals(node)).Select(x => x.Start);
+               foreach (var child in incoming)
+               {
+                   Traverse(child, result, visited);
+               }
+           }
+           else if (!result.Any(x => x.Equals(node)))
+           {
+               throw new ArgumentException("Graph contains circular references.");
+           }
+         */
+    }
+
     public IEnumerable<PackageGraphNode> Traverse(PackageGraphNode package)
     {
         if (!Exists(package))
@@ -121,11 +163,14 @@ public class PackageGraph
         visited ??= new HashSet<PackageGraphNode>();
         if (visited.Add(node))
         {
+            //                 var incoming = _edges.Where(x => x.End.Equals(node, StringComparison.OrdinalIgnoreCase)).Select(x => x.Start);
+
             var incoming = _edges.Where(x => x.End.Equals(node)).Select(x => x.Start);
             foreach (var child in incoming)
             {
                 Traverse(child, result, visited);
             }
+            result.Add(node);
         }
         else if (!result.Any(x => x.Equals(node)))
         {

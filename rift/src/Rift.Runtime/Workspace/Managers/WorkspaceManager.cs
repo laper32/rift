@@ -148,15 +148,20 @@ public sealed class WorkspaceManager
 
         ConnectPackageDependencies();
 
-        foreach (var node in PackageGraph.Nodes)
+        var result = PackageGraph.Traverse(PackageGraph.GetRootNode());
+        foreach (var node in result)
         {
-            Console.WriteLine(node);
+            Console.WriteLine($"{node}");
         }
+        //foreach (var node in PackageGraph.Nodes)
+        //{
+        //    Console.WriteLine(node);
+        //}
 
-        foreach (var edge in PackageGraph.Edges)
-        {
-            Console.WriteLine($"{edge}");
-        }
+        //foreach (var edge in PackageGraph.Edges)
+        //{
+        //    Console.WriteLine($"{edge}");
+        //}
 
         OnAllPackageLoaded();
     }
@@ -687,7 +692,8 @@ public sealed class WorkspaceManager
                         rootRefNode = new PackageGraphNode(rootPackageReference.Name, rootPackageReference.Version);
                     }
 
-                    PackageGraph.Connect(rootRefNode, packageNode);
+                    //PackageGraph.Connect(rootRefNode, packageNode);
+                    PackageGraph.Connect(packageNode, rootRefNode);
                 }
                 else if (reference.HasRef())
                 {
@@ -709,7 +715,8 @@ public sealed class WorkspaceManager
                         refPackageReferenceNode = new PackageGraphNode(refPackageReference.Name, refPackageReference.Version);
                     }
 
-                    PackageGraph.Connect(refPackageReferenceNode, packageNode);
+                    //PackageGraph.Connect(refPackageReferenceNode, packageNode);
+                    PackageGraph.Connect(packageNode, refPackageReferenceNode);
                 }
                 else
                 {
@@ -717,12 +724,14 @@ public sealed class WorkspaceManager
 
                     if (PackageGraph.Find(reference.Name, reference.Version) is { } dep)
                     {
-                        PackageGraph.Connect(dep, packageNode);
+                        //PackageGraph.Connect(dep, packageNode);
+                        PackageGraph.Connect(packageNode, dep);
                     }
                     else
                     {
                         PackageGraph.Add(depNode);
-                        PackageGraph.Connect(depNode, packageNode);
+                        //PackageGraph.Connect(depNode, packageNode);
+                        PackageGraph.Connect(packageNode, depNode);
                     }
                 }
             });

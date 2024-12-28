@@ -34,7 +34,6 @@ internal class GolangPackageGraph
         return _nodes.Any(x => x.Equals(name, version));
     }
 
-
     public void Connect(GolangPackageGraphNode start, GolangPackageGraphNode end)
     {
         if (start.Equals(end))
