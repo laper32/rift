@@ -2,7 +2,7 @@
 using Rift.Generate.Services;
 using Rift.Go.Application;
 using Rift.Go.Generate;
-using Rift.Go.Workspace;
+using Rift.Go.Workspace.Managers;
 using Rift.Runtime.Interfaces.Managers;
 using Rift.Runtime.Plugins.Abstractions;
 using Rift.Runtime.Plugins.Managers;
@@ -22,7 +22,7 @@ internal class GolangPlugin : RiftPlugin
         services.AddSingleton(myInfo);
         services.AddSingleton<GolangEnvironment>();
         services.AddSingleton<GolangGenerateService>();
-        services.AddSingleton<GolangWorkspaceService>();
+        services.AddSingleton<GolangWorkspaceManager>();
         var provider = services.BuildServiceProvider();
         _golangGenerateService = provider.GetRequiredService<GolangGenerateService>();
 

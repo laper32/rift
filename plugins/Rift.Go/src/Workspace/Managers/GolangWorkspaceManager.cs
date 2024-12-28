@@ -2,17 +2,17 @@
 using Rift.Runtime.Workspace.Managers;
 using System.Text.Json;
 using Rift.Runtime.Workspace.Extensions;
+using Rift.Go.Workspace.Fundamental;
 
-namespace Rift.Go.Workspace;
+namespace Rift.Go.Workspace.Managers;
 
-internal class GolangWorkspaceService : IWorkspaceListener
+internal class GolangWorkspaceManager : IWorkspaceListener
 {
-    private static   GolangWorkspaceService _instance = null!;
-    private readonly List<GolangPackage>    _packages = [];
+    private static GolangWorkspaceManager _instance = null!;
+    private readonly List<GolangPackage> _packages = [];
 
-    public GolangWorkspaceService(GolangPlugin instance)
+    public GolangWorkspaceManager(GolangPlugin instance)
     {
-        CollectGolangPackages();
         WorkspaceManager.AddListener(instance, this);
         _instance = this;
     }
@@ -21,7 +21,7 @@ internal class GolangWorkspaceService : IWorkspaceListener
 
     public void OnAllPackagesLoaded()
     {
-        Console.WriteLine($"{Environment.GetEnvironmentVariable("GOPROXY")}");
+        CollectGolangPackages();
     }
 
     internal static void DumpGolangPackages()

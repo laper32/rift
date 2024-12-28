@@ -1,15 +1,16 @@
 ﻿using Rift.Generate.Abstractions;
 using Rift.Go.Application;
-using Rift.Go.Workspace;
 using System.Data;
 using System.Net;
 using System.Net.Http.Json;
 using Rift.Go.Scripting;
+using Rift.Go.Workspace.Managers;
+using Rift.Go.Workspace.Fundamental;
 
 namespace Rift.Go.Generate;
 
 internal class GolangGenerateService(
-    GolangWorkspaceService workspaceService,
+    GolangWorkspaceManager workspaceService,
     GolangEnvironment goEnv
     ) : IGenerateListener
 {
