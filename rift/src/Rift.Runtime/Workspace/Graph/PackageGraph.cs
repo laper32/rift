@@ -40,12 +40,12 @@ public class PackageGraph
 
     public PackageGraphNode? Find(string name, string version)
     {
-        return _nodes.First(x => x.Equals(name, version));
+        return _nodes.FirstOrDefault(x => x.Equals(name, version));
     }
 
     public PackageGraphNode? Find(PackageReference reference)
     {
-        return _nodes.First(x => x.Equals(reference.Name, reference.Version));
+        return _nodes.FirstOrDefault(x => x.Equals(reference.Name, reference.Version));
     }
 
     public void Connect(PackageGraphNode start, PackageGraphNode end)
