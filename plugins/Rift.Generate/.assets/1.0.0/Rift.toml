@@ -1,7 +1,0 @@
-# Distributed copy DO NOT EDIT
-[plugin]
-name = "Rift.Generate"
-authors = ["Rift dev team"]
-version = "1.0.0"
-description = "Generater"
-dependencies = "rift/dependencies.csx"

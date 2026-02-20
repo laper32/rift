@@ -1,0 +1,11 @@
+[project]
+name = "basic"
+version = "0.1.0"
+description = "A basic project to demonstrate the usage of Rift."
+configure = "configure.ts"
+dependencies = "dependencies.ts"
+
+[target]
+name = "basic-target"
+version = "0.1.0"
+description = "A target for the basic project."
