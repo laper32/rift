@@ -1,0 +1,5 @@
+[plugin]
+name = "rift.go"
+version = "0.1.0"
+description = "Go project support plugin"
+authors = ["Rift"]

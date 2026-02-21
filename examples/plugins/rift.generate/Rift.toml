@@ -1,0 +1,5 @@
+[plugin]
+name = "rift.generate"
+version = "0.1.0"
+description = "Generate build system files for different projects"
+authors = ["Rift"]

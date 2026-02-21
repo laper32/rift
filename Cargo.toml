@@ -7,8 +7,11 @@ edition = "2024"
 deno_ast = { version = "0.53.0", features = ["transpiling", "visit"] }
 deno_lint = "0.83.0"
 deno_core = "0.385.0"
+deno_error = "0.6.0"
 anyhow = "1.0.102"
 tokio = { version = "1.49.0", features = ["full"] }
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
 toml = "0.9.8"
-clap = "4.5.60"
+clap = { version = "4.5.60", features = ["derive"] }
+glob = "0.3"

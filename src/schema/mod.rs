@@ -3,11 +3,13 @@ use crate::schema::{
     rift::TomlPlugin,
     r#virtual::{TomlFolder, TomlWorkspace},
 };
+use serde::Deserialize;
 
-mod real;
-mod rift;
-mod r#virtual;
+pub mod real;
+pub mod rift;
+pub mod r#virtual;
 
+#[derive(Debug, Deserialize)]
 pub struct TomlManifest {
     pub target: Option<TomlTarget>,
     pub project: Option<TomlProject>,

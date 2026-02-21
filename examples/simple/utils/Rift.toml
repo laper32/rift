@@ -1,0 +1,6 @@
+[project]
+name = "utils"
+version = "1.0.0"
+authors = ["Rift Example"]
+
+dependencies = "deps.ts"

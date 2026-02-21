@@ -1,0 +1,13 @@
+[project]
+name = "package-reference-demo"
+version = "1.0.0"
+authors = []
+
+# Dependencies script - demonstrates PackageReference API
+dependencies = "dependencies.ts"
+
+# Optional: Configure the package
+# configure = "configure.ts"
+
+# Optional: Define tasks
+# tasks = "tasks.ts"

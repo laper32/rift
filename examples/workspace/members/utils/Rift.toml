@@ -1,0 +1,13 @@
+[project]
+name = "utils"
+version = "0.1.0"
+description = "Utility library"
+authors = ["Your Name <you@example.com>"]
+
+# This project has a target
+dependencies = "deps.ts"
+
+[target]
+name = "utils-bin"
+type = "bin"
+description = "Utility binary"

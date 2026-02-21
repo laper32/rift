@@ -1,0 +1,4 @@
+[folder]
+name = "services"
+members = ["api", "frontend"]
+dependencies = "dependencies.ts"

@@ -1,0 +1,10 @@
+[workspace]
+name = "my-workspace"
+members = ["services/*", "libs/*"]
+dependencies = "dependencies.ts"
+
+# All workspace configuration is done via scripts:
+# - dependencies.ts - workspace dependencies
+# - plugins.ts - plugin registration
+# - configure.ts - package configuration
+# - tasks.ts - task registration

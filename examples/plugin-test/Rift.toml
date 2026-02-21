@@ -1,0 +1,3 @@
+[workspace]
+name = "plugin-test-workspace"
+members = ["myapp", "../plugins/rift.generate", "../plugins/rift.go"]

@@ -1,0 +1,9 @@
+[workspace]
+name = "my-workspace"
+members = ["members/*"]
+exclude = ["members/*/target"]
+
+# Workspace-level scripts - inherited by all members
+dependencies = "scripts/workspace-deps.ts"
+plugins = "scripts/workspace-plugins.ts"
+configure = "scripts/workspace-configure.ts"

@@ -1,0 +1,4 @@
+[workspace]
+name = "simple-workspace"
+members = ["utils", "app"]
+exclude = []

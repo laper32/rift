@@ -1,8 +1,11 @@
 use crate::manifest::{real::Manifest, rift::RiftManifest, r#virtual::VirtualManifest};
 
-mod real;
-mod rift;
-mod r#virtual;
+pub mod converter;
+pub mod real;
+pub mod rift;
+pub mod r#virtual;
+
+pub use converter::{PackageKind, convert_toml_to_manifest};
 
 pub enum EitherManifest {
     Virtual(VirtualManifest),

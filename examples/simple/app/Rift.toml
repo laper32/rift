@@ -1,0 +1,7 @@
+[project]
+name = "app"
+version = "1.0.0"
+authors = ["Rift Example"]
+
+dependencies = "deps.ts"
+tasks = "tasks.ts"

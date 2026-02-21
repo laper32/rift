@@ -1,0 +1,5 @@
+[project]
+name = "api"
+version = "0.1.0"
+authors = ["workspace"]
+dependencies = "dependencies.ts"

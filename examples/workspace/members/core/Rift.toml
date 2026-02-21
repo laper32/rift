@@ -1,0 +1,8 @@
+[project]
+name = "core"
+version = "0.1.0"
+description = "Core library"
+authors = ["Your Name <you@example.com>"]
+
+# This package has no target - it's a library package
+# It can be depended on by other packages
