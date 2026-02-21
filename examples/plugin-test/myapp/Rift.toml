@@ -3,3 +3,4 @@ name = "myapp"
 version = "1.0.0"
 authors = []
 plugins = "plugins.ts"
+tasks = "tasks.ts"

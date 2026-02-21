@@ -4,25 +4,51 @@
  */
 
 /**
+ * Git dependency source
+ */
+export interface GitSource {
+    /** Git repository URL */
+    url: string;
+    /** Branch, tag, or commit hash (optional, defaults to main/master) */
+    ref?: string;
+}
+
+/**
+ * Path dependency source
+ */
+export interface PathSource {
+    /** Filesystem path (relative or absolute) */
+    path: string;
+}
+
+/**
  * Package reference - represents a dependency or plugin
  *
  * Rift is a coordination layer - it does NOT parse package formats.
  * Each language plugin (rift.go, rift.ts, etc.) handles its own format.
  *
  * The `source` field determines where the dependency comes from:
- * - "explicit" (default): version is explicitly specified in `version` field
+ * - "explicit" (default): version is explicitly specified, looked up in registry index
  * - "workspace": reference a package defined in the workspace
  * - "inherit": inherit from parent/folder definitions
+ * - "git": direct git repository reference
+ * - "path": local filesystem path (like Go's replace directive)
  *
  * Examples:
- *   // Explicit version
- *   addDependency({ name: "lodash", version: "4.17.21" });
+ *   // Explicit version (from registry)
+ *   addDependency({ name: "rift.go", version: "1.0.0" });
  *
  *   // Workspace reference
  *   addDependency({ name: "shared-utils", source: "workspace" });
  *
  *   // Inherit from parent
  *   addDependency({ name: "config", source: "inherit" });
+ *
+ *   // Git direct reference
+ *   addDependency({ name: "rift.go", source: "git", git: { url: "https://github.com/user/rift-go", ref: "main" } });
+ *
+ *   // Path reference (local filesystem)
+ *   addDependency({ name: "local-pkg", source: "path", path: "../local-pkg" });
  *
  *   // With attributes
  *   addDependency({ name: "react", version: "18.0.0", attributes: { dev: true } });
@@ -32,8 +58,12 @@ export interface PackageReference {
     name: string;
     /** Optional version constraint (used when source is "explicit") */
     version?: string;
-    /** Dependency source: "explicit" (default), "workspace", or "inherit" */
-    source?: "explicit" | "workspace" | "inherit";
+    /** Dependency source: "explicit" (default), "workspace", "inherit", "git", or "path" */
+    source?: "explicit" | "workspace" | "inherit" | "git" | "path";
+    /** Git source configuration (required when source is "git") */
+    git?: GitSource;
+    /** Path source configuration (required when source is "path") */
+    path?: PathSource;
     /** Optional attributes for language-specific metadata */
     attributes?: Record<string, any>;
 }

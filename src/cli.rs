@@ -62,12 +62,6 @@ enum Commands {
         #[arg(short, long)]
         path: Option<PathBuf>,
     },
-    /// Generate project files (go.work, go.mod, etc.)
-    Generate {
-        /// Path to the workspace root (default: current directory)
-        #[arg(short, long)]
-        path: Option<PathBuf>,
-    },
 }
 
 /// Parse CLI arguments with smart task detection
@@ -94,7 +88,6 @@ pub fn parse_args() -> CliAction {
         match cli.command {
             Some(Commands::Scan { path }) => CliAction::Scan(path),
             Some(Commands::Tasks { path }) => CliAction::Tasks(path),
-            Some(Commands::Generate { path }) => CliAction::Generate(path),
             None => {
                 Cli::command().print_help().ok();
                 std::process::exit(0);
@@ -112,7 +105,7 @@ pub fn parse_args() -> CliAction {
 fn is_subcommand(arg: &str) -> bool {
     matches!(
         arg,
-        "scan" | "tasks" | "generate" | "help" | "--help" | "-h"
+        "scan" | "tasks" | "help" | "--help" | "-h"
     )
 }
 
@@ -121,7 +114,6 @@ pub enum CliAction {
     ExecuteTask(String),
     Scan(Option<PathBuf>),
     Tasks(Option<PathBuf>),
-    Generate(Option<PathBuf>),
 }
 
 #[cfg(test)]
@@ -132,7 +124,7 @@ mod tests {
     fn test_subcommand_detection() {
         assert!(is_subcommand("scan"));
         assert!(is_subcommand("tasks"));
-        assert!(is_subcommand("generate"));
+        assert!(!is_subcommand("generate"));  // Now a task, not a subcommand
         assert!(!is_subcommand("build"));
         assert!(!is_subcommand("app"));
     }

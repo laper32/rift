@@ -2,7 +2,12 @@ use anyhow::Result;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
+use git::clone_or_update;
+
 mod cli;
+mod config;
+mod git;
+mod index;
 mod manifest;
 mod plugin;
 mod schema;
@@ -58,7 +63,6 @@ fn main() -> Result<()> {
     match action {
         cli::CliAction::Scan(path) => cmd_scan(path),
         cli::CliAction::Tasks(path) => cmd_tasks(path),
-        cli::CliAction::Generate(path) => cmd_generate(path),
         cli::CliAction::ExecuteTask(task_name) => cmd_exec(task_name),
     }
 }
@@ -171,6 +175,12 @@ fn cmd_generate(path: Option<PathBuf>) -> Result<()> {
     println!("Found {} package(s) to process", script_results.len());
     println!();
 
+    // Query explicit dependencies from indexes
+    query_explicit_dependencies(&root, &script_results)?;
+
+    // Fetch git dependencies
+    fetch_git_dependencies(&script_results)?;
+
     // Find the workspace package
     let workspace_name = executor.root_name();
     let workspace_pkg = packages
@@ -221,6 +231,123 @@ fn cmd_generate(path: Option<PathBuf>) -> Result<()> {
     } else {
         println!("No workspace found. Please run from a workspace root.");
     }
+
+    Ok(())
+}
+
+/// Fetch all git dependencies from resolved script results
+fn fetch_git_dependencies(
+    script_results: &HashMap<String, workspace::executor::ScriptResult>,
+) -> Result<()> {
+    use workspace::executor::DependencySource;
+
+    let mut git_deps = Vec::new();
+
+    // Collect all git dependencies
+    for (_pkg_name, result) in script_results {
+        for dep in &result.dependencies {
+            if dep.source == DependencySource::Git {
+                if let Some(git_info) = &dep.git {
+                    git_deps.push((dep.name.clone(), git_info.url.clone(), git_info.ref_.clone()));
+                }
+            }
+        }
+    }
+
+    if git_deps.is_empty() {
+        return Ok(());
+    }
+
+    println!("Fetching {} git dependenc(ies)...", git_deps.len());
+    for (name, url, ref_) in &git_deps {
+        println!("  - {} (ref: {:?})", name, ref_.as_deref().unwrap_or("default"));
+        match clone_or_update(url, ref_.as_deref()) {
+            Ok(path) => {
+                println!("    -> Cloned to: {}", path.display());
+            }
+            Err(e) => {
+                println!("    -> Error: {}", e);
+            }
+        }
+    }
+    println!();
+
+    Ok(())
+}
+
+/// Query explicit dependencies from configured plugin indexes
+/// This resolves versions and provides download URLs for packages
+fn query_explicit_dependencies(
+    root: &Path,
+    script_results: &HashMap<String, workspace::executor::ScriptResult>,
+) -> Result<()> {
+    use workspace::executor::DependencySource;
+    use index::query_package;
+    use config::load_config_or_default;
+
+    // Load index sources from config
+    let config = load_config_or_default(root);
+    let all_indexes = config.index.sources;
+
+    if all_indexes.is_empty() {
+        println!("No plugin indexes configured in .rift/config.toml, skipping explicit dependency resolution.");
+        return Ok(());
+    }
+
+    println!("Using {} plugin index(es):", all_indexes.len());
+    for index in &all_indexes {
+        println!("  - {}", index);
+    }
+    println!();
+
+    // Collect all explicit dependencies (those with versions)
+    let mut explicit_deps: Vec<(String, Option<String>)> = Vec::new();
+    for (_pkg_name, result) in script_results {
+        for dep in &result.dependencies {
+            if dep.source == DependencySource::Explicit {
+                if dep.version.is_some() {
+                    explicit_deps.push((dep.name.clone(), dep.version.clone()));
+                }
+            }
+        }
+    }
+
+    if explicit_deps.is_empty() {
+        println!("No explicit dependencies to resolve.");
+        return Ok(());
+    }
+
+    println!("Querying {} explicit dependenc(ies)...", explicit_deps.len());
+    for (name, version) in &explicit_deps {
+        let version_str = version.as_ref().map(|v| v.as_str()).unwrap_or("latest");
+
+        // Try each index until we find the package
+        let mut found = false;
+        for index_url in &all_indexes {
+            match query_package(index_url, name, version_str) {
+                Ok(entry) => {
+                    println!("  - {}@{} found in {}", name, version_str, index_url);
+                    if let Some(url) = entry.url {
+                        println!("    -> URL: {}", url);
+                    }
+                    if let Some(cksum) = entry.cksum {
+                        println!("    -> Checksum: {}", cksum);
+                    }
+                    found = true;
+                    break;
+                }
+                Err(_) => {
+                    // Try next index
+                    continue;
+                }
+            }
+        }
+
+        if !found {
+            println!("  - {}@{} NOT FOUND in any index", name, version_str);
+        }
+    }
+    println!();
 
     Ok(())
 }
@@ -289,6 +416,7 @@ fn generate_go_mod(
 
     // Collect all dependencies (both workspace-local and external)
     let mut required_deps = std::collections::BTreeSet::new();
+    let mut replace_deps: std::collections::BTreeSet<(String, String)> = std::collections::BTreeSet::new();
 
     // Helper to find workspace dependencies
     let workspace_result = all_results
@@ -338,6 +466,21 @@ fn generate_go_mod(
                 };
                 required_deps.insert(format!("{} {}", dep.name, version));
             }
+            DependencySource::Git => {
+                // Git dependencies use replace directive with the cloned path
+                if let Some(ref git_info) = dep.git {
+                    // Get the cache path for this git repo
+                    if let Ok(cache_path) = git::repo_cache_dir(&git_info.url) {
+                        replace_deps.insert((dep.name.clone(), cache_path.to_string_lossy().to_string()));
+                    }
+                }
+            }
+            DependencySource::Path => {
+                // Path dependencies use replace directive
+                if let Some(path_info) = &dep.path {
+                    replace_deps.insert((dep.name.clone(), path_info.path.clone()));
+                }
+            }
         }
     }
 
@@ -353,6 +496,24 @@ fn generate_go_mod(
             writeln!(file, "require (")?;
             for dep in required_deps {
                 writeln!(file, "\t{}", dep)?;
+            }
+            writeln!(file, ")")?;
+        }
+    }
+
+    // Write replace statements for git and path dependencies
+    if !replace_deps.is_empty() {
+        writeln!(file)?;
+        if replace_deps.len() == 1 {
+            // Single replace - use simple format
+            for (name, path) in &replace_deps {
+                writeln!(file, "replace {} => {}", name, path)?;
+            }
+        } else {
+            // Multiple replaces - use block format
+            writeln!(file, "replace (")?;
+            for (name, path) in &replace_deps {
+                writeln!(file, "\t{} => {}", name, path)?;
             }
             writeln!(file, ")")?;
         }
@@ -381,48 +542,284 @@ fn cmd_exec(task_name: String) -> Result<()> {
 
     // Find and execute the task
     let task_manager = executor.task_manager();
-    let task_to_execute = task_manager.find_task(&lookup_name);
 
-    match task_to_execute {
-        Some(t) => {
+    // Get execution order (including all dependencies)
+    let execution_order = task_manager.get_execution_order(&lookup_name);
+
+    match execution_order {
+        Ok(tasks) => {
             println!();
-            println!("Executing task: {}", t.name);
-            println!("Description: {}", t.description);
-            if !t.dependencies.is_empty() {
-                println!("Dependencies: {}", t.dependencies.join(", "));
+            println!("Executing {} task(s) in order:", tasks.len());
+            for t in &tasks {
+                println!("  - {}", t.name);
             }
             println!();
 
-            // TODO: Execute task action
-            // For now, we just print what would be executed
-            println!("Task execution not yet implemented.");
-            println!("The task '{}' was found and ready to execute.", t.name);
+            // Execute each task in order
+            for task in tasks {
+                println!("Executing task: {}", task.name);
+                if !task.description.is_empty() {
+                    println!("  Description: {}", task.description);
+                }
+                println!();
 
-            // Note: To actually execute task actions, we would need to:
-            // 1. Store the JavaScript action functions during registration
-            // 2. Create a new v8 runtime or reuse existing one
-            // 3. Call the stored action function
+                // Execute the task action
+                execute_task_action(&root, &task, &packages, &manifests, &script_results)?;
+                println!();
+            }
 
             Ok(())
         }
-        None => {
-            println!();
-            println!("Error: Task '{}' not found.", task_name);
-            println!();
-            println!("Available tasks:");
-            let all_tasks = task_manager.get_all_tasks();
-            for t in &all_tasks {
-                let cmd_marker = if t.is_command { " [command]" } else { "" };
-                println!("  - {}{}: {}", t.name, cmd_marker, t.description);
+        Err(e) => {
+            // Task not found or has circular dependency
+            let task = task_manager.find_task(&lookup_name);
+            if task.is_none() {
+                // Special case: for development, provide builtin generate as fallback
+                if task_name == "generate" {
+                    println!("Note: No 'generate' task provided by plugin. Using builtin generate.");
+                    println!("      In the future, this should be provided by rift.go plugin.");
+                    println!();
+                    return cmd_generate(None);
+                }
+
+                println!();
+                println!("Error: Task '{}' not found.", task_name);
+                println!();
+
+                println!("Available tasks:");
+                let all_tasks = task_manager.get_all_tasks();
+                for t in &all_tasks {
+                    let cmd_marker = if t.is_command { " [command]" } else { "" };
+                    println!("  - {}{}: {}", t.name, cmd_marker, t.description);
+                }
+                println!();
+                println!("Available plugin commands:");
+                for cmd in get_plugin_commands() {
+                    println!("  - {}", cmd);
+                }
+                Err(anyhow::anyhow!("Task not found: {}", task_name))
+            } else {
+                Err(e)
             }
-            println!();
-            println!("Available plugin commands:");
-            for cmd in get_plugin_commands() {
-                println!("  - {}", cmd);
-            }
-            Err(anyhow::anyhow!("Task not found: {}", task_name))
         }
     }
+}
+
+/// Execute a single task's action
+fn execute_task_action(
+    root: &PathBuf,
+    task: &tasks::Task,
+    packages: &HashMap<String, workspace::package::MaybePackage>,
+    manifests: &HashMap<String, PathBuf>,
+    script_results: &HashMap<String, workspace::ScriptResult>,
+) -> Result<()> {
+    use tasks::Task;
+    use deno_core::{JsRuntime, RuntimeOptions};
+    use deno_ast::{EmitOptions, MediaType, ParseParams, SourceMapOption, TranspileModuleOptions, TranspileOptions};
+
+    // Check if task has an action
+    if task.action.is_none() {
+        println!("  (Task has no action to execute)");
+        return Ok(());
+    }
+
+    // Check if action is "has_action" marker (action exists in JS)
+    let has_action = task.action.as_ref().map(|a| a == "has_action").unwrap_or(false);
+    if !has_action {
+        println!("  (Task action not available)");
+        return Ok(());
+    }
+
+    // Find the package that owns this task
+    let pkg_path = if let Some(ref path) = task.package_path {
+        Some(PathBuf::from(path))
+    } else {
+        // Try to find by package name
+        manifests.get(&task.package_name).and_then(|m| m.parent()).map(|p| p.to_path_buf())
+    };
+
+    // Find and load the tasks script for this package to register task actions
+    let tasks_script = if let Some(manifest_path) = manifests.get(&task.package_name) {
+        let tasks_path = manifest_path.parent().map(|p| p.join("tasks.ts"));
+        if let Some(path) = tasks_path {
+            if path.exists() {
+                Some(std::fs::read_to_string(&path)?)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    if tasks_script.is_none() {
+        println!("  (No tasks script found)");
+        return Ok(());
+    }
+
+    // Build all_packages map
+    let all_packages: HashMap<String, PathBuf> = packages
+        .iter()
+        .filter_map(|(name, _)| {
+            manifests.get(name).and_then(|p| p.parent()).map(|p| (name.clone(), p.to_path_buf()))
+        })
+        .collect();
+
+    // Build config JSON from script_results
+    let mut config_entries: Vec<String> = Vec::new();
+    for (pkg_name, script_result) in script_results {
+        let mut pkg_config: Vec<String> = Vec::new();
+        for (key, value) in &script_result.config {
+            let value_str = match value {
+                workspace::executor::ConfigValue::String(s) => {
+                    format!("\"{}\"", s.replace('\\', "\\\\").replace('"', "\\\""))
+                }
+                workspace::executor::ConfigValue::Number(n) => n.to_string(),
+                workspace::executor::ConfigValue::Boolean(b) => b.to_string(),
+            };
+            pkg_config.push(format!("\"{}\": {}", key, value_str));
+        }
+        if !pkg_config.is_empty() {
+            config_entries.push(format!("\"{}\": {{{}}}", pkg_name, pkg_config.join(", ")));
+        }
+    }
+    let config_json = if config_entries.is_empty() {
+        "{}".to_string()
+    } else {
+        format!("{{{}}}", config_entries.join(", "))
+    };
+
+    // Create VM and runtime
+    use crate::vm::{RIFT_API_JS, rift_runtime};
+
+    let mut runtime: JsRuntime = JsRuntime::new(RuntimeOptions {
+        extensions: vec![rift_runtime::init()],
+        ..Default::default()
+    });
+
+    // Initialize console
+    runtime.execute_script(
+        "<init_console>",
+        "globalThis.console = globalThis.console ?? { log: (..._args) => {}, warn: (..._args) => {}, error: (..._args) => {} };",
+    )?;
+
+    // Inject Rift API
+    runtime.execute_script("<rift_api>", RIFT_API_JS)?;
+
+    // Load and execute the tasks script to register the task actions
+    let tasks_path = manifests.get(&task.package_name)
+        .and_then(|p| p.parent())
+        .map(|p| p.join("tasks.ts"))
+        .unwrap();
+    let path_str = tasks_path.display().to_string();
+
+    let specifier = deno_ast::ModuleSpecifier::from_file_path(&tasks_path)
+        .map_err(|_| anyhow::anyhow!("Invalid module path: {}", path_str))?;
+
+    let parsed = deno_ast::parse_module(ParseParams {
+        specifier,
+        text: tasks_script.unwrap().into(),
+        media_type: MediaType::TypeScript,
+        capture_tokens: true,
+        scope_analysis: false,
+        maybe_syntax: None,
+    })
+    .map_err(|e| anyhow::anyhow!("Failed to parse tasks script: {}", e))?;
+
+    let emitted = parsed
+        .transpile(
+            &TranspileOptions::default(),
+            &TranspileModuleOptions::default(),
+            &EmitOptions {
+                source_map: SourceMapOption::None,
+                ..Default::default()
+            },
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to transpile tasks script: {}", e))?;
+    let js_code = emitted.into_source().text;
+
+    // Build packages JSON for the context
+    let packages_json = all_packages
+        .iter()
+        .map(|(k, v)| {
+            let path_str = v.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\");
+            format!("['{}', '{}']", k, path_str)
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+
+    // Set working directory if task has a package path
+    if let Some(ref path) = pkg_path {
+        std::env::set_current_dir(path)?;
+    }
+
+    // Combine tasks script + context + action execution in ONE script
+    let combined_script = format!(
+        r#"
+// ===== LOAD TASKS SCRIPT =====
+{}
+// ===== SET CONTEXT =====
+globalThis.Rift = {{
+    package: {{ name: "{}", path: "{}" }},
+    parent: undefined,
+    root: {{ name: "root", path: "{}" }},
+    find: (name) => {{
+        return _rift_packages.get(name);
+    }}
+}};
+globalThis._rift_packages = new Map([{}]);
+globalThis._rift_config = {{}};
+
+// Set up configuration from script_results
+try {{
+    const rawConfig = JSON.parse('{}');
+    globalThis._rift_config = rawConfig;
+}} catch(e) {{
+    // Ignore if no config
+}}
+
+// ===== EXECUTE TASK ACTION =====
+const handler = globalThis._rift_task_actions && globalThis._rift_task_actions['{}'];
+if (handler && typeof handler === 'function') {{
+    const ctx = {{
+        workspaceRoot: "{}",
+        packageName: "{}",
+        packagePath: "{}",
+        packages: globalThis._rift_packages,
+        config: globalThis._rift_config
+    }};
+    handler(ctx);
+}} else {{
+    console.error("Task action handler not found for: '{}");
+}}
+"#,
+        // Tasks script (already JS)
+        js_code,
+        task.package_name,
+        pkg_path.as_ref().map(|p| p.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\")).unwrap_or_default(),
+        root.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\"),
+        packages_json,
+        config_json.replace('\\', "\\\\"),
+        task.name,
+        root.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\"),
+        task.package_name,
+        pkg_path.as_ref().map(|p| p.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\")).unwrap_or_default(),
+        task.name
+    );
+
+    // Debug: print the generated script
+    eprintln!("--- DEBUG: Generated task script ---");
+    for (i, line) in combined_script.lines().enumerate() {
+        eprintln!("{}: {}", i + 1, line);
+    }
+    eprintln!("--- END DEBUG ---");
+    eprintln!();
+
+    runtime.execute_script("<execute_task>", combined_script)?;
+
+    Ok(())
 }
 
 /// Execute a plugin command by reloading plugins and calling the handler

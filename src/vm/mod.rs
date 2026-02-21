@@ -212,6 +212,7 @@ fn op_rift_register_task(
     #[string] description: String,
     #[string] dependencies_str: String,
     #[string] is_command_str: String,
+    #[string] has_action_str: String,
 ) {
     let mut op_state = state.try_take::<RiftOpState>().unwrap_or_default();
 
@@ -226,13 +227,14 @@ fn op_rift_register_task(
     };
 
     let is_command = is_command_str == "true";
+    let has_action = has_action_str == "true";
 
     op_state.tasks.push(TaskValue {
         name: name.clone(),
         description,
         dependencies,
         is_command,
-        action: None, // Actions are set separately via doRegister
+        action: if has_action { Some("has_action".to_string()) } else { None },
     });
     state.put(op_state);
 }
@@ -812,23 +814,41 @@ const ops = globalThis.Deno.core.ops;
 // Helper: normalize dependency to object form
 function normalizeDependency(dep) {
     if (typeof dep === 'string' || typeof dep === 'undefined') {
-        throw new Error('String dependencies are not supported. Use object form: { name: "...", version?: "...", source?: "explicit"|"workspace"|"inherit" }');
+        throw new Error('String dependencies are not supported. Use object form: { name: "...", version?: "...", source?: "explicit"|"workspace"|"inherit"|"git"|"path" }');
     }
     return dep;
 }
 
 // Add a dependency (supports single or array)
-// source can be: "explicit" (default), "workspace", "inherit"
+// source can be: "explicit" (default), "workspace", "inherit", "git", "path"
 function addDependency(dep) {
     const addOne = (d) => {
         const normalized = normalizeDependency(d);
         const name = normalized.name;
         const version = normalized.version;
         const source = normalized.source || 'explicit';
-        const attributes = normalized.attributes || {};
+        const attributes = { ...normalized.attributes } || {};
+        const git = normalized.git;
+        const path = normalized.path;
 
-        // Set source in attributes if it's not "explicit"
-        if (source !== 'explicit') {
+        // Handle git source
+        if (source === 'git') {
+            if (!git || !git.url) {
+                throw new Error(`Git dependency "${name}" must have a git.url field`);
+            }
+            attributes.source = 'git';
+            attributes.git = git;
+        }
+        // Handle path source
+        else if (source === 'path') {
+            if (!path || !path.path) {
+                throw new Error(`Path dependency "${name}" must have a path.path field`);
+            }
+            attributes.source = 'path';
+            attributes.path = path;
+        }
+        // Set source in attributes for non-explicit sources
+        else if (source !== 'explicit') {
             attributes.source = source;
         }
 
@@ -963,15 +983,17 @@ const tasks = {
         const depsStr = Array.isArray(config.dependencies)
             ? config.dependencies.join(',')
             : '';
+        const hasAction = typeof config.action === 'function';
         ops.op_rift_register_task(
             name,
             config.description,
             depsStr,
-            String(config.isCommand)
+            String(config.isCommand),
+            String(hasAction)
         );
 
         // Store action for later execution
-        if (typeof config.action === 'function') {
+        if (hasAction) {
             globalThis._rift_task_actions = globalThis._rift_task_actions || {};
             globalThis._rift_task_actions[name] = config.action;
         }

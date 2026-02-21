@@ -134,6 +134,60 @@ impl TaskManager {
             None => Vec::new(),
         }
     }
+
+    /// Get tasks in execution order (topological sort based on dependencies)
+    pub fn get_execution_order(&self, task_name: &str) -> Result<Vec<Task>> {
+        let tasks = self.tasks.read()
+            .map_err(|e| anyhow!("Failed to acquire read lock: {}", e))?;
+
+        // Collect all tasks that need to be executed
+        let mut to_execute: Vec<String> = Vec::new();
+        let mut visited: std::collections::HashSet<String> = std::collections::HashSet::new();
+
+        // Recursive DFS to collect dependencies
+        fn collect_deps(
+            task_name: &str,
+            tasks: &HashMap<String, Task>,
+            to_execute: &mut Vec<String>,
+            visited: &mut std::collections::HashSet<String>,
+            visiting: &mut std::collections::HashSet<String>
+        ) -> Result<()> {
+            if visited.contains(task_name) {
+                return Ok(());
+            }
+
+            if visiting.contains(task_name) {
+                return Err(anyhow!("Circular dependency detected involving task: {}", task_name));
+            }
+
+            visiting.insert(task_name.to_string());
+
+            if let Some(task) = tasks.get(task_name) {
+                for dep in &task.dependencies {
+                    collect_deps(dep, tasks, to_execute, visited, visiting)?;
+                }
+            }
+
+            visiting.remove(task_name);
+            visited.insert(task_name.to_string());
+            to_execute.push(task_name.to_string());
+
+            Ok(())
+        }
+
+        let mut visiting: std::collections::HashSet<String> = std::collections::HashSet::new();
+        collect_deps(task_name, &tasks, &mut to_execute, &mut visited, &mut visiting)?;
+
+        // Convert task names to Task objects
+        let mut result: Vec<Task> = Vec::new();
+        for name in to_execute {
+            if let Some(task) = tasks.get(&name) {
+                result.push(task.clone());
+            }
+        }
+
+        Ok(result)
+    }
 }
 
 #[cfg(test)]

@@ -26,15 +26,35 @@ pub struct ScriptResult {
     pub tasks: Vec<TaskValue>,
 }
 
+/// Git source information
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GitSource {
+    /// Git repository URL
+    pub url: String,
+    /// Branch, tag, or commit hash (optional)
+    pub ref_: Option<String>,
+}
+
+/// Path source information
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PathSource {
+    /// Filesystem path (relative or absolute)
+    pub path: String,
+}
+
 /// Dependency source - determines where the version comes from
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DependencySource {
-    /// Explicitly specified version (from `version` field)
+    /// Explicitly specified version (from `version` field, looked up in registry)
     Explicit,
     /// Reference a package defined in the workspace
     Workspace,
     /// Inherit from parent/folder definitions
     Inherit,
+    /// Direct git repository reference
+    Git,
+    /// Local filesystem path
+    Path,
 }
 
 impl Default for DependencySource {
@@ -53,17 +73,30 @@ impl Default for DependencySource {
 ///
 /// # Examples
 /// ```
-/// use rift::workspace::executor::{PackageReference, DependencySource};
+/// use rift::workspace::executor::{PackageReference, DependencySource, GitSource, PathSource};
 /// use std::collections::HashMap;
 ///
-/// // Explicit version
-/// let dep = PackageReference::new("lodash", Some("4.17.21".to_string()));
+/// // Explicit version (from registry)
+/// let dep = PackageReference::new("rift.go", Some("1.0.0".to_string()));
 ///
 /// // Workspace reference
 /// let dep = PackageReference::with_source("shared-utils", DependencySource::Workspace);
 ///
 /// // Inherit from parent
 /// let dep = PackageReference::with_source("config", DependencySource::Inherit);
+///
+/// // Git direct reference
+/// let dep = PackageReference::with_git(
+///     "rift.go",
+///     "https://github.com/user/rift-go".to_string(),
+///     Some("main".to_string())
+/// );
+///
+/// // Path reference
+/// let dep = PackageReference::with_path(
+///     "local-pkg",
+///     "../local-pkg".to_string()
+/// );
 ///
 /// // With attributes for language-specific metadata
 /// let mut attrs = HashMap::new();
@@ -78,6 +111,10 @@ pub struct PackageReference {
     pub version: Option<String>,
     /// Dependency source (defaults to Explicit)
     pub source: DependencySource,
+    /// Git source configuration (only used when source is Git)
+    pub git: Option<GitSource>,
+    /// Path source configuration (only used when source is Path)
+    pub path: Option<PathSource>,
     /// Extensible attributes for language-specific metadata
     pub attributes: HashMap<String, serde_json::Value>,
 }
@@ -89,6 +126,8 @@ impl PackageReference {
             name: name.into(),
             version,
             source: DependencySource::Explicit,
+            git: None,
+            path: None,
             attributes: HashMap::new(),
         }
     }
@@ -100,10 +139,43 @@ impl PackageReference {
             match s.as_str() {
                 "workspace" => DependencySource::Workspace,
                 "inherit" => DependencySource::Inherit,
+                "git" => DependencySource::Git,
+                "path" => DependencySource::Path,
                 _ => DependencySource::Explicit,
             }
         } else {
             DependencySource::Explicit
+        };
+
+        // Extract git info from attributes if present
+        let git = if let Some(serde_json::Value::Object(git_obj)) = dep.attributes.remove("git") {
+            let url = git_obj.get("url")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let ref_ = git_obj.get("ref")
+                .and_then(|v| v.as_str())
+                .map(|s| s.to_string());
+            if !url.is_empty() {
+                Some(GitSource { url, ref_: ref_ })
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // Extract path info from attributes if present
+        let path = if let Some(serde_json::Value::String(p)) = dep.attributes.remove("path") {
+            Some(PathSource { path: p })
+        } else if let Some(serde_json::Value::Object(path_obj)) = dep.attributes.remove("path") {
+            if let Some(p) = path_obj.get("path").and_then(|v| v.as_str()) {
+                Some(PathSource { path: p.to_string() })
+            } else {
+                None
+            }
+        } else {
+            None
         };
 
         // Check if this is an excluded dependency
@@ -117,6 +189,8 @@ impl PackageReference {
             name: dep.name,
             version: dep.version,
             source,
+            git,
+            path,
             attributes: dep.attributes,
         }
     }
@@ -127,6 +201,32 @@ impl PackageReference {
             name: name.into(),
             version: None,
             source,
+            git: None,
+            path: None,
+            attributes: HashMap::new(),
+        }
+    }
+
+    /// Create a new PackageReference with Git source
+    pub fn with_git(name: impl Into<String>, url: String, ref_: Option<String>) -> Self {
+        Self {
+            name: name.into(),
+            version: None,
+            source: DependencySource::Git,
+            git: Some(GitSource { url, ref_ }),
+            path: None,
+            attributes: HashMap::new(),
+        }
+    }
+
+    /// Create a new PackageReference with Path source
+    pub fn with_path(name: impl Into<String>, path: String) -> Self {
+        Self {
+            name: name.into(),
+            version: None,
+            source: DependencySource::Path,
+            git: None,
+            path: Some(PathSource { path }),
             attributes: HashMap::new(),
         }
     }
@@ -141,6 +241,8 @@ impl PackageReference {
             name: name.into(),
             version,
             source: DependencySource::Explicit,
+            git: None,
+            path: None,
             attributes,
         }
     }
@@ -378,7 +480,15 @@ impl ScriptExecutor {
 
                 match dep.source {
                     DependencySource::Explicit => {
-                        // Keep explicit dependencies as-is (external packages)
+                        // Keep explicit dependencies as-is (to be looked up in registry)
+                        resolved_deps.push(dep.clone());
+                    }
+                    DependencySource::Git => {
+                        // Keep git dependencies as-is (direct git reference)
+                        resolved_deps.push(dep.clone());
+                    }
+                    DependencySource::Path => {
+                        // Keep path dependencies as-is (language plugins handle path resolution)
                         resolved_deps.push(dep.clone());
                     }
                     DependencySource::Workspace => {
@@ -744,8 +854,12 @@ impl ScriptExecutor {
                 .dependencies
                 .iter()
                 .fold(task, |t, dep| t.with_dependency(dep.clone()));
-            // Note: action handling would require storing and executing JS functions
-            // For now, we store the task without the action
+            // Include action if present
+            let task = if let Some(ref action) = task_value.action {
+                task.with_action(action.clone())
+            } else {
+                task
+            };
             let _ = self
                 .task_manager
                 .register_task(task_value.name.clone(), task);
