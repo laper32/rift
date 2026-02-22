@@ -3,12 +3,9 @@
 //! Handles cloning git repositories for dependencies and plugins.
 
 use anyhow::{Result, anyhow};
-use git2::{
-    build::RepoBuilder,
-    FetchOptions, ObjectType, Oid, Remote,
-};
-use std::path::{Path, PathBuf};
+use git2::{FetchOptions, Oid, build::RepoBuilder};
 use std::fs;
+use std::path::{Path, PathBuf};
 
 /// Git cache directory under the user's home directory
 const RIFT_CACHE_DIR: &str = ".rift";
@@ -16,8 +13,7 @@ const GIT_CACHE_DIR: &str = "git";
 
 /// Get the Rift cache directory
 pub fn cache_dir() -> Result<PathBuf> {
-    let home = dirs::home_dir()
-        .ok_or_else(|| anyhow!("Could not determine home directory"))?;
+    let home = dirs::home_dir().ok_or_else(|| anyhow!("Could not determine home directory"))?;
     Ok(home.join(RIFT_CACHE_DIR).join(GIT_CACHE_DIR))
 }
 
@@ -41,10 +37,12 @@ pub fn repo_cache_dir(url: &str) -> Result<PathBuf> {
 
     let clean_path: String = url_without_proto
         .chars()
-        .map(|c| if c.is_alphanumeric() || c == '/' || c == '-' || c == '_' || c == '.' {
-            c
-        } else {
-            '_'
+        .map(|c| {
+            if c.is_alphanumeric() || c == '/' || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '_'
+            }
         })
         .collect();
 
@@ -199,10 +197,10 @@ mod tests {
 
     #[test]
     fn test_cache_dir_with_github_url() {
-        let url = "https://github.com/rift-lang/rift";
+        let url = "https://github.com/laper32/rift";
         let path = repo_cache_dir(url).unwrap();
         let path_str = path.to_string_lossy();
         assert!(path_str.contains("github.com"));
-        assert!(path_str.contains("rift-lang"));
+        assert!(path_str.contains("laper32"));
     }
 }

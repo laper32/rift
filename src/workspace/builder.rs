@@ -73,6 +73,8 @@ impl WorkspaceBuilder {
         manifest_path: &Path,
         parent: Option<&VirtualPackage>,
     ) -> Result<MaybePackage> {
+        eprintln!("DEBUG: load_and_register_package: path={:?}", manifest_path.display());
+
         // Normalize path
         let manifest_path = manifest_path.canonicalize()?;
 
@@ -160,9 +162,16 @@ impl WorkspaceBuilder {
 
         // Load each child package
         for child_path in filtered {
-            if let Ok(child_package) = self.load_and_register_package(&child_path, parent_package) {
-                // Recursively scan if child is also a virtual package
-                self.scan_virtual_packages(&child_package)?;
+            eprintln!("DEBUG: Loading child package: {:?}", child_path.display());
+            match self.load_and_register_package(&child_path, parent_package) {
+                Ok(child_package) => {
+                    eprintln!("DEBUG: Loaded package: {}", child_package.name());
+                    // Recursively scan if child is also a virtual package
+                    self.scan_virtual_packages(&child_package)?;
+                }
+                Err(e) => {
+                    eprintln!("DEBUG: Failed to load package {:?}: {}", child_path.display(), e);
+                }
             }
         }
 
@@ -175,14 +184,20 @@ impl WorkspaceBuilder {
 
         let pattern_path = base_dir.join(pattern);
 
+        // Debug output
+        eprintln!("DEBUG builder: expand_glob_pattern: base_dir={}, pattern={}", base_dir.display(), pattern);
+
         // Check if it's a direct path (no wildcards)
         if !pattern.contains('*') && !pattern.contains('?') {
             if pattern_path.is_dir() {
                 // It's a directory, look for Rift.toml inside
                 let manifest = pattern_path.join("Rift.toml");
+                eprintln!("DEBUG builder: pattern_path is_dir, checking manifest at: {}", manifest.display());
                 if manifest.exists() {
+                    eprintln!("DEBUG builder: FOUND manifest at: {}", manifest.display());
                     results.push(manifest);
                 } else {
+                    eprintln!("DEBUG builder: manifest NOT found at: {}", manifest.display());
                     // Scan subdirectories for Rift.toml
                     if let Ok(entries) = fs::read_dir(&pattern_path) {
                         for entry in entries.flatten() {

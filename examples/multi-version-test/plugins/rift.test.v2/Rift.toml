@@ -1,0 +1,5 @@
+[plugin]
+name = "rift.test.v2"
+version = "2.0.0"
+description = "Test plugin v2 for color isolation"
+authors = ["Rift"]

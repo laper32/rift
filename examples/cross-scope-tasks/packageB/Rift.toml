@@ -1,0 +1,6 @@
+[project]
+name = "packageB"
+version = "1.0.0"
+authors = []
+
+tasks = "tasks.ts"

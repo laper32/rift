@@ -170,7 +170,7 @@ fn cmd_generate(path: Option<PathBuf>) -> Result<()> {
     println!();
 
     let (packages, manifests) = scan_workspace(&root)?;
-    let (executor, script_results) = execute_scripts(&root, &packages, &manifests)?;
+    let (mut executor, script_results) = execute_scripts(&root, &packages, &manifests)?;
 
     println!("Found {} package(s) to process", script_results.len());
     println!();
@@ -530,7 +530,7 @@ fn cmd_exec(task_name: String) -> Result<()> {
     println!();
 
     let (packages, manifests) = scan_workspace(&root)?;
-    let (executor, script_results) = execute_scripts(&root, &packages, &manifests)?;
+    let (mut executor, script_results) = execute_scripts(&root, &packages, &manifests)?;
 
     // Convert "app build" to "app.project" for lookup
     let lookup_name = task_name.replace(' ', ".");
@@ -564,7 +564,7 @@ fn cmd_exec(task_name: String) -> Result<()> {
                 println!();
 
                 // Execute the task action
-                execute_task_action(&root, &task, &packages, &manifests, &script_results)?;
+                execute_task_action(&root, &task, &packages, &manifests, &script_results, executor.vm_mut())?;
                 println!();
             }
 
@@ -612,6 +612,7 @@ fn execute_task_action(
     packages: &HashMap<String, workspace::package::MaybePackage>,
     manifests: &HashMap<String, PathBuf>,
     script_results: &HashMap<String, workspace::ScriptResult>,
+    vm: &mut Vm,
 ) -> Result<()> {
     use tasks::Task;
     use deno_core::{JsRuntime, RuntimeOptions};
@@ -691,54 +692,22 @@ fn execute_task_action(
         format!("{{{}}}", config_entries.join(", "))
     };
 
-    // Create VM and runtime
-    use crate::vm::{RIFT_API_JS, rift_runtime};
+    // Use VM's runtime (which already has the exports from plugin loading)
+    use crate::vm::RIFT_API_JS;
+    let mut runtime = vm.get_or_create_runtime()?;
 
-    let mut runtime: JsRuntime = JsRuntime::new(RuntimeOptions {
-        extensions: vec![rift_runtime::init()],
-        ..Default::default()
-    });
-
-    // Initialize console
-    runtime.execute_script(
+    // Initialize console (if not already initialized)
+    let _ = runtime.execute_script(
         "<init_console>",
         "globalThis.console = globalThis.console ?? { log: (..._args) => {}, warn: (..._args) => {}, error: (..._args) => {} };",
-    )?;
+    );
 
-    // Inject Rift API
-    runtime.execute_script("<rift_api>", RIFT_API_JS)?;
+    // Inject Rift API (if not already injected)
+    let _ = runtime.execute_script("<rift_api>", RIFT_API_JS);
 
-    // Load and execute the tasks script to register the task actions
-    let tasks_path = manifests.get(&task.package_name)
-        .and_then(|p| p.parent())
-        .map(|p| p.join("tasks.ts"))
-        .unwrap();
-    let path_str = tasks_path.display().to_string();
-
-    let specifier = deno_ast::ModuleSpecifier::from_file_path(&tasks_path)
-        .map_err(|_| anyhow::anyhow!("Invalid module path: {}", path_str))?;
-
-    let parsed = deno_ast::parse_module(ParseParams {
-        specifier,
-        text: tasks_script.unwrap().into(),
-        media_type: MediaType::TypeScript,
-        capture_tokens: true,
-        scope_analysis: false,
-        maybe_syntax: None,
-    })
-    .map_err(|e| anyhow::anyhow!("Failed to parse tasks script: {}", e))?;
-
-    let emitted = parsed
-        .transpile(
-            &TranspileOptions::default(),
-            &TranspileModuleOptions::default(),
-            &EmitOptions {
-                source_map: SourceMapOption::None,
-                ..Default::default()
-            },
-        )
-        .map_err(|e| anyhow::anyhow!("Failed to transpile tasks script: {}", e))?;
-    let js_code = emitted.into_source().text;
+    // Note: The tasks script was already executed during execute_scripts phase,
+    // which registered the task actions. We don't need to re-execute it here.
+    // Just execute the task action handler directly.
 
     // Build packages JSON for the context
     let packages_json = all_packages
@@ -758,8 +727,6 @@ fn execute_task_action(
     // Combine tasks script + context + action execution in ONE script
     let combined_script = format!(
         r#"
-// ===== LOAD TASKS SCRIPT =====
-{}
 // ===== SET CONTEXT =====
 globalThis.Rift = {{
     package: {{ name: "{}", path: "{}" }},
@@ -795,8 +762,6 @@ if (handler && typeof handler === 'function') {{
     console.error("Task action handler not found for: '{}");
 }}
 "#,
-        // Tasks script (already JS)
-        js_code,
         task.package_name,
         pkg_path.as_ref().map(|p| p.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\")).unwrap_or_default(),
         root.display().to_string().replacen("\\?\\", "", 2).replace('\\', "\\\\"),
@@ -859,16 +824,24 @@ fn execute_plugin_command(
         .collect();
 
     // Collect all plugin index.ts file contents to load
-    let mut plugin_scripts: Vec<(String, String)> = Vec::new();
+    // Also collect plugin metadata (name, version) for color context
+    let mut plugin_scripts: Vec<(String, String, String, String)> = Vec::new(); // (path, content, name, version)
     for (name, pkg) in packages {
         if matches!(pkg, workspace::package::MaybePackage::Plugin(_)) {
             if let Some(manifest_path) = manifests.get(name) {
                 let index_path = manifest_path.parent().map(|p| p.join("index.ts"));
                 if let Some(path) = index_path {
                     if path.exists() {
+                        // Get plugin version for color
+                        let plugin_version = if let workspace::package::MaybePackage::Plugin(p) = pkg {
+                            p.version.clone()
+                        } else {
+                            "0.0.0".to_string()
+                        };
+
                         // Read the TypeScript file
                         let ts_content = std::fs::read_to_string(&path)?;
-                        plugin_scripts.push((path.display().to_string(), ts_content));
+                        plugin_scripts.push((path.display().to_string(), ts_content, name.clone(), plugin_version));
                     }
                 }
             }
@@ -898,7 +871,12 @@ fn execute_plugin_command(
         EmitOptions, MediaType, ParseParams, SourceMapOption, TranspileModuleOptions,
         TranspileOptions,
     };
-    for (path_str, ts_content) in plugin_scripts {
+    for (path_str, ts_content, plugin_name, plugin_version) in plugin_scripts {
+        // Set color context before loading the plugin
+        let color = format!("{}@{}:{}", plugin_name, plugin_version, plugin_name);
+        let color_script = format!("globalThis._rift_current_color = '{}';", color);
+        let _ = runtime.execute_script("<set_color>", color_script);
+
         // Convert path string to PathBuf
         let path = std::path::PathBuf::from(&path_str);
 
@@ -992,9 +970,15 @@ try {{
     // Ignore if no config
 }}
 
-// Get the command handler
-const handler = globalThis._rift_command_handlers && globalThis._rift_command_handlers['{}'];
+// Get the command handler (now stored with color)
+const cmdData = globalThis._rift_command_handlers && globalThis._rift_command_handlers['{}'];
+const handler = cmdData && cmdData.handler;
 if (handler && typeof handler === 'function') {{
+    // Set the color context before executing the handler
+    // This ensures events emitted during command execution have the correct color
+    const originalColor = globalThis._rift_current_color;
+    globalThis._rift_current_color = cmdData.color || 'unknown:unknown:unknown';
+
     const ctx = {{
         workspaceRoot: "{}",
         packageName: "{}",
@@ -1002,7 +986,11 @@ if (handler && typeof handler === 'function') {{
         packages: globalThis._rift_packages,
         config: globalThis._rift_config
     }};
+    console.log("Executing command handler (color: " + (cmdData.color || "unknown") + ")");
     handler(ctx);
+
+    // Restore the original color
+    globalThis._rift_current_color = originalColor;
 }} else {{
     console.error("Command handler not found for: '{}'");
 }}

@@ -1,0 +1,2 @@
+[workspace]
+members = ["packageA", "packageB", "plugins/rift.test.v1", "plugins/rift.test.v2"]

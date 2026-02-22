@@ -1,0 +1,5 @@
+[plugin]
+name = "mathPlugin"
+version = "1.0.0"
+authors = []
+description = "A math plugin that exports utility functions"

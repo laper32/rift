@@ -15,6 +15,7 @@ pub struct Task {
     /// Task description
     pub description: String,
     /// List of task names this task depends on
+    /// Can include cross-scope references like "packageA:build"
     pub dependencies: Vec<String>,
     /// Whether this task should be exposed as a CLI command
     pub is_command: bool,
@@ -24,6 +25,11 @@ pub struct Task {
     pub package_name: String,
     /// Path to the package manifest (for determining working directory)
     pub package_path: Option<String>,
+    /// Color context for this task (plugin@version:scope)
+    /// Used for isolating different versions of the same plugin
+    pub color: Option<String>,
+    /// Scope (package name) where this task is defined
+    pub scope: String,
 }
 
 impl Task {
@@ -37,7 +43,21 @@ impl Task {
             action: None,
             package_name: String::new(),
             package_path: None,
+            color: None,
+            scope: String::new(),
         }
+    }
+
+    /// Set the color context for this task
+    pub fn with_color(mut self, color: String) -> Self {
+        self.color = Some(color);
+        self
+    }
+
+    /// Set the scope for this task
+    pub fn with_scope(mut self, scope: String) -> Self {
+        self.scope = scope;
+        self
     }
 
     /// Set the package that owns this task
@@ -135,7 +155,32 @@ impl TaskManager {
         }
     }
 
+    /// Parse a task reference into (scope, task_name) components
+    /// Supports:
+    /// - "taskname" -> (None, "taskname") - local scope
+    /// - "package:taskname" -> (Some("package"), "taskname") - cross-scope
+    fn parse_task_reference(reference: &str) -> (Option<String>, String) {
+        if let Some((scope, task_name)) = reference.split_once(':') {
+            (Some(scope.to_string()), task_name.to_string())
+        } else {
+            (None, reference.to_string())
+        }
+    }
+
+    /// Find a task by name, optionally in a specific scope
+    /// If scope is None, searches all scopes and returns the first match
+    pub fn find_task_in_scope(&self, task_name: &str, scope: Option<&str>) -> Option<Task> {
+        let tasks = self.tasks.read().ok()?;
+        if let Some(target_scope) = scope {
+            // Search in specific scope
+            tasks.values().find(|t| t.name == task_name && t.scope == target_scope).cloned()
+        } else {
+            // Search all scopes, return first match
+            tasks.values().find(|t| t.name == task_name).cloned()
+        }
+    }
     /// Get tasks in execution order (topological sort based on dependencies)
+    /// Supports cross-scope task references using "package:task" syntax
     pub fn get_execution_order(&self, task_name: &str) -> Result<Vec<Task>> {
         let tasks = self.tasks.read()
             .map_err(|e| anyhow!("Failed to acquire read lock: {}", e))?;
@@ -164,7 +209,30 @@ impl TaskManager {
 
             if let Some(task) = tasks.get(task_name) {
                 for dep in &task.dependencies {
-                    collect_deps(dep, tasks, to_execute, visited, visiting)?;
+                    // Parse dependency reference (e.g., "packageA:build" or just "build")
+                    let (scope, dep_task_name) = TaskManager::parse_task_reference(dep);
+
+                    // Resolve the actual task name to use
+                    // If scope is specified, look for task in that scope
+                    let resolved_task_name = if let Some(target_scope) = scope {
+                        // Find task in specific scope
+                        let found = tasks.values().find(|t| t.name == dep_task_name && t.scope == target_scope);
+                        if let Some(found_task) = found {
+                            found_task.name.clone()
+                        } else {
+                            return Err(anyhow!(
+                                "Cross-scope dependency '{}' not found in scope '{}'",
+                                dep_task_name,
+                                target_scope
+                            ));
+                        }
+                    } else {
+                        // No scope specified - use the task name as-is
+                        // This will look up the task in the global registry
+                        dep_task_name.clone()
+                    };
+
+                    collect_deps(&resolved_task_name, tasks, to_execute, visited, visiting)?;
                 }
             }
 
@@ -234,5 +302,70 @@ mod tests {
         assert!(commands.iter().any(|t| t.name == "build"));
         assert!(commands.iter().any(|t| t.name == "test"));
         assert!(!commands.iter().any(|t| t.name == "internal"));
+    }
+
+    #[test]
+    fn test_parse_task_reference() {
+        // Local scope
+        let (scope, task) = TaskManager::parse_task_reference("build");
+        assert!(scope.is_none());
+        assert_eq!(task, "build");
+
+        // Cross-scope
+        let (scope, task) = TaskManager::parse_task_reference("packageA:build");
+        assert_eq!(scope, Some("packageA".to_string()));
+        assert_eq!(task, "build");
+
+        // Cross-scope with dots in name
+        let (scope, task) = TaskManager::parse_task_reference("my.package:test");
+        assert_eq!(scope, Some("my.package".to_string()));
+        assert_eq!(task, "test");
+    }
+
+    #[test]
+    fn test_cross_scope_task_dependencies() {
+        let manager = TaskManager::new();
+
+        // Register tasks in different scopes
+        let package_a_build = Task::new("build".to_string())
+            .with_description("Build package A".to_string())
+            .with_scope("packageA".to_string())
+            .with_color("unknown@unknown:packageA".to_string());
+
+        let package_b_test = Task::new("test".to_string())
+            .with_description("Test package B".to_string())
+            .with_scope("packageB".to_string())
+            .with_color("unknown@unknown:packageB".to_string())
+            .with_dependency("packageA:build".to_string());
+
+        manager.register_task("build".to_string(), package_a_build).unwrap();
+        manager.register_task("test".to_string(), package_b_test).unwrap();
+
+        // Get execution order for packageB's test task
+        // Should execute packageA:build first, then packageB:test
+        let order = manager.get_execution_order("test").unwrap();
+        assert_eq!(order.len(), 2);
+        assert_eq!(order[0].name, "build");
+        assert_eq!(order[0].scope, "packageA");
+        assert_eq!(order[1].name, "test");
+        assert_eq!(order[1].scope, "packageB");
+    }
+
+    #[test]
+    fn test_cross_scope_dependency_not_found() {
+        let manager = TaskManager::new();
+
+        let task = Task::new("test".to_string())
+            .with_description("Test".to_string())
+            .with_scope("packageB".to_string())
+            .with_color("unknown@unknown:packageB".to_string())
+            .with_dependency("nonexistent:build".to_string());
+
+        manager.register_task("test".to_string(), task).unwrap();
+
+        // Should fail because the cross-scope dependency doesn't exist
+        let result = manager.get_execution_order("test");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found in scope"));
     }
 }

@@ -24,6 +24,8 @@ pub struct ScriptResult {
     pub plugins: Vec<PackageReference>,
     pub config: HashMap<String, ConfigValue>,
     pub tasks: Vec<TaskValue>,
+    /// Package exports (package_name -> JSON string of exports)
+    pub exports: HashMap<String, String>,
 }
 
 /// Git source information
@@ -313,6 +315,11 @@ impl ScriptExecutor {
         self.task_manager.clone()
     }
 
+    /// Get mutable reference to the VM
+    pub fn vm_mut(&mut self) -> &mut Vm {
+        &mut self.vm
+    }
+
     /// Get the root workspace name
     pub fn root_name(&self) -> &str {
         &self.root_name
@@ -588,6 +595,7 @@ impl ScriptExecutor {
                     config: script_result.config.clone(),
                     tasks: script_result.tasks.clone(),
                     package_name: script_result.package_name.clone(),
+                    exports: script_result.exports.clone(),
                 },
             );
         }
@@ -669,6 +677,37 @@ impl ScriptExecutor {
         let mut all_plugins = Vec::new();
         let mut all_config = HashMap::new();
         let mut all_tasks = Vec::new();
+        let mut all_exports: HashMap<String, String> = HashMap::new();
+
+        // Special handling for plugins: execute index.ts if it exists
+        // Plugins use index.ts as entry point (like front-end packages)
+        let is_plugin = matches!(pkg, MaybePackage::Plugin(_));
+
+        // Get plugin version and scope for coloring
+        let plugin_name: Option<String>;
+        let plugin_version: Option<String>;
+        let color_scope: String;
+
+        if is_plugin {
+            if let MaybePackage::Plugin(p) = pkg {
+                plugin_name = Some(name.to_string());
+                plugin_version = Some(p.version.to_string());
+                color_scope = name.to_string();
+            } else {
+                plugin_name = None;
+                plugin_version = None;
+                color_scope = name.to_string();
+            }
+        } else {
+            // For non-plugins, scope is the package name (for workspace, use "workspace")
+            plugin_name = None;
+            plugin_version = None;
+            color_scope = if matches!(pkg, MaybePackage::Workspace(_)) {
+                "workspace".to_string()
+            } else {
+                name.to_string()
+            };
+        };
 
         // Build script context
         let context = ScriptContext {
@@ -679,15 +718,16 @@ impl ScriptExecutor {
             root_name: self.root_name.clone(),
             root_path: root_dir.to_path_buf(),
             all_packages: all_packages.clone(),
+            plugin_name: plugin_name.clone(),
+            plugin_version: plugin_version.clone(),
+            color_scope: color_scope.clone(),
         };
 
-        // Special handling for plugins: execute index.ts if it exists
-        // Plugins use index.ts as entry point (like front-end packages)
-        let is_plugin = matches!(pkg, MaybePackage::Plugin(_));
         if is_plugin {
             let index_path = manifest_dir.join("index.ts");
             if index_path.exists() {
                 println!("Loading plugin: {} from {}", name, index_path.display());
+                println!("  Color: {}@{}:{}", plugin_name.as_ref().unwrap_or(&"?".to_string()), plugin_version.as_ref().unwrap_or(&"?".to_string()), color_scope);
                 let result = self.vm.run_entry_with_context(&index_path, &context)?;
 
                 // Collect commands and event subscriptions from the plugin
@@ -695,8 +735,8 @@ impl ScriptExecutor {
                 for cmd in &result.commands {
                     println!("  - Command registered: {}", cmd);
                 }
-                for event in &result.event_subscriptions {
-                    println!("  - Event subscription: {}", event);
+                for (event_name, color) in &result.event_subscriptions {
+                    println!("  - Event subscription: {} (color: {})", event_name, color);
                 }
 
                 // Collect tasks from plugin
@@ -704,11 +744,26 @@ impl ScriptExecutor {
                     all_tasks.push(task);
                 }
 
+                // Collect exports from plugin
+                for (pkg_name, exports_json) in result.exports {
+                    println!("  - Exports registered: {}", pkg_name);
+                    all_exports.insert(pkg_name, exports_json);
+                }
+
                 // Register all collected tasks with the task manager
                 for task_value in &all_tasks {
+                    // Build color string for this task
+                    let color = if let (Some(plugin), Some(version)) = (&plugin_name, &plugin_version) {
+                        Some(format!("{}@{}:{}", plugin, version, color_scope))
+                    } else {
+                        None
+                    };
+
                     let task = Task::new(task_value.name.clone())
                         .with_description(task_value.description.clone())
-                        .with_command(task_value.is_command);
+                        .with_command(task_value.is_command)
+                        .with_color(color.unwrap_or_else(|| format!("unknown@unknown:{}", color_scope)))
+                        .with_scope(color_scope.clone());
                     let task = task_value
                         .dependencies
                         .iter()
@@ -724,6 +779,7 @@ impl ScriptExecutor {
                     plugins: all_plugins,
                     config: all_config,
                     tasks: all_tasks,
+                    exports: all_exports,
                 });
             }
         }
@@ -743,6 +799,13 @@ impl ScriptExecutor {
                 root_name: self.root_name.clone(),
                 root_path: root_dir.to_path_buf(),
                 all_packages: all_packages.clone(),
+                plugin_name: None,
+                plugin_version: None,
+                color_scope: if matches!(pkg, MaybePackage::Workspace(_)) {
+                    "workspace".to_string()
+                } else {
+                    name.to_string()
+                },
             };
 
             let result = self.vm.run_entry_with_context(&full_path, &context)?;
@@ -775,6 +838,13 @@ impl ScriptExecutor {
                 root_name: self.root_name.clone(),
                 root_path: root_dir.to_path_buf(),
                 all_packages: all_packages.clone(),
+                plugin_name: None,
+                plugin_version: None,
+                color_scope: if matches!(pkg, MaybePackage::Workspace(_)) {
+                    "workspace".to_string()
+                } else {
+                    name.to_string()
+                },
             };
 
             let result = self.vm.run_entry_with_context(&full_path, &context)?;
@@ -806,6 +876,13 @@ impl ScriptExecutor {
                 root_name: self.root_name.clone(),
                 root_path: root_dir.to_path_buf(),
                 all_packages: all_packages.clone(),
+                plugin_name: None,
+                plugin_version: None,
+                color_scope: if matches!(pkg, MaybePackage::Workspace(_)) {
+                    "workspace".to_string()
+                } else {
+                    name.to_string()
+                },
             };
 
             let result = self.vm.run_entry_with_context(&full_path, &context)?;
@@ -834,6 +911,13 @@ impl ScriptExecutor {
                 root_name: self.root_name.clone(),
                 root_path: root_dir.to_path_buf(),
                 all_packages: all_packages.clone(),
+                plugin_name: None,
+                plugin_version: None,
+                color_scope: if matches!(pkg, MaybePackage::Workspace(_)) {
+                    "workspace".to_string()
+                } else {
+                    name.to_string()
+                },
             };
 
             let result = self.vm.run_entry_with_context(&full_path, &context)?;
@@ -845,11 +929,27 @@ impl ScriptExecutor {
 
         // Register all collected tasks with the task manager
         let package_path_str = manifest_dir.display().to_string();
+        // Determine scope for this package
+        let scope = if matches!(pkg, MaybePackage::Workspace(_)) {
+            "workspace".to_string()
+        } else {
+            name.to_string()
+        };
+
         for task_value in &all_tasks {
+            // Build color string for this task
+            let color = if let (Some(plugin), Some(version)) = (&plugin_name, &plugin_version) {
+                format!("{}@{}:{}", plugin, version, scope)
+            } else {
+                format!("unknown@unknown:{}", scope)
+            };
+
             let task = Task::new(task_value.name.clone())
                 .with_description(task_value.description.clone())
                 .with_command(task_value.is_command)
-                .with_package(name.to_string(), Some(package_path_str.clone()));
+                .with_package(name.to_string(), Some(package_path_str.clone()))
+                .with_color(color)
+                .with_scope(scope.clone());
             let task = task_value
                 .dependencies
                 .iter()
@@ -872,6 +972,7 @@ impl ScriptExecutor {
             plugins: all_plugins,
             config: all_config,
             tasks: all_tasks,
+            exports: all_exports,
         })
     }
 }

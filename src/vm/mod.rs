@@ -1,7 +1,7 @@
 use anyhow::{Result, anyhow};
-use deno_ast::swc::ast::{ModuleDecl, TsKeywordType, TsKeywordTypeKind};
+use deno_ast::swc::ast::{ModuleDecl, TsKeywordType, TsKeywordTypeKind, ModuleItem, ImportDecl, Expr, Ident, ObjectPatProp, PropName, Lit};
 use deno_ast::swc::common::Span;
-use deno_ast::swc::ecma_visit::{Visit, VisitWith};
+use deno_ast::swc::ecma_visit::{Visit, VisitWith, VisitMut, VisitMutWith};
 use deno_ast::{
     EmitOptions, MediaType, ParseParams, ParsedSource, SourceMapOption, TranspileModuleOptions,
     TranspileOptions,
@@ -64,6 +64,12 @@ pub struct ScriptContext {
     pub root_path: PathBuf,
     /// All packages in the workspace (for `Rift.find()`)
     pub all_packages: HashMap<String, PathBuf>,
+    /// Current plugin name (for colored event handlers)
+    pub plugin_name: Option<String>,
+    /// Current plugin version (for colored event handlers)
+    pub plugin_version: Option<String>,
+    /// Current scope (package_name or "workspace") for coloring
+    pub color_scope: String,
 }
 
 /// Raw script execution result (before conversion to ScriptResult)
@@ -81,8 +87,10 @@ pub struct RawScriptResult {
     pub tasks: Vec<TaskValue>,
     /// Commands registered via defineCommand()
     pub commands: Vec<String>,
-    /// Event subscriptions made via on()
-    pub event_subscriptions: Vec<String>,
+    /// Event subscriptions made via on() (event_name, color)
+    pub event_subscriptions: Vec<(String, String)>,
+    /// Package exports (package_name -> JSON string of exports)
+    pub exports: std::collections::HashMap<String, String>,
 }
 
 /// A dependency value (name, optional version, and optional attributes)
@@ -127,8 +135,10 @@ pub struct RiftOpState {
     pub tasks: Vec<TaskValue>,
     /// Command names registered by plugins
     pub commands: Vec<String>,
-    /// Event subscriptions made by plugins
-    pub event_subscriptions: Vec<String>,
+    /// Event subscriptions made by plugins (event_name, color)
+    pub event_subscriptions: Vec<(String, String)>,
+    /// Package exports (package_name -> JSON string of exports)
+    pub exports: std::collections::HashMap<String, String>,
 }
 
 impl Default for RiftOpState {
@@ -140,6 +150,7 @@ impl Default for RiftOpState {
             tasks: Vec::new(),
             commands: Vec::new(),
             event_subscriptions: Vec::new(),
+            exports: std::collections::HashMap::new(),
         }
     }
 }
@@ -253,10 +264,11 @@ fn op_rift_define_command(state: &mut OpState, #[string] name: String) {
 
 /// Op to subscribe to an event (plugin system)
 /// Stores the event subscription for later emit calls
+/// Now includes color information for handler isolation
 #[op2(fast)]
-fn op_rift_on(state: &mut OpState, #[string] event_name: String) {
+fn op_rift_on(state: &mut OpState, #[string] event_name: String, #[string] color: String) {
     let mut op_state = state.try_take::<RiftOpState>().unwrap_or_default();
-    op_state.event_subscriptions.push(event_name);
+    op_state.event_subscriptions.push((event_name, color));
     state.put(op_state);
 }
 
@@ -308,6 +320,18 @@ fn op_rift_write_file(
     }
 }
 
+/// Op to register package exports
+#[op2(fast)]
+fn op_rift_register_exports(
+    state: &mut OpState,
+    #[string] package_name: String,
+    #[string] exports_json: String,
+) {
+    let mut op_state = state.try_take::<RiftOpState>().unwrap_or_default();
+    op_state.exports.insert(package_name, exports_json);
+    state.put(op_state);
+}
+
 deno_core::extension!(
     rift_runtime,
     ops = [
@@ -319,6 +343,7 @@ deno_core::extension!(
         op_rift_on,
         op_rift_emit,
         op_rift_write_file,
+        op_rift_register_exports,
     ],
 );
 
@@ -326,6 +351,8 @@ pub struct Vm {
     linter: Linter,
     /// Shared runtime for maintaining global state across script executions
     runtime: Option<std::sync::Mutex<deno_core::JsRuntime>>,
+    /// All packages in the workspace (for rift: import resolution)
+    all_packages: HashMap<String, PathBuf>,
 }
 
 impl Vm {
@@ -333,11 +360,17 @@ impl Vm {
         Self {
             linter: build_strict_linter(),
             runtime: None,
+            all_packages: HashMap::new(),
         }
     }
 
+    /// Set the workspace packages map for rift: import resolution
+    pub fn set_workspace_packages(&mut self, packages: HashMap<String, PathBuf>) {
+        self.all_packages = packages;
+    }
+
     /// Get or create the shared runtime
-    fn get_or_create_runtime(
+    pub fn get_or_create_runtime(
         &mut self,
     ) -> Result<std::sync::MutexGuard<deno_core::JsRuntime>, anyhow::Error> {
         if self.runtime.is_none() {
@@ -374,6 +407,8 @@ impl Vm {
         entry: impl AsRef<Path>,
         context: &ScriptContext,
     ) -> Result<RawScriptResult> {
+        // Set workspace packages for rift: import resolution
+        self.all_packages = context.all_packages.clone();
         let graph = self.build_graph(entry.as_ref())?;
         // TODO: Skip linting for now - need to handle global API declarations
         // for module in graph.values() {
@@ -405,6 +440,13 @@ impl Vm {
             .join(",\n");
 
         // Build context injection code
+        // Build color string: plugin@version:scope
+        let color = if let (Some(plugin), Some(version)) = (&context.plugin_name, &context.plugin_version) {
+            format!("{}@{}:{}", plugin, version, context.color_scope)
+        } else {
+            format!("unknown@unknown:{}", context.color_scope)
+        };
+
         let context_code = format!(
             r#"
 globalThis.Rift = {{
@@ -418,6 +460,8 @@ globalThis.Rift = {{
 globalThis._rift_packages = new Map([
 {}
 ]);
+// Set current color for event handler registration
+globalThis._rift_current_color = "{}";
 "#,
             context.package_name,
             escape_js_string(context.package_path.display().to_string()),
@@ -432,7 +476,8 @@ globalThis._rift_packages = new Map([
             },
             context.root_name,
             escape_js_string(context.root_path.display().to_string()),
-            packages_json
+            packages_json,
+            color
         );
 
         // Use shared runtime to maintain global state (e.g., plugin APIs)
@@ -449,7 +494,7 @@ globalThis._rift_packages = new Map([
         let op_state = runtime.op_state();
         let mut op_state_ref = op_state.borrow_mut();
 
-        let (dependencies, plugins, config, tasks, commands, event_subscriptions) =
+        let (dependencies, plugins, config, tasks, commands, event_subscriptions, exports) =
             match op_state_ref.try_take::<RiftOpState>() {
                 Some(rift_state) => (
                     rift_state.dependencies,
@@ -458,6 +503,7 @@ globalThis._rift_packages = new Map([
                     rift_state.tasks,
                     rift_state.commands,
                     rift_state.event_subscriptions,
+                    rift_state.exports,
                 ),
                 None => (
                     Vec::new(),
@@ -466,6 +512,7 @@ globalThis._rift_packages = new Map([
                     Vec::new(),
                     Vec::new(),
                     Vec::new(),
+                    std::collections::HashMap::new(),
                 ),
             };
 
@@ -480,6 +527,7 @@ globalThis._rift_packages = new Map([
             tasks,
             commands,
             event_subscriptions,
+            exports,
         })
     }
 
@@ -518,7 +566,7 @@ globalThis._rift_packages = new Map([
         let mut visiting = HashSet::new();
 
         let normalized = normalize_path(entry)?;
-        collect_module_recursive(&normalized, &mut visiting, &mut modules)?;
+        collect_module_recursive(&normalized, &mut visiting, &mut modules, &self.all_packages)?;
 
         Ok(modules)
     }
@@ -583,6 +631,7 @@ fn collect_module_recursive(
     path: &Path,
     visiting: &mut HashSet<PathBuf>,
     modules: &mut BTreeMap<PathBuf, ModuleUnit>,
+    all_packages: &HashMap<String, PathBuf>,
 ) -> Result<()> {
     if modules.contains_key(path) {
         return Ok(());
@@ -602,6 +651,14 @@ fn collect_module_recursive(
             .to_str()
             .unwrap_or("")
             .trim_start_matches("@rift/virtual/");
+
+        // Check if this is a workspace package import (rift:package-name)
+        if specifier.starts_with("rift:") && !specifier.starts_with("rift:api") {
+            // For workspace package imports, just skip this module
+            // The import will be transformed during transpilation by process_rift_imports
+            return Ok(());
+        }
+
         (
             get_virtual_module_code(specifier)?,
             Some(specifier.to_string()),
@@ -637,7 +694,7 @@ fn collect_module_recursive(
     );
 
     for dep in dependencies {
-        collect_module_recursive(&dep, visiting, modules)?;
+        collect_module_recursive(&dep, visiting, modules, all_packages)?;
     }
 
     visiting.remove(path);
@@ -1002,9 +1059,59 @@ const tasks = {
 
 // ===== PLUGIN API =====
 
-// Event handlers storage
+// Event handlers storage (colored by plugin@version:scope)
 globalThis._rift_event_handlers = globalThis._rift_event_handlers || {};
 globalThis._rift_command_handlers = globalThis._rift_command_handlers || {};
+
+// Current color context (set by Rift when executing plugins)
+globalThis._rift_current_color = globalThis._rift_current_color || null;
+
+// ===== WORKSPACE PACKAGE EXPORT/IMPORT API =====
+// This allows packages to export functions that other packages can import via "rift:" protocol
+
+// Storage for package exports
+globalThis._rift_exports = globalThis._rift_exports || {};
+
+// Register exports for a package
+// rift.registerExports(packageName, exports)
+// Example: rift.registerExports("mathPlugin", { add: (x, y) => x + y, multiply: (x, y) => x * y });
+const registerExports = (packageName, exports) => {
+    if (typeof packageName !== 'string') {
+        throw new Error(`Package name must be a string, got ${typeof packageName}`);
+    }
+    if (typeof exports !== 'object' || exports === null) {
+        throw new Error(`Exports must be an object, got ${typeof exports}`);
+    }
+    // Store in global state for JavaScript access (preserves functions)
+    globalThis._rift_exports[packageName] = exports;
+    // Note: We don't use JSON.stringify for functions since they can't be serialized
+    // The exports are kept in JavaScript memory and accessed directly
+};
+
+// Get exports from a package
+// rift.getExports(packageName)
+// Example: const { add, multiply } = rift.getExports("mathPlugin");
+const getExports = (packageName) => {
+    if (typeof packageName !== 'string') {
+        throw new Error(`Package name must be a string, got ${typeof packageName}`);
+    }
+    const exports = globalThis._rift_exports[packageName];
+    if (!exports) {
+        throw new Error(`Package '${packageName}' not found or has no exports registered`);
+    }
+    return exports;
+};
+
+// Helper: escape special characters in color parts
+function escapeColorPart(part) {
+    if (typeof part !== 'string') return '';
+    return part.replace(/[@:]/g, '\\$&');
+}
+
+// Helper: build color string from parts
+function buildColor(plugin, version, scope) {
+    return `${escapeColorPart(plugin)}@${version}:${scope}`;
+}
 
 // Define a command (plugin system)
 // rift.defineCommand(name, handler)
@@ -1016,28 +1123,39 @@ const defineCommand = (name, handler) => {
     // Register via op
     ops.op_rift_define_command(name);
 
-    // Store handler for execution
-    globalThis._rift_command_handlers[name] = handler;
+    // Store handler for execution (with current color)
+    const color = globalThis._rift_current_color || 'unknown:unknown:unknown';
+    globalThis._rift_command_handlers[name] = { handler, color };
 };
 
 // Subscribe to an event (plugin system)
 // rift.on(eventName, handler)
+// Handlers are colored by the current plugin context
 const on = (eventName, handler) => {
     if (typeof handler !== 'function') {
         throw new Error(`Event handler must be a function, got ${typeof handler}`);
     }
 
-    // Register via op
-    ops.op_rift_on(eventName);
+    // Get current color context
+    const color = globalThis._rift_current_color || 'unknown:unknown:unknown';
 
-    // Store handler
-    globalThis._rift_event_handlers[eventName] = globalThis._rift_event_handlers[eventName] || [];
-    globalThis._rift_event_handlers[eventName].push(handler);
+    // Register via op with color
+    ops.op_rift_on(eventName, color);
+
+    // Store handler with color (nested structure for efficient lookup)
+    if (!globalThis._rift_event_handlers[eventName]) {
+        globalThis._rift_event_handlers[eventName] = {};
+    }
+    if (!globalThis._rift_event_handlers[eventName][color]) {
+        globalThis._rift_event_handlers[eventName][color] = [];
+    }
+    globalThis._rift_event_handlers[eventName][color].push(handler);
 };
 
 // Emit an event (plugin system)
-// rift.emit(eventName, context)
-const emit = (eventName, context) => {
+// rift.emit(eventName, context, options?)
+// Options: { scope?: string, color?: string } - filter handlers by scope or exact color
+const emit = (eventName, context, options) => {
     const contextJson = typeof context === 'string' ? context : JSON.stringify(context || {});
 
     // Emit via op (triggers Rust-side handlers)
@@ -1047,14 +1165,48 @@ const emit = (eventName, context) => {
         console.error(`Error emitting event '${eventName}':`, e);
     }
 
-    // Also trigger JavaScript-side handlers
-    const handlers = globalThis._rift_event_handlers[eventName];
-    if (handlers) {
+    // Trigger JavaScript-side handlers with color filtering
+    const eventHandlers = globalThis._rift_event_handlers[eventName];
+    if (!eventHandlers) return;
+
+    const targetScope = options?.scope;
+    const targetColor = options?.color;
+
+    // Get current color for default filtering
+    const currentColor = globalThis._rift_current_color || 'unknown:unknown:unknown';
+
+    for (const [color, handlers] of Object.entries(eventHandlers)) {
+        // Default behavior: only execute handlers with the same color as the current context
+        // This ensures isolation - when plugin A calls emit(), only plugin A's handlers run
+        // Users can override this by explicitly passing options
+        const useDefaultFilter = !targetScope && !targetColor;
+
+        if (useDefaultFilter) {
+            // Default: only execute handlers from the current color scope
+            if (color !== currentColor) {
+                continue;
+            }
+        }
+
+        // Filter by scope if specified
+        if (targetScope && targetScope !== 'all') {
+            const colorScope = color.split(':')[1] || '';  // Extract scope from "plugin@version:scope"
+            if (colorScope !== targetScope && colorScope !== 'workspace') {
+                continue;
+            }
+        }
+
+        // Filter by exact color if specified
+        if (targetColor && color !== targetColor) {
+            continue;
+        }
+
+        // Execute all handlers for this color
         for (const handler of handlers) {
             try {
                 handler(context);
             } catch (e) {
-                console.error(`Error in handler for event '${eventName}':`, e);
+                console.error(`Error in handler for event '${eventName}' (color: ${color}):`, e);
             }
         }
     }
@@ -1140,6 +1292,26 @@ const config = {
 // Make config available globally
 globalThis.config = config;
 globalThis.Config = config;
+
+// ===== WORKSPACE PACKAGE EXPORT/IMPORT API =====
+// Make registerExports and getExports available globally
+globalThis.registerExports = registerExports;
+globalThis.getExports = getExports;
+
+// Create a rift object for better API organization
+globalThis.rift = {
+    // Workspace package export/import
+    registerExports,
+    getExports,
+
+    // Plugin system
+    defineCommand,
+    on,
+    emit,
+
+    // File operations
+    writeFile,
+};
 "#;
 
 #[derive(Default)]
@@ -1229,7 +1401,107 @@ fn transpile_typescript_to_javascript(parsed_source: ParsedSource) -> Result<Str
         )?
         .into_source();
 
-    Ok(emitted.text)
+    // Post-process: convert rift: imports to rift.getExports() calls
+    let js_code = process_rift_imports(emitted.text);
+
+    Ok(js_code)
+}
+
+/// Convert rift: ES module imports to rift.getExports() calls
+fn process_rift_imports(js_code: String) -> String {
+    let mut result = String::new();
+    let mut pos = 0;
+
+    // Look for import statements with "rift:" specifier
+    while let Some(import_start) = js_code[pos..].find("import") {
+        let import_start = pos + import_start;
+
+        // Find the end of the statement (semicolon)
+        let stmt_end = match js_code[import_start..].find(';') {
+            Some(end) => import_start + end + 1,
+            None => break,
+        };
+
+        let statement = &js_code[import_start..stmt_end];
+
+        // Check if this is a "rift:" import
+        if statement.contains("\"rift:") || statement.contains("'rift:") {
+            // Parse: import { x, y } from "rift:package"
+            // Extract what's between { and }
+            if let Some(brace_start) = statement.find('{') {
+                if let Some(brace_end) = statement.find('}') {
+                    if let Some(from_pos) = statement.find("from") {
+                        let imports = &statement[brace_start + 1..brace_end];
+                        let after_from = &statement[from_pos + 4..];
+
+                        // Extract package name from "rift:package" or 'rift:package'
+                        let package_name = if after_from.contains("\"rift:") {
+                            if let Some(start) = after_from.find("\"rift:") {
+                                if let Some(end) = after_from[start + 6..].find('"') {
+                                    &after_from[start + 7..start + 6 + end]
+                                } else {
+                                    ""
+                                }
+                            } else {
+                                ""
+                            }
+                        } else if after_from.contains("'rift:") {
+                            if let Some(start) = after_from.find("'rift:") {
+                                if let Some(end) = after_from[start + 6..].find('\'') {
+                                    &after_from[start + 7..start + 6 + end]
+                                } else {
+                                    ""
+                                }
+                            } else {
+                                ""
+                            }
+                        } else {
+                            ""
+                        };
+
+                        // Clean up imports: split by comma, trim each, remove 'as' aliases
+                        let import_items: Vec<&str> = imports
+                            .split(',')
+                            .map(|s| {
+                                let trimmed = s.trim();
+                                // Handle 'as' aliases: keep the original name
+                                if let Some(as_pos) = trimmed.find(" as ") {
+                                    &trimmed[..as_pos]
+                                } else {
+                                    trimmed
+                                }
+                            })
+                            .collect();
+
+                        // Generate: const { x, y } = rift.getExports("package");
+                        let converted = format!(
+                            "const {{ {} }} = rift.getExports(\"{}\");",
+                            import_items.join(", "),
+                            package_name
+                        );
+
+                        // Add everything before this import
+                        result.push_str(&js_code[pos..import_start]);
+                        // Add the converted statement
+                        result.push_str(&converted);
+
+                        pos = stmt_end;
+                        continue;
+                    }
+                }
+            }
+        }
+
+        // Not a rift: import, add the original import
+        result.push_str(&js_code[pos..import_start]);
+        result.push_str(statement);
+        pos = stmt_end;
+    }
+
+    // Add remaining code
+    result.push_str(&js_code[pos..]);
+
+    result
 }
 
 fn run_embedded_javascript(specifier: &deno_ast::ModuleSpecifier, js_code: String) -> Result<()> {
@@ -1479,6 +1751,9 @@ mod tests {
             root_name: "my-workspace".to_string(),
             root_path: temp.clone(),
             all_packages,
+            plugin_name: None,
+            plugin_version: None,
+            color_scope: "my-package".to_string(),
         };
 
         let result = vm.run_entry_with_context(&entry, &context);
